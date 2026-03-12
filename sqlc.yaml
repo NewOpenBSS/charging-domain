@@ -1,0 +1,11 @@
+version: "2"
+sql:
+  - engine: "postgresql"
+    schema: "db/migrations"
+    queries: "internal/store/queries"
+    gen:
+      go:
+        package: "sqlc"
+        out: "internal/store/sqlc"
+        sql_package: "pgx/v5"
+        query_parameter_limit: 4

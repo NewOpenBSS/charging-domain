@@ -1,0 +1,73 @@
+{
+  "quotaId": "3088b95b-a004-4665-a594-b1035c850b5c",
+  "counters": [
+    {
+      "counterId": "1c7fbc1e-3a0d-4a7a-b3b4-ef2b4f5b8c22",
+      "productId": "9a2e6d55-3e7f-4f88-9c5c-2c1a4b7d6f11",
+      "productName": "Voice Bundle 200 Minutes",
+      "description": "Monthly voice bundle",
+      "UnitType": "SECONDS",
+      "priority": 90,
+      "initialBalance": "12000",
+      "balance": "12000",
+      "expiry": "2026-04-01T00:00:00Z",
+      "reservations": {},
+      "canTransfer": false,
+      "canConvert": false,
+      "UnitPrice": "0.05",
+      "taxRate": "0.15",
+      "notifications": {
+        "thresholds": [
+          50,
+          80,
+          100
+        ],
+        "lastThresholdNotified": 0,
+        "daysBeforeExpiry": [
+          7,
+          3,
+          1
+        ],
+        "lastDayBeforeExpiryNotified": 0
+      },
+      "counterSelectionKeys": [
+        "VOICE.*.*.*.*"
+      ],
+      "externalReference": "VOICE_PROMO_200MIN_2026"
+    },
+    {
+      "counterId": "6a3f5a9d-9e4c-4d43-8f7a-6e9a8d1f2c11",
+      "productId": "8b7e3d4c-2f11-4b55-9b8c-91a3b7d8c2f4",
+      "productName": "Data Bundle 5GB",
+      "description": "Monthly data bundle",
+      "UnitType": "OCTETS",
+      "priority": 100,
+      "initialBalance": "5368709120",
+      "balance": "5368709120",
+      "expiry": "2026-04-01T00:00:00Z",
+      "reservations": {},
+      "canTransfer": false,
+      "canConvert": false,
+      "UnitPrice": "0.00000005",
+      "taxRate": "0.15",
+      "notifications": {
+        "thresholds": [
+          50,
+          80,
+          100
+        ],
+        "lastThresholdNotified": 0,
+        "daysBeforeExpiry": [
+          7,
+          3,
+          1
+        ],
+        "lastDayBeforeExpiryNotified": 0
+      },
+      "counterSelectionKeys": [
+        "DATA.*.*.*.*"
+      ],
+      "externalReference": "PROMO_5GB_2026"
+    }
+  ]
+}

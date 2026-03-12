@@ -1,0 +1,31 @@
+base:
+  metrics:
+    enabled: true
+    addr: ":9090"
+    path: "/metrics"
+
+  database:
+    url: "postgres://gobss:gobss@localhost:5432/gobss?sslmode=disable&search_path=charging"
+
+  logging:
+    level: debug
+    format: text
+
+engine:
+  addr: ":8080"
+  path: "/api/"
+  settlementPlanId: "9a0d171b-ab6d-45d9-ae2e-ddb281936855"
+
+kafka:
+  enabled: true
+  brokers:
+    - "localhost:9092"
+  requiredAcks: "all"
+  #clientID: go-ocs
+  #dialTimeout: 10s
+  #writeTimeout: 10s
+  #batchTimeout: 100ms
+  #compressionCodec: "snappy"
+  topics:
+    charge-record: "public.charge-record"
+    quota-journal: "public.quota-journal"

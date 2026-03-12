@@ -1,0 +1,27 @@
+base:
+  metrics:
+    enabled: true
+    addr: ":9090"
+    path: "/metrics"
+
+  database:
+    url: "postgres://gobss:gobss@localhost:5432/gobss?sslmode=disable&search_path=charging"
+
+  logging:
+    level: debug
+    format: text
+diameter:
+  transport:
+    bindAddresses: ["127.0.0.1:3868"]
+
+  localPeer:
+    host: ocs.frei.one
+    realm: server.tradeswitch.com
+    vendorId: 0
+    productName: "charging-dra"
+    originStateId: 0
+    firmwareRevision: 0
+
+  watchdog:
+    enabled: true
+    interval: 30s

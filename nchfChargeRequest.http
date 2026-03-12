@@ -1,0 +1,266 @@
+### VOICE the first request
+POST http://localhost:8080/api/nchf/chargingdata
+
+{
+  "subscriberIdentifier": "0272587305",
+  "chargingId": "{{chargingId1}}",
+  "invocationSequenceNumber": 1,
+  "invocationTimeStamp":  "{{$isoTimestamp}}",
+  "oneTimeEvent": false,
+  "multipleUnitUsage": [
+    {
+      "ratingGroup": 1001,
+      "requestedUnit": {
+        "time": 600
+      }
+    }
+  ],
+  "imsChargingInformation": {
+    "roleOfNode": "MO",
+    "calledPartyAddress": "0650100300"
+  }
+}
+
+### VOICE update request (seq 2)
+POST http://localhost:8080/api/nchf/chargingdata/{{chargingId1}}/update
+
+{
+  "subscriberIdentifier": "0272587305",
+  "chargingId": "{{chargingId1}}",
+  "invocationSequenceNumber": 2,
+  "invocationTimeStamp":  "{{$isoTimestamp}}",
+  "oneTimeEvent": false,
+  "multipleUnitUsage": [
+    {
+      "ratingGroup": 1001,
+      "requestedUnit": {
+        "time": 600
+      },
+      "usedUnitContainer": [
+        {
+          "time": 550
+        }
+      ]
+    }
+  ],
+  "imsChargingInformation": {
+    "roleOfNode": "MO",
+    "calledPartyAddress": "0650100300"
+  }
+}
+
+### VOICE update request (retransmit seq 2)
+POST http://localhost:8080/api/nchf/chargingdata/{{chargingId1}}/update
+
+{
+  "subscriberIdentifier": "0272587305",
+  "chargingId": "{{chargingId1}}",
+  "invocationSequenceNumber": 2,
+  "invocationTimeStamp":  "{{$isoTimestamp}}",
+  "oneTimeEvent": false,
+  "retransmissionIndicator": true,
+  "multipleUnitUsage": [
+    {
+      "ratingGroup": 1001,
+      "requestedUnit": {
+        "time": 600
+      },
+      "usedUnitContainer": [
+        {
+          "time": 550
+        }
+      ]
+    }
+  ],
+  "imsChargingInformation": {
+    "roleOfNode": "MO",
+    "calledPartyAddress": "0650100300"
+  }
+}
+
+### VOICE update request (seq 3)
+POST http://localhost:8080/api/nchf/chargingdata/{{chargingId1}}/update
+
+{
+  "subscriberIdentifier": "0272587305",
+  "chargingId": "{{chargingId1}}",
+  "invocationSequenceNumber": 3,
+  "invocationTimeStamp":  "{{$isoTimestamp}}",
+  "oneTimeEvent": false,
+  "multipleUnitUsage": [
+    {
+      "ratingGroup": 1001,
+      "requestedUnit": {
+        "time": 600
+      },
+      "usedUnitContainer": [
+        {
+          "time": 400
+        }
+      ]
+    }
+  ],
+  "imsChargingInformation": {
+    "roleOfNode": "MO",
+    "calledPartyAddress": "0650100300"
+  }
+}
+
+### VOICE terminate request (seq 4)
+POST http://localhost:8080/api/nchf/chargingdata/{{chargingId1}}/release
+
+{
+  "subscriberIdentifier": "0272587305",
+  "chargingId": "{{chargingId1}}",
+  "invocationSequenceNumber": 4,
+  "invocationTimeStamp": "{{$isoTimestamp}}",
+  "oneTimeEvent": false,
+  "multipleUnitUsage": [
+    {
+      "ratingGroup": 1001,
+      "usedUnitContainer": [
+        {
+          "time": 400
+        }
+      ]
+    }
+  ],
+  "imsChargingInformation": {
+    "roleOfNode": "MO",
+    "calledPartyAddress": "0650100300"
+  }
+}
+
+
+### DATA the first request
+POST http://localhost:8080/api/nchf/chargingdata
+
+{
+  "subscriberIdentifier": "0272587305",
+  "chargingId": "{{chargingId2}}",
+  "invocationSequenceNumber": 1,
+  "invocationTimeStamp":  "{{$isoTimestamp}}",
+  "oneTimeEvent": false,
+  "reclaimable": true,
+  "multipleUnitUsage": [
+    {
+      "ratingGroup": 1001,
+      "requestedUnit": {
+        "totalVolume": 500000
+      }
+    }
+  ],
+  "pduSessionChargingInformation": {
+    "chargingId": "123456789"
+  }
+}
+
+### DATA update request (seq 2)
+POST http://localhost:8080/api/nchf/chargingdata/{{chargingId2}}/update
+
+{
+  "subscriberIdentifier": "0272587305",
+  "chargingId": "{{chargingId2}}",
+  "invocationSequenceNumber": 2,
+  "invocationTimeStamp":  "{{$isoTimestamp}}",
+  "oneTimeEvent": false,
+  "reclaimable": true,
+  "multipleUnitUsage": [
+    {
+      "ratingGroup": 1001,
+      "requestedUnit": {
+        "totalVolume": 500000
+      },
+      "usedUnitContainer": [
+        {
+          "totalVolume": 480000
+        }
+      ]
+    }
+  ],
+  "pduSessionChargingInformation": {
+    "chargingId": "123456789"
+  }
+}
+
+### DATA update request (retransmit seq 2)
+POST http://localhost:8080/api/nchf/chargingdata/{{chargingId2}}/update
+
+{
+  "subscriberIdentifier": "0272587305",
+  "chargingId": "{{chargingId2}}",
+  "invocationSequenceNumber": 2,
+  "invocationTimeStamp":  "{{$isoTimestamp}}",
+  "oneTimeEvent": false,
+  "retransmissionIndicator": true,
+  "reclaimable": true,
+  "multipleUnitUsage": [
+    {
+      "ratingGroup": 1001,
+      "requestedUnit": {
+        "totalVolume": 500000
+      },
+      "usedUnitContainer": [
+        {
+          "totalVolume": 480000
+        }
+      ]
+    }
+  ],
+  "pduSessionChargingInformation": {
+    "chargingId": "123456789"
+  }
+}
+
+### DATA update request (seq 3)
+POST http://localhost:8080/api/nchf/chargingdata/{{chargingId2}}/update
+
+{
+  "subscriberIdentifier": "0272587305",
+  "chargingId": "{{chargingId2}}",
+  "invocationSequenceNumber": 3,
+  "invocationTimeStamp":  "{{$isoTimestamp}}",
+  "oneTimeEvent": false,
+  "reclaimable": true,
+  "multipleUnitUsage": [
+    {
+      "ratingGroup": 1001,
+      "requestedUnit": {
+        "totalVolume": 500000
+      },
+      "usedUnitContainer": [
+        {
+          "totalVolume": 380000
+        }
+      ]
+    }
+  ],
+  "pduSessionChargingInformation": {
+    "chargingId": "123456789"
+  }
+}
+
+### DATA terminate request (seq 4)
+POST http://localhost:8080/api/nchf/chargingdata/{{chargingId2}}/release
+
+{
+  "subscriberIdentifier": "0272587305",
+  "chargingId": "{{chargingId2}}",
+  "invocationSequenceNumber": 4,
+  "invocationTimeStamp": "{{$isoTimestamp}}",
+  "oneTimeEvent": false,
+  "reclaimable": true,
+  "multipleUnitUsage": [
+    {
+      "ratingGroup": 1001,
+      "usedUnitContainer": [
+        {
+          "totalVolume": 280000
+        }
+      ]
+    }
+  ],
+  "pduSessionChargingInformation": {
+    "chargingId": "123456789"
+  }
+}
