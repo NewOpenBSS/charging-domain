@@ -54,8 +54,8 @@ func main() {
 	gqlHandler := graphqlhandler.NewRouter(appCtx)
 
 	mux := http.NewServeMux()
-	mux.Handle(cfg.Server.GraphqlPath+"/", gqlHandler)
-	mux.Handle(cfg.Server.RestPath+"/", restHandler)
+	mux.Handle(cfg.Server.GraphqlPath+"/", http.StripPrefix(cfg.Server.GraphqlPath, gqlHandler))
+	mux.Handle(cfg.Server.RestPath+"/", http.StripPrefix(cfg.Server.RestPath, restHandler))
 
 	srv := &http.Server{
 		Addr:         cfg.Server.Addr,

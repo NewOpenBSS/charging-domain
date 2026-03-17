@@ -5,9 +5,13 @@ import (
 	"time"
 
 	"github.com/99designs/gqlgen/graphql/handler"
+	"github.com/99designs/gqlgen/graphql/handler/extension"
+	"github.com/99designs/gqlgen/graphql/handler/lru"
+	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/vektah/gqlparser/v2/ast"
 
 	"go-ocs/internal/auth/keycloak"
 	"go-ocs/internal/backend/appcontext"
@@ -35,12 +39,15 @@ func NewRouter(appCtx *appcontext.AppContext) http.Handler {
 		CarrierSvc: appCtx.CarrierSvc,
 	}
 
-	srv := handler.NewDefaultServer(
-		generated.NewExecutableSchema(generated.Config{Resolvers: resolver}),
-	)
+	srv := handler.New(generated.NewExecutableSchema(generated.Config{Resolvers: resolver}))
+	srv.AddTransport(transport.Options{})
+	srv.AddTransport(transport.GET{})
+	srv.AddTransport(transport.POST{})
+	srv.SetQueryCache(lru.New[*ast.QueryDocument](1000))
+	srv.Use(extension.Introspection{})
 
-	r.Handle(graphqlPath, srv)
-	r.Get(graphqlPath+"/playground", playground.Handler("Charging Admin", graphqlPath))
+	r.Handle("/", srv)
+	r.Get("/playground", playground.Handler("Charging Admin", graphqlPath))
 
 	logging.Info("GraphQL router configured", "path", graphqlPath)
 	return r
