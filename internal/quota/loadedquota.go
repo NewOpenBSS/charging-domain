@@ -13,15 +13,18 @@ type LoadedQuota struct {
 	Version time.Time
 }
 
-func (l *LoadedQuota) RemoveExpiredEntries() {
+// RemoveExpiredEntries removes counters that have passed their expiry or have a zero balance,
+// and prunes expired reservations from surviving counters. now is the reference time for all
+// expiry comparisons, enabling deterministic behaviour in tests.
+func (l *LoadedQuota) RemoveExpiredEntries(now time.Time) {
 
 	counters := make([]Counter, 0)
 	for _, c := range l.Quota.Counters {
 		// Check if counter is expired and has zero balance
-		if c.Expiry.After(time.Now()) && !c.Balance.IsZero() {
+		if c.Expiry.After(now) && !c.Balance.IsZero() {
 			reservations := make(map[uuid.UUID]Reservation)
 			for k, r := range c.Reservations {
-				if r.Expiry.After(time.Now()) {
+				if r.Expiry.After(now) {
 					reservations[k] = r
 				}
 			}

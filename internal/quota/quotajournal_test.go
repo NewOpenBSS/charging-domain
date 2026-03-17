@@ -113,7 +113,7 @@ func TestPublishJournalEvent(t *testing.T) {
 		// This won't actually send to a real Kafka but it should not panic.
 		// Note: PublishJournalEvent is asynchronous and uses context.Background()
 		assert.NotPanics(t, func() {
-			PublishJournalEvent(manager, quotaID, transactionID, counter, reasonCode, adjustedUnits, unitType, taxCalculation, subscriberID, metaData)
+			PublishJournalEvent(manager, quotaID, transactionID, counter, reasonCode, adjustedUnits, unitType, taxCalculation, subscriberID, metaData, time.Now())
 		})
 	})
 }

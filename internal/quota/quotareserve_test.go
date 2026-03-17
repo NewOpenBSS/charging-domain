@@ -54,7 +54,7 @@ func TestQuotaManager_ReserveQuota_Comprehensive(t *testing.T) {
 		mockRepo.On("Load", ctx, subscriberID).Return(loadedQuota, nil)
 		mockRepo.On("Save", ctx, loadedQuota).Return(nil)
 
-		granted, err := manager.ReserveQuota(ctx, reservationID, subscriberID, ReasonServiceUsage, rateKey, unitType, requestedUnits, unitPrice, multiplier, validityTime, false)
+		granted, err := manager.ReserveQuota(ctx, time.Now(), reservationID, subscriberID, ReasonServiceUsage, rateKey, unitType, requestedUnits, unitPrice, multiplier, validityTime, false)
 
 		assert.NoError(t, err)
 		assert.Equal(t, int64(100), granted)
@@ -111,7 +111,7 @@ func TestQuotaManager_ReserveQuota_Comprehensive(t *testing.T) {
 		mockRepo.On("Load", ctx, subscriberID).Return(loadedQuota, nil)
 		mockRepo.On("Save", ctx, loadedQuota).Return(nil)
 
-		granted, err := manager.ReserveQuota(ctx, reservationID, subscriberID, ReasonServiceUsage, rateKey, unitType, requestedUnits, unitPrice, multiplier, validityTime, true)
+		granted, err := manager.ReserveQuota(ctx, time.Now(), reservationID, subscriberID, ReasonServiceUsage, rateKey, unitType, requestedUnits, unitPrice, multiplier, validityTime, true)
 
 		assert.NoError(t, err)
 		assert.Equal(t, int64(150), granted)
@@ -172,7 +172,7 @@ func TestQuotaManager_ReserveQuota_Comprehensive(t *testing.T) {
 		mockRepo.On("Load", ctx, subscriberID).Return(loadedQuota, nil)
 		mockRepo.On("Save", ctx, loadedQuota).Return(nil)
 
-		granted, err := manager.ReserveQuota(ctx, reservationID, subscriberID, ReasonServiceUsage, rateKey, unitType, requestedUnits, unitPrice, multiplier, validityTime, true)
+		granted, err := manager.ReserveQuota(ctx, time.Now(), reservationID, subscriberID, ReasonServiceUsage, rateKey, unitType, requestedUnits, unitPrice, multiplier, validityTime, true)
 
 		assert.NoError(t, err)
 		assert.Equal(t, int64(100), granted) // 50 (service) + 50 (monetary)
@@ -196,7 +196,7 @@ func TestQuotaManager_ReserveQuota_Comprehensive(t *testing.T) {
 			loadErr := errors.New("load failed")
 			mockRepo.On("Load", ctx, subscriberID).Return(nil, loadErr).Once()
 
-			granted, err := manager.ReserveQuota(ctx, reservationID, subscriberID, ReasonServiceUsage, rateKey, unitType, requestedUnits, unitPrice, multiplier, validityTime, false)
+			granted, err := manager.ReserveQuota(ctx, time.Now(), reservationID, subscriberID, ReasonServiceUsage, rateKey, unitType, requestedUnits, unitPrice, multiplier, validityTime, false)
 
 			assert.ErrorIs(t, err, loadErr)
 			assert.Equal(t, int64(0), granted)
@@ -210,7 +210,7 @@ func TestQuotaManager_ReserveQuota_Comprehensive(t *testing.T) {
 			mockRepo.On("Load", ctx, subscriberID).Return(loadedQuota, nil).Once()
 			mockRepo.On("Save", ctx, loadedQuota).Return(saveErr).Once()
 
-			granted, err := manager.ReserveQuota(ctx, reservationID, subscriberID, ReasonServiceUsage, rateKey, unitType, requestedUnits, unitPrice, multiplier, validityTime, false)
+			granted, err := manager.ReserveQuota(ctx, time.Now(), reservationID, subscriberID, ReasonServiceUsage, rateKey, unitType, requestedUnits, unitPrice, multiplier, validityTime, false)
 
 			assert.ErrorIs(t, err, saveErr)
 			assert.Equal(t, int64(0), granted)

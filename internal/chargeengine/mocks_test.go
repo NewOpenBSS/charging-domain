@@ -30,10 +30,10 @@ type MockQuotaManager struct {
 	mock.Mock
 }
 
-func (m *MockQuotaManager) ReserveQuota(ctx context.Context, reservationId uuid.UUID, subscriberId uuid.UUID, reason quota.ReasonCode, rateKey charging.RateKey, unitType charging.UnitType, requestedUnits int64, unitPrice decimal.Decimal, multiplier decimal.Decimal, validityTime time.Duration, allowOOBCharging bool) (int64, error) {
-	args := m.Called(ctx, reservationId, subscriberId, reason, rateKey, unitType, requestedUnits, unitPrice, multiplier, validityTime, allowOOBCharging)
-	if fn, ok := args.Get(0).(func(context.Context, uuid.UUID, uuid.UUID, quota.ReasonCode, charging.RateKey, charging.UnitType, int64, decimal.Decimal, decimal.Decimal, time.Duration, bool) int64); ok {
-		return fn(ctx, reservationId, subscriberId, reason, rateKey, unitType, requestedUnits, unitPrice, multiplier, validityTime, allowOOBCharging), args.Error(1)
+func (m *MockQuotaManager) ReserveQuota(ctx context.Context, now time.Time, reservationId uuid.UUID, subscriberId uuid.UUID, reason quota.ReasonCode, rateKey charging.RateKey, unitType charging.UnitType, requestedUnits int64, unitPrice decimal.Decimal, multiplier decimal.Decimal, validityTime time.Duration, allowOOBCharging bool) (int64, error) {
+	args := m.Called(ctx, now, reservationId, subscriberId, reason, rateKey, unitType, requestedUnits, unitPrice, multiplier, validityTime, allowOOBCharging)
+	if fn, ok := args.Get(0).(func(context.Context, time.Time, uuid.UUID, uuid.UUID, quota.ReasonCode, charging.RateKey, charging.UnitType, int64, decimal.Decimal, decimal.Decimal, time.Duration, bool) int64); ok {
+		return fn(ctx, now, reservationId, subscriberId, reason, rateKey, unitType, requestedUnits, unitPrice, multiplier, validityTime, allowOOBCharging), args.Error(1)
 	}
 	res := args.Get(0)
 	if res == nil {
@@ -45,8 +45,8 @@ func (m *MockQuotaManager) ReserveQuota(ctx context.Context, reservationId uuid.
 	return res.(int64), args.Error(1)
 }
 
-func (m *MockQuotaManager) Debit(ctx context.Context, subscriberID uuid.UUID, requestId string, reservationId uuid.UUID, usedUnits int64, unitType charging.UnitType, reclaimUnusedUnits bool) (*quota.DebitResponse, error) {
-	args := m.Called(ctx, subscriberID, requestId, reservationId, usedUnits, unitType, reclaimUnusedUnits)
+func (m *MockQuotaManager) Debit(ctx context.Context, now time.Time, subscriberID uuid.UUID, requestId string, reservationId uuid.UUID, usedUnits int64, unitType charging.UnitType, reclaimUnusedUnits bool) (*quota.DebitResponse, error) {
+	args := m.Called(ctx, now, subscriberID, requestId, reservationId, usedUnits, unitType, reclaimUnusedUnits)
 	return args.Get(0).(*quota.DebitResponse), args.Error(1)
 }
 

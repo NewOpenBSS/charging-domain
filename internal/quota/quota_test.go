@@ -26,21 +26,23 @@ func TestCounter_ReserveServiceUnits(t *testing.T) {
 	taxRate := decimal.NewFromFloat(0.1)
 	validity := 1 * time.Hour
 
+	now := time.Now()
+
 	// Test successful reservation
-	reserved := c.ReserveServiceUnits(ref, 10, unitPrice, multiplier, taxRate, ReasonServiceUsage, validity)
+	reserved := c.ReserveServiceUnits(ref, 10, unitPrice, multiplier, taxRate, ReasonServiceUsage, validity, now)
 	assert.Equal(t, int64(10), reserved)
 	assert.Contains(t, c.Reservations, ref)
 	assert.Equal(t, int64(10), *c.Reservations[ref].Units)
 
 	// Test insufficient balance
 	ref2 := uuid.New()
-	reserved2 := c.ReserveServiceUnits(ref2, 100, unitPrice, multiplier, taxRate, ReasonServiceUsage, validity)
+	reserved2 := c.ReserveServiceUnits(ref2, 100, unitPrice, multiplier, taxRate, ReasonServiceUsage, validity, now)
 	assert.Equal(t, int64(90), reserved2) // 100 - 10 already reserved
 	assert.Contains(t, c.Reservations, ref2)
 
 	// Test monetary counter (should not reserve service units)
 	cMonetary := &Counter{UnitType: charging.MONETARY}
-	reserved3 := cMonetary.ReserveServiceUnits(uuid.New(), 10, unitPrice, multiplier, taxRate, ReasonServiceUsage, validity)
+	reserved3 := cMonetary.ReserveServiceUnits(uuid.New(), 10, unitPrice, multiplier, taxRate, ReasonServiceUsage, validity, now)
 	assert.Equal(t, int64(0), reserved3)
 }
 
@@ -135,9 +137,10 @@ func TestCounter_ReserveValue(t *testing.T) {
 		Reservations: make(map[uuid.UUID]Reservation),
 	}
 
+	now := time.Now()
 	ref := uuid.New()
 	amount := decimal.NewFromInt(40)
-	reserved := c.ReserveValue(ref, amount, decimal.Zero, decimal.NewFromInt(1), decimal.Zero, ReasonServiceUsage, 1*time.Hour)
+	reserved := c.ReserveValue(ref, amount, decimal.Zero, decimal.NewFromInt(1), decimal.Zero, ReasonServiceUsage, 1*time.Hour, now)
 	// balance is 100. amount is 40. multiplier is 1.
 	// amount = 1 * 40 = 40.
 	// avail = 100 - 0 = 100.
@@ -150,7 +153,7 @@ func TestCounter_ReserveValue(t *testing.T) {
 	// Test exceeding balance
 	ref2 := uuid.New()
 	amount2 := decimal.NewFromInt(100)
-	reserved2 := c.ReserveValue(ref2, amount2, decimal.Zero, decimal.NewFromInt(1), decimal.Zero, ReasonServiceUsage, 1*time.Hour)
+	reserved2 := c.ReserveValue(ref2, amount2, decimal.Zero, decimal.NewFromInt(1), decimal.Zero, ReasonServiceUsage, 1*time.Hour, now)
 	// balance is 100. reservations sum to 40.
 	// avail = 100 - 40 = 60.
 	// amount2 = 100.

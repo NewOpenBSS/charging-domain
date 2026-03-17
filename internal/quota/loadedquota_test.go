@@ -37,7 +37,7 @@ func TestLoadedQuota_RemoveExpiredEntries(t *testing.T) {
 			},
 		}
 
-		l.RemoveExpiredEntries()
+		l.RemoveExpiredEntries(now)
 
 		assert.Len(t, l.Quota.Counters, 1)
 		assert.Len(t, l.Quota.Counters[0].Reservations, 1)
@@ -62,7 +62,7 @@ func TestLoadedQuota_RemoveExpiredEntries(t *testing.T) {
 			},
 		}
 
-		l.RemoveExpiredEntries()
+		l.RemoveExpiredEntries(now)
 
 		assert.Len(t, l.Quota.Counters, 1)
 		assert.Equal(t, &future, l.Quota.Counters[0].Expiry)
@@ -81,7 +81,7 @@ func TestLoadedQuota_RemoveExpiredEntries(t *testing.T) {
 			},
 		}
 
-		l.RemoveExpiredEntries()
+		l.RemoveExpiredEntries(now)
 
 		assert.Len(t, l.Quota.Counters, 0)
 	})
@@ -108,7 +108,7 @@ func TestLoadedQuota_CheckForUsageNotifications(t *testing.T) {
 			},
 		}
 
-		l.CheckForUsageNotifications(subscriberID)
+		l.CheckForUsageNotifications(nil, subscriberID)
 
 		assert.NotNil(t, l.Quota.Counters[0].Notifications.LastThresholdNotified)
 		assert.Equal(t, 50, *l.Quota.Counters[0].Notifications.LastThresholdNotified)
@@ -131,7 +131,7 @@ func TestLoadedQuota_CheckForUsageNotifications(t *testing.T) {
 			},
 		}
 
-		l.CheckForUsageNotifications(subscriberID)
+		l.CheckForUsageNotifications(nil, subscriberID)
 
 		assert.NotNil(t, l.Quota.Counters[0].Notifications.LastThresholdNotified)
 		assert.Equal(t, 80, *l.Quota.Counters[0].Notifications.LastThresholdNotified)
@@ -156,7 +156,7 @@ func TestLoadedQuota_CheckForUsageNotifications(t *testing.T) {
 			},
 		}
 
-		l.CheckForUsageNotifications(subscriberID)
+		l.CheckForUsageNotifications(nil, subscriberID)
 
 		assert.Equal(t, 80, *l.Quota.Counters[0].Notifications.LastThresholdNotified)
 	})
@@ -180,7 +180,7 @@ func TestLoadedQuota_CheckForUsageNotifications(t *testing.T) {
 			},
 		}
 
-		l.CheckForUsageNotifications(subscriberID)
+		l.CheckForUsageNotifications(nil, subscriberID)
 
 		assert.Equal(t, 80, *l.Quota.Counters[0].Notifications.LastThresholdNotified)
 	})
@@ -203,7 +203,7 @@ func TestLoadedQuota_CheckForUsageNotifications(t *testing.T) {
 		}
 
 		// Should not panic and should skip
-		l.CheckForUsageNotifications(subscriberID)
+		l.CheckForUsageNotifications(nil, subscriberID)
 
 		assert.Nil(t, l.Quota.Counters[0].Notifications.LastThresholdNotified)
 	})
@@ -224,7 +224,7 @@ func TestLoadedQuota_CheckForUsageNotifications(t *testing.T) {
 			},
 		}
 
-		l.CheckForUsageNotifications(subscriberID)
+		l.CheckForUsageNotifications(nil, subscriberID)
 
 		assert.Nil(t, l.Quota.Counters[0].Notifications.LastThresholdNotified)
 	})

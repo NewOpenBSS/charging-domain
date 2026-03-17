@@ -158,7 +158,7 @@ func TestProcessCharging(t *testing.T) {
 	mockInfra.On("FindRatingPlan", appCtx.Config.Engine.SettlementPlanId).Return(ratePlan, nil)
 	mockInfra.On("FindRatingPlan", subscriber.WholesalerRatePlanId).Return(ratePlan, nil)
 
-	mockQM.On("ReserveQuota", mock.Anything, mock.Anything, subscriberID, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(int64(100), nil)
+	mockQM.On("ReserveQuota", mock.Anything, mock.Anything, mock.Anything, subscriberID, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(int64(100), nil)
 
 	// Mock DB calls for CreateChargeDataStep
 	mockRow := new(MockRow)
@@ -262,9 +262,9 @@ func TestProcessOneTimeCharging(t *testing.T) {
 	mockInfra.On("FindRatingPlan", appCtx.Config.Engine.SettlementPlanId).Return(ratePlan, nil)
 	mockInfra.On("FindRatingPlan", subscriber.WholesalerRatePlanId).Return(ratePlan, nil)
 
-	mockQM.On("ReserveQuota", mock.Anything, mock.Anything, subscriberID, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(int64(100), nil)
+	mockQM.On("ReserveQuota", mock.Anything, mock.Anything, mock.Anything, subscriberID, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(int64(100), nil)
 
-	mockQM.On("Debit", mock.Anything, subscriberID, mock.Anything, mock.Anything, int64(50), mock.Anything, mock.Anything).Return(&quota.DebitResponse{
+	mockQM.On("Debit", mock.Anything, mock.Anything, subscriberID, mock.Anything, mock.Anything, int64(50), mock.Anything, mock.Anything).Return(&quota.DebitResponse{
 		UnitsDebited: 50,
 		UnitsValue:   decimal.NewFromInt(500),
 	}, nil)
@@ -368,9 +368,9 @@ func TestUpdateChargingData(t *testing.T) {
 	mockInfra.On("FindRatingPlan", appCtx.Config.Engine.SettlementPlanId).Return(ratePlan, nil)
 	mockInfra.On("FindRatingPlan", subscriber.WholesalerRatePlanId).Return(ratePlan, nil)
 
-	mockQM.On("ReserveQuota", mock.Anything, mock.Anything, subscriberID, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(int64(100), nil)
+	mockQM.On("ReserveQuota", mock.Anything, mock.Anything, mock.Anything, subscriberID, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(int64(100), nil)
 
-	mockQM.On("Debit", mock.Anything, subscriberID, mock.Anything, mock.Anything, int64(50), mock.Anything, mock.Anything).Return(&quota.DebitResponse{
+	mockQM.On("Debit", mock.Anything, mock.Anything, subscriberID, mock.Anything, mock.Anything, int64(50), mock.Anything, mock.Anything).Return(&quota.DebitResponse{
 		UnitsDebited: 50,
 		UnitsValue:   decimal.NewFromInt(500),
 	}, nil).Once()
@@ -501,7 +501,7 @@ func TestReleaseChargingData(t *testing.T) {
 		*(args[3].(*[]byte)) = cdBytes
 	}).Return(nil).Once()
 
-	mockQM.On("Debit", mock.Anything, subscriberID, mock.Anything, grantID, int64(50), mock.Anything, mock.Anything).Return(&quota.DebitResponse{
+	mockQM.On("Debit", mock.Anything, mock.Anything, subscriberID, mock.Anything, grantID, int64(50), mock.Anything, mock.Anything).Return(&quota.DebitResponse{
 		UnitsDebited: 50,
 		UnitsValue:   decimal.NewFromInt(500),
 	}, nil).Once()

@@ -155,7 +155,7 @@ func rateUnit(dc *engine.ChargingContext, u nchf.MultipleUnitUsage) (*model.Gran
 		InvocationSequenceNumber: *dc.Request.InvocationSequenceNumber,
 		FinalUnitIndication:      isFinalUnitIndication,
 		ValidityTime:             int32(validityWindow.Seconds()),
-		GrantedTime:              time.Now(),
+		GrantedTime:              dc.StartTime,
 		UnitsGranted:             grantedUnits,
 		RatingGroup:              *u.RatingGroup,
 		UnitType:                 classification.UnitType,

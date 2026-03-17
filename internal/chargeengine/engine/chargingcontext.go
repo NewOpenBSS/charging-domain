@@ -36,9 +36,11 @@ type ChargingContext struct {
 }
 
 // NewChargingContext creates a new ChargingContext instance with the provided request.
-func NewChargingContext(appContext *appcontext.AppContext, infra interfaces.Infrastructure, sessionId string, request *nchf.ChargingDataRequest) *ChargingContext {
+// now is the UTC timestamp captured at the transport boundary and used as the single
+// source of truth for all time-dependent operations in the pipeline.
+func NewChargingContext(appContext *appcontext.AppContext, infra interfaces.Infrastructure, sessionId string, request *nchf.ChargingDataRequest, now time.Time) *ChargingContext {
 	return &ChargingContext{
-		StartTime:    time.Now(),
+		StartTime:    now,
 		SessionId:    sessionId,
 		AppContext:   appContext,
 		Infra:        infra,

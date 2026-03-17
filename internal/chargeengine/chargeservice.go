@@ -6,11 +6,12 @@ import (
 	"go-ocs/internal/chargeengine/engine/business/interfaces"
 	"go-ocs/internal/chargeengine/engine/steps"
 	"go-ocs/internal/nchf"
+	"time"
 )
 
 func ProcessCharging(appCtx *appcontext.AppContext, infra interfaces.Infrastructure, sessionId string, request *nchf.ChargingDataRequest) (*nchf.ChargingDataResponse, error) {
-
-	chargingCtx := engine.NewChargingContext(appCtx, infra, sessionId, request)
+	now := time.Now().UTC()
+	chargingCtx := engine.NewChargingContext(appCtx, infra, sessionId, request, now)
 
 	// Create a new charge data record
 	if err := steps.CreateChargeDataStep(chargingCtx); err != nil {
@@ -52,8 +53,8 @@ func ProcessCharging(appCtx *appcontext.AppContext, infra interfaces.Infrastruct
 }
 
 func ProcessOneTimeCharging(appCtx *appcontext.AppContext, infra interfaces.Infrastructure, sessionId string, request *nchf.ChargingDataRequest) (*nchf.ChargingDataResponse, error) {
-
-	chargingCtx := engine.NewChargingContext(appCtx, infra, sessionId, request)
+	now := time.Now().UTC()
+	chargingCtx := engine.NewChargingContext(appCtx, infra, sessionId, request, now)
 
 	// Create a new charge data record
 	if err := steps.CreateChargeDataStep(chargingCtx); err != nil {
@@ -100,7 +101,8 @@ func ProcessOneTimeCharging(appCtx *appcontext.AppContext, infra interfaces.Infr
 }
 
 func UpdateChargingData(appCtx *appcontext.AppContext, infra interfaces.Infrastructure, sessionId string, request *nchf.ChargingDataRequest) (*nchf.ChargingDataResponse, error) {
-	chargingCtx := engine.NewChargingContext(appCtx, infra, sessionId, request)
+	now := time.Now().UTC()
+	chargingCtx := engine.NewChargingContext(appCtx, infra, sessionId, request, now)
 
 	// Create a new charge data record
 	if err := steps.LoadChargeDataStep(chargingCtx); err != nil {
@@ -142,7 +144,8 @@ func UpdateChargingData(appCtx *appcontext.AppContext, infra interfaces.Infrastr
 }
 
 func ReleaseChargingData(appCtx *appcontext.AppContext, infra interfaces.Infrastructure, sessionId string, request *nchf.ChargingDataRequest) (*nchf.ChargingDataResponse, error) {
-	chargingCtx := engine.NewChargingContext(appCtx, infra, sessionId, request)
+	now := time.Now().UTC()
+	chargingCtx := engine.NewChargingContext(appCtx, infra, sessionId, request, now)
 
 	// Create a new charge data record
 	if err := steps.LoadChargeDataStep(chargingCtx); err != nil {

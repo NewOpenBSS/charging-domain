@@ -123,7 +123,9 @@ type CounterEvent struct {
 	CounterSelectionKeys []charging.RateKey `json:"counterSelectionKeys"`
 }
 
-func PublishJournalEvent(manager *QuotaManager, quotaId uuid.UUID, transactionId string, counter *Counter, reasonCode ReasonCode, adjustedUnits decimal.Decimal, unitType charging.UnitType, taxCalculation TaxCalculation, subscriberId uuid.UUID, metaData *CounterEvent) {
+// PublishJournalEvent publishes a quota journal entry to Kafka. now is the transaction
+// timestamp and must be provided by the caller to ensure deterministic event records.
+func PublishJournalEvent(manager *QuotaManager, quotaId uuid.UUID, transactionId string, counter *Counter, reasonCode ReasonCode, adjustedUnits decimal.Decimal, unitType charging.UnitType, taxCalculation TaxCalculation, subscriberId uuid.UUID, metaData *CounterEvent, now time.Time) {
 
 	journalId := uuid.New()
 	event := QuotaJournalEvent{
@@ -135,7 +137,7 @@ func PublishJournalEvent(manager *QuotaManager, quotaId uuid.UUID, transactionId
 		ProductID:         counter.ProductID,
 		ProductName:       counter.ProductName,
 		ReasonCode:        reasonCode,
-		Timestamp:         time.Now(),
+		Timestamp:         now,
 		ExternalReference: counter.ExternalReference,
 		UnitType:          unitType,
 		Balance:           *counter.Balance,

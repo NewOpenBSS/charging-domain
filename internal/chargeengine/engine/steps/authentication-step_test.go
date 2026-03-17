@@ -11,6 +11,7 @@ import (
 	"go-ocs/internal/nchf"
 	"go-ocs/internal/store/sqlc"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -171,7 +172,7 @@ func TestAuthenticate(t *testing.T) {
 			req := nchf.NewChargingDataRequest()
 			req.SubscriberIdentifier = tt.subscriberIdentifier
 
-			dc := engine.NewChargingContext(appCtx, infra, "test-session", req)
+			dc := engine.NewChargingContext(appCtx, infra, "test-session", req, time.Now())
 
 			err := Authenticate(dc)
 
