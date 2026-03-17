@@ -1,0 +1,23 @@
+# GraphQL Schema for Charging Backend
+
+# Root types
+type Query {
+  _empty: String
+}
+
+type Mutation {
+  _empty: String
+}
+
+# Common types used in charging operations
+scalar DateTime
+
+# Admin types that will be added over time
+type AdminUser {
+  id: ID!
+  username: String!
+  email: String
+  firstName: String
+  lastName: String
+  roles: [String!]!
+}

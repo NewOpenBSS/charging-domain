@@ -29,3 +29,4 @@ kafka:
   topics:
     charge-record: "public.charge-record"
     quota-journal: "public.quota-journal"
+    notification-event: "public.notification"

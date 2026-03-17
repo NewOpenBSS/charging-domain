@@ -90,7 +90,7 @@ func (m *QuotaManager) executeWithQuota(
 		// Check for usage notifications
 		// this might result in a message being sent more than once (if the save fails)
 		// but that's okay, as it will not happen that frequently
-		loaded.CheckForUsageNotifications(subscriberID)
+		loaded.CheckForUsageNotifications(m, subscriberID)
 
 		err = m.repo.Save(ctx, loaded)
 		if err == nil {

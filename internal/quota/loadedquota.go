@@ -32,7 +32,7 @@ func (l *LoadedQuota) RemoveExpiredEntries() {
 	l.Quota.Counters = counters
 }
 
-func (l *LoadedQuota) CheckForUsageNotifications(subscriberID uuid.UUID) {
+func (l *LoadedQuota) CheckForUsageNotifications(m *QuotaManager, subscriberID uuid.UUID) {
 	for i := range l.Quota.Counters {
 		c := &l.Quota.Counters[i]
 
@@ -72,8 +72,8 @@ func (l *LoadedQuota) CheckForUsageNotifications(subscriberID uuid.UUID) {
 		}
 
 		if maxThreshold != nil {
-			// TODO: replace with proper logging / event publishing
-			fmt.Printf("%s: Quota threshold reached: %d%%\n", subscriberID, *maxThreshold)
+			msg := fmt.Sprintf("Quota threshold reached: %d%%\n", *maxThreshold)
+			PublishNotificationEvent(m, subscriberID, msg)
 			c.Notifications.LastThresholdNotified = maxThreshold
 		}
 	}

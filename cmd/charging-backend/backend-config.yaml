@@ -1,0 +1,28 @@
+base:
+  appName: "charging-backend"
+
+  metrics:
+    enabled: true
+    addr: ":9091"
+    path: "/metrics"
+
+  logging:
+    level: info
+    format: json
+
+  database:
+    url: "postgres://gobss:gobss@localhost:5432/gobss?sslmode=disable&search_path=charging"
+
+server:
+  addr: ":8081"
+  restPath: "/api/charging"
+  graphqlPath: "/api/charging/graphql"
+  readTimeout: "15s"
+  writeTimeout: "15s"
+
+auth:
+  enabled: false
+  issuerUrl: "https://keycloak.example.com/realms/charging-realm"
+  clientId: "charging-backend-client"
+  audience: "charging-api"
+  skipTLSVerify: false

@@ -1,0 +1,16 @@
+# Charging domain GraphQL types.
+# Additional types will be added in Phase 2-4 as resolvers are implemented.
+
+# Carrier represents a wholesale carrier partner in the charging system.
+type Carrier {
+  id: ID!
+  name: String!
+  code: String!
+}
+
+# Subscriber represents an end-user account in the charging system.
+type Subscriber {
+  id: ID!
+  msisdn: String!
+  status: String!
+}
