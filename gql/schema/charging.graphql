@@ -1,16 +1,51 @@
 # Charging domain GraphQL types.
-# Additional types will be added in Phase 2-4 as resolvers are implemented.
 
-# Carrier represents a wholesale carrier partner in the charging system.
+# Carrier represents a wholesale carrier / mobile network operator.
+# Maps directly to the charging.carrier database table.
 type Carrier {
-  id: ID!
-  name: String!
-  code: String!
+  plmn:             String!   # Primary key — MCC+MNC combined e.g. "53005"
+  mcc:              String!   # Mobile Country Code (3 digits)
+  mnc:              String    # Mobile Network Code (up to 3 digits, optional)
+  carrierName:      String!
+  sourceGroup:      String!   # Roaming source classification (maps to RateKey.SOURCE_TYPE)
+  destinationGroup: String!   # Service destination group (maps to RateKey.SERVICE_CATEGORY)
+  countryName:      String!
+  iso:              String!   # ISO 3166-1 alpha-3 country code e.g. "NZL"
+  modifiedOn:       DateTime  # Last modified timestamp — managed by the database; read-only
 }
 
-# Subscriber represents an end-user account in the charging system.
-type Subscriber {
-  id: ID!
-  msisdn: String!
-  status: String!
+# CarrierInput is used for both createCarrier and updateCarrier mutations.
+# On updateCarrier the plmn path argument is authoritative;
+# the plmn field inside this input is ignored for the WHERE predicate.
+input CarrierInput {
+  plmn:             String!
+  mcc:              String!
+  mnc:              String
+  carrierName:      String!
+  sourceGroup:      String!
+  destinationGroup: String!
+  countryName:      String!
+  iso:              String!
+}
+
+extend type Query {
+  # Returns a filtered, sorted, paginated list of carriers.
+  carrierList(page: PageRequest, filter: FilterRequest): [Carrier!]!
+
+  # Returns a single carrier by PLMN, or null if not found.
+  carrierByPlmn(plmn: String!): Carrier
+
+  # Returns the total count of carriers matching the supplied filter.
+  countCarriers(filter: FilterRequest): Int!
+}
+
+extend type Mutation {
+  # Creates a new carrier and returns the persisted record (including modifiedOn).
+  createCarrier(carrier: CarrierInput!): Carrier!
+
+  # Updates an existing carrier by PLMN and returns the updated record.
+  updateCarrier(plmn: String!, carrier: CarrierInput!): Carrier!
+
+  # Deletes a carrier by PLMN. Returns true on success.
+  deleteCarrier(plmn: String!): Boolean!
 }

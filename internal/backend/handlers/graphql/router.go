@@ -4,18 +4,21 @@ import (
 	"net/http"
 	"time"
 
-	"go-ocs/internal/auth/keycloak"
-	"go-ocs/internal/backend/appcontext"
-	"go-ocs/internal/logging"
-
+	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+
+	"go-ocs/internal/auth/keycloak"
+	"go-ocs/internal/backend/appcontext"
+	"go-ocs/internal/backend/graphql/generated"
+	"go-ocs/internal/backend/resolvers"
+	"go-ocs/internal/logging"
 )
 
 // NewRouter builds the Chi router for the GraphQL endpoint.
-// Phase 1: mounts a placeholder handler and the GraphQL Playground.
-// Phase 2 will wire in the generated gqlgen schema and resolvers.
+// It mounts the gqlgen-generated server at graphqlPath and the GraphQL Playground
+// at graphqlPath+"/playground".
 func NewRouter(appCtx *appcontext.AppContext) http.Handler {
 	r := chi.NewRouter()
 
@@ -28,13 +31,15 @@ func NewRouter(appCtx *appcontext.AppContext) http.Handler {
 
 	graphqlPath := appCtx.Config.Server.GraphqlPath
 
-	// Placeholder until gqlgen schema and resolvers are generated in Phase 2.
-	r.Get(graphqlPath, func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(`{"message":"GraphQL endpoint - schema not yet defined"}`))
-	})
+	resolver := &resolvers.Resolver{
+		CarrierSvc: appCtx.CarrierSvc,
+	}
 
+	srv := handler.NewDefaultServer(
+		generated.NewExecutableSchema(generated.Config{Resolvers: resolver}),
+	)
+
+	r.Handle(graphqlPath, srv)
 	r.Get(graphqlPath+"/playground", playground.Handler("Charging Admin", graphqlPath))
 
 	logging.Info("GraphQL router configured", "path", graphqlPath)

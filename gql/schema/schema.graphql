@@ -21,3 +21,40 @@ type AdminUser {
   lastName: String
   roles: [String!]!
 }
+
+# ---------------------------------------------------------------------------
+# Common pagination and filter input types — shared by all list endpoints.
+# ---------------------------------------------------------------------------
+
+# Pagination control — mirrors Java PageRequest record.
+# pageIndex defaults to 0 if null or negative.
+# pageSize  defaults to 10 if null or zero.
+input PageRequest {
+  pageIndex: Int
+  pageSize:  Int
+  sort:      SortInput
+}
+
+# Sort direction for list queries — mirrors Java SortRequest record.
+# order must be "asc" or "desc"; any other value is treated as "asc".
+input SortInput {
+  key:   String!
+  order: String!
+}
+
+# A single field-level predicate — mirrors Java Filter record.
+# Allowed operations: =  <>  <  >  <=  >=  ILIKE  LIKE  IN  NOT IN
+# For IN and NOT IN, supply a comma-separated value e.g. "NZL,AUS,GBR".
+input FilterInput {
+  key:       String!
+  operation: String!
+  value:     String!
+}
+
+# Bundle of predicates and an optional wildcard term — mirrors Java FilterRequest.
+# All entries in filters are ANDed together.
+# wildcard is searched across resource-defined columns using ILIKE.
+input FilterRequest {
+  filters:  [FilterInput!]
+  wildcard: String
+}

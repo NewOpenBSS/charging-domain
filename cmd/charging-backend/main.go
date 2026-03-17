@@ -41,12 +41,7 @@ func main() {
 		logging.Fatal("Failed to initialise Keycloak client", "err", err)
 	}
 
-	appCtx := &appcontext.AppContext{
-		Config:  cfg,
-		Metrics: appcontext.NewMetrics(),
-		Store:   db,
-		Auth:    authClient,
-	}
+	appCtx := appcontext.NewAppContext(cfg, db, authClient)
 
 	metricsSrv := appl.StartMetricsServer(&cfg.Base)
 	defer func() {
