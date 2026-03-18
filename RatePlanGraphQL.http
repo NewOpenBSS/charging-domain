@@ -18,12 +18,12 @@ Content-Type: application/json
   }
 }
 
-### Rate Plan List — wildcard search
+### Rate Plan List — wildcard search (searches planId, planName, planType, planStatus)
 POST http://localhost:8083/api/charging/graphql
 Content-Type: application/json
 
 {
-  "query": "query RatePlanList($page: PageRequest, $filter: FilterRequest) { ratePlanList(page: $page, filter: $filter) { planId planName planType planStatus effectiveAt } }",
+  "query": "query RatePlanList($page: PageRequest, $filter: FilterRequest) { ratePlanList(page: $page, filter: $filter) { planId planName planType planStatus effectiveAt createdBy approvedBy } }",
   "variables": {
     "page": {
       "pageIndex": 0,
@@ -35,12 +35,12 @@ Content-Type: application/json
   }
 }
 
-### Rate Plan List — filter by status
+### Rate Plan List — filtered by status
 POST http://localhost:8083/api/charging/graphql
 Content-Type: application/json
 
 {
-  "query": "query RatePlanList($page: PageRequest, $filter: FilterRequest) { ratePlanList(page: $page, filter: $filter) { planId planName planType planStatus effectiveAt } }",
+  "query": "query RatePlanList($page: PageRequest, $filter: FilterRequest) { ratePlanList(page: $page, filter: $filter) { planId planName planType planStatus effectiveAt createdBy approvedBy } }",
   "variables": {
     "page": {
       "pageIndex": 0,
@@ -48,13 +48,17 @@ Content-Type: application/json
     },
     "filter": {
       "filters": [
-        { "key": "planStatus", "operation": "eq", "value": "DRAFT" }
+        {
+          "key": "planStatus",
+          "operation": "=",
+          "value": "DRAFT"
+        }
       ]
     }
   }
 }
 
-### Count Rate Plans
+### Count Rate Plans — total count with optional filter
 POST http://localhost:8083/api/charging/graphql
 Content-Type: application/json
 
@@ -65,23 +69,42 @@ Content-Type: application/json
   }
 }
 
-### Get Rate Plan by planId — replace with a real UUID
+### Count Rate Plans — ACTIVE only
 POST http://localhost:8083/api/charging/graphql
 Content-Type: application/json
 
 {
-  "query": "query RatePlan($planId: ID!) { ratePlan(planId: $planId) { planId planName planType wholesaleId planStatus createdBy approvedBy effectiveAt modifiedAt rateLines { classificationKey tariffType unitType baseTariff unitOfMeasure multiplier minimumUnits roundingIncrement barred monetaryOnly } } }",
+  "query": "query CountRatePlans($filter: FilterRequest) { countRatePlans(filter: $filter) }",
   "variables": {
-    "planId": "00000000-0000-0000-0000-000000000000"
+    "filter": {
+      "filters": [
+        {
+          "key": "planStatus",
+          "operation": "=",
+          "value": "ACTIVE"
+        }
+      ]
+    }
   }
 }
 
-### Latest Rate Plan List — SETTLEMENT
+### Get Rate Plan by planId
 POST http://localhost:8083/api/charging/graphql
 Content-Type: application/json
 
 {
-  "query": "query LatestRatePlanList($planType: RatePlanType!) { latestRatePlanList(planType: $planType) { planId planName planType planStatus effectiveAt rateLines { classificationKey tariffType baseTariff } } }",
+  "query": "query RatePlan($planId: ID!) { ratePlan(planId: $planId) { planId planName planType wholesaleId planStatus createdBy approvedBy effectiveAt modifiedAt rateLines { classificationKey groupKey description tariffType unitType baseTariff unitOfMeasure multiplier qosProfile minimumUnits roundingIncrement barred monetaryOnly } } }",
+  "variables": {
+    "planId": "00000000-0000-0000-0000-000000000001"
+  }
+}
+
+### Latest Rate Plan List — SETTLEMENT (most recent active version per logical plan)
+POST http://localhost:8083/api/charging/graphql
+Content-Type: application/json
+
+{
+  "query": "query LatestRatePlanList($planType: RatePlanType!) { latestRatePlanList(planType: $planType) { planId planName planType planStatus effectiveAt rateLines { classificationKey tariffType unitType baseTariff unitOfMeasure multiplier minimumUnits roundingIncrement barred monetaryOnly } } }",
   "variables": {
     "planType": "SETTLEMENT"
   }
@@ -93,21 +116,21 @@ Content-Type: application/json
 Host: retail-tenant.example.com
 
 {
-  "query": "query LatestRatePlanList($planType: RatePlanType!) { latestRatePlanList(planType: $planType) { planId planName planType wholesaleId planStatus effectiveAt rateLines { classificationKey tariffType baseTariff } } }",
+  "query": "query LatestRatePlanList($planType: RatePlanType!) { latestRatePlanList(planType: $planType) { planId planName planType wholesaleId planStatus effectiveAt rateLines { classificationKey tariffType unitType baseTariff unitOfMeasure multiplier minimumUnits roundingIncrement barred monetaryOnly } } }",
   "variables": {
     "planType": "RETAIL"
   }
 }
 
-### Create Rate Plan (SETTLEMENT)
+### Create Rate Plan (SETTLEMENT — DRAFT)
 POST http://localhost:8083/api/charging/graphql
 Content-Type: application/json
 
 {
-  "query": "mutation CreateRatePlan($ratePlan: RatePlanInput!) { createRatePlan(ratePlan: $ratePlan) { planId planName planType planStatus createdBy effectiveAt rateLines { classificationKey tariffType baseTariff unitType unitOfMeasure multiplier minimumUnits roundingIncrement barred monetaryOnly } } }",
+  "query": "mutation CreateRatePlan($ratePlan: RatePlanInput!) { createRatePlan(ratePlan: $ratePlan) { planId planName planType planStatus createdBy effectiveAt rateLines { classificationKey tariffType unitType baseTariff unitOfMeasure multiplier minimumUnits roundingIncrement barred monetaryOnly } } }",
   "variables": {
     "ratePlan": {
-      "planName": "Domestic Settlement 2024",
+      "planName": "NZ Domestic Settlement 2024",
       "planType": "SETTLEMENT",
       "effectiveAt": "2024-01-01T00:00:00Z",
       "rateLines": [
@@ -116,6 +139,18 @@ Content-Type: application/json
           "tariffType": "ACTUAL",
           "unitType": "SECONDS",
           "baseTariff": "0.0150",
+          "unitOfMeasure": 60,
+          "multiplier": "1",
+          "minimumUnits": 60,
+          "roundingIncrement": 60,
+          "barred": false,
+          "monetaryOnly": false
+        },
+        {
+          "classificationKey": "voice.Home.MO.national",
+          "tariffType": "ACTUAL",
+          "unitType": "SECONDS",
+          "baseTariff": "0.0250",
           "unitOfMeasure": 60,
           "multiplier": "1",
           "minimumUnits": 60,
@@ -140,16 +175,27 @@ Content-Type: application/json
   }
 }
 
-### Update Rate Plan (full update) — replace planId with a real DRAFT planId
+### Clone Rate Plan — creates a new DRAFT version of an existing plan (same planId, new row)
 POST http://localhost:8083/api/charging/graphql
 Content-Type: application/json
 
 {
-  "query": "mutation UpdateRatePlan($planId: ID!, $ratePlan: RatePlanInput!) { updateRatePlan(planId: $planId, ratePlan: $ratePlan) { planId planName planType planStatus effectiveAt modifiedAt rateLines { classificationKey tariffType baseTariff } } }",
+  "query": "mutation CloneRatePlan($planId: ID!) { cloneRatePlan(planId: $planId) { planId planName planType planStatus createdBy effectiveAt } }",
   "variables": {
-    "planId": "00000000-0000-0000-0000-000000000000",
+    "planId": "00000000-0000-0000-0000-000000000001"
+  }
+}
+
+### Update Rate Plan — name, planType, effectiveAt, and all rateLines (DRAFT only)
+POST http://localhost:8083/api/charging/graphql
+Content-Type: application/json
+
+{
+  "query": "mutation UpdateRatePlan($planId: ID!, $ratePlan: RatePlanInput!) { updateRatePlan(planId: $planId, ratePlan: $ratePlan) { planId planName planType planStatus effectiveAt modifiedAt rateLines { classificationKey tariffType baseTariff unitType } } }",
+  "variables": {
+    "planId": "00000000-0000-0000-0000-000000000001",
     "ratePlan": {
-      "planName": "Domestic Settlement 2024 (revised)",
+      "planName": "NZ Domestic Settlement 2024 (revised)",
       "planType": "SETTLEMENT",
       "effectiveAt": "2024-06-01T00:00:00Z",
       "rateLines": [
@@ -164,20 +210,32 @@ Content-Type: application/json
           "roundingIncrement": 60,
           "barred": false,
           "monetaryOnly": false
+        },
+        {
+          "classificationKey": "sms.Home.MO.standard",
+          "tariffType": "ACTUAL",
+          "unitType": "UNITS",
+          "baseTariff": "0.0450",
+          "unitOfMeasure": 1,
+          "multiplier": "1",
+          "minimumUnits": 1,
+          "roundingIncrement": 1,
+          "barred": false,
+          "monetaryOnly": false
         }
       ]
     }
   }
 }
 
-### Update Rate Plan Rules only — replace planId with a real DRAFT planId
+### Update Rate Plan Rules — rateLines only, metadata unchanged (DRAFT only)
 POST http://localhost:8083/api/charging/graphql
 Content-Type: application/json
 
 {
-  "query": "mutation UpdateRatePlanRules($planId: ID!, $rateLines: [RateLineInput!]!) { updateRatePlanRules(planId: $planId, rateLines: $rateLines) { planId planName planStatus modifiedAt rateLines { classificationKey tariffType baseTariff } } }",
+  "query": "mutation UpdateRatePlanRules($planId: ID!, $rateLines: [RateLineInput!]!) { updateRatePlanRules(planId: $planId, rateLines: $rateLines) { planId planName planStatus modifiedAt rateLines { classificationKey tariffType baseTariff unitType } } }",
   "variables": {
-    "planId": "00000000-0000-0000-0000-000000000000",
+    "planId": "00000000-0000-0000-0000-000000000001",
     "rateLines": [
       {
         "classificationKey": "voice.Home.MO.local",
@@ -195,57 +253,46 @@ Content-Type: application/json
   }
 }
 
-### Clone Rate Plan — replace planId with a real planId (any status)
-POST http://localhost:8083/api/charging/graphql
-Content-Type: application/json
-
-{
-  "query": "mutation CloneRatePlan($planId: ID!) { cloneRatePlan(planId: $planId) { planId planName planType planStatus createdBy effectiveAt } }",
-  "variables": {
-    "planId": "00000000-0000-0000-0000-000000000000"
-  }
-}
-
-### Submit Rate Plan For Approval — replace planId with a real DRAFT planId
+### Submit Rate Plan for Approval — DRAFT → PENDING
 POST http://localhost:8083/api/charging/graphql
 Content-Type: application/json
 
 {
   "query": "mutation SubmitRatePlanForApproval($planId: ID!) { submitRatePlanForApproval(planId: $planId) { planId planName planStatus modifiedAt } }",
   "variables": {
-    "planId": "00000000-0000-0000-0000-000000000000"
+    "planId": "00000000-0000-0000-0000-000000000001"
   }
 }
 
-### Approve Rate Plan — replace planId with a real PENDING planId
+### Approve Rate Plan — PENDING → ACTIVE (approvedBy set from JWT)
 POST http://localhost:8083/api/charging/graphql
 Content-Type: application/json
 
 {
   "query": "mutation ApproveRatePlan($planId: ID!) { approveRatePlan(planId: $planId) { planId planName planStatus approvedBy modifiedAt } }",
   "variables": {
-    "planId": "00000000-0000-0000-0000-000000000000"
+    "planId": "00000000-0000-0000-0000-000000000001"
   }
 }
 
-### Decline Rate Plan — replace planId with a real PENDING planId
+### Decline Rate Plan — PENDING → DRAFT (clears approvedBy)
 POST http://localhost:8083/api/charging/graphql
 Content-Type: application/json
 
 {
-  "query": "mutation DeclineRatePlan($planId: ID!) { declineRatePlan(planId: $planId) { planId planName planStatus modifiedAt } }",
+  "query": "mutation DeclineRatePlan($planId: ID!) { declineRatePlan(planId: $planId) { planId planName planStatus approvedBy modifiedAt } }",
   "variables": {
-    "planId": "00000000-0000-0000-0000-000000000000"
+    "planId": "00000000-0000-0000-0000-000000000001"
   }
 }
 
-### Delete Rate Plan — replace planId with a real DRAFT planId
+### Delete Rate Plan — permanently removes a DRAFT version
 POST http://localhost:8083/api/charging/graphql
 Content-Type: application/json
 
 {
   "query": "mutation DeleteRatePlan($planId: ID!) { deleteRatePlan(planId: $planId) }",
   "variables": {
-    "planId": "00000000-0000-0000-0000-000000000000"
+    "planId": "00000000-0000-0000-0000-000000000001"
   }
 }
