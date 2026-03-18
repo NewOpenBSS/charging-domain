@@ -45,9 +45,9 @@ func (lt *LocalTime) UnmarshalYAML(unmarshal func(interface{}) error) error {
 
 func (lt LocalTime) Duration(other LocalTime) time.Duration {
 	if lt.Time.After(other.Time) {
-		return other.Time.Sub(lt.Time)
+		return lt.Time.Sub(other.Time)
 	}
-	return lt.Time.Sub(other.Time)
+	return other.Time.Sub(lt.Time)
 }
 
 func (lt LocalTime) MarshalJSON() ([]byte, error) {
