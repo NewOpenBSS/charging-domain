@@ -1,6 +1,5 @@
 package charging
 
-import "fmt"
 
 type CallDirection string
 
@@ -20,6 +19,6 @@ func ParseCallDirection(s string) (CallDirection, error) {
 	case MO, MF, MT, ANY:
 		return CallDirection(s), nil
 	default:
-		return "", fmt.Errorf("invalid CallDirection: %s", s)
+		return "", NewInvalidCallDirection(s)
 	}
 }

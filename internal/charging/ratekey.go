@@ -112,12 +112,12 @@ func (k *RateKey) Matches(other RateKey) (bool, int) {
 func ParseRateKey(s string) (*RateKey, error) {
 	parts := strings.Split(s, ".")
 	if len(parts) != 4 && len(parts) != 5 {
-		return nil, fmt.Errorf("invalid rate key %q: expected 4 or 5 components", s)
+		return nil, NewInvalidRateKey(fmt.Sprintf("invalid rate key %q: expected 4 or 5 components", s))
 	}
 
 	cd, err := ParseCallDirection(parts[2])
 	if err != nil {
-		return nil, fmt.Errorf("invalid service direction %q in rate key %q: %w", parts[2], s, err)
+		return nil, NewInvalidRateKey(fmt.Sprintf("invalid service direction %q in rate key %q: %s", parts[2], s, err.Error()))
 	}
 
 	rk := &RateKey{

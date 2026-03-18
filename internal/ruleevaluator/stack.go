@@ -1,6 +1,5 @@
 package ruleevaluator
 
-import "fmt"
 
 type stack[T any] struct {
 	data []T
@@ -19,7 +18,7 @@ func (s *stack[T]) Push(v T) {
 func (s *stack[T]) Pop() (T, error) {
 	if len(s.data) == 0 {
 		var zero T
-		return zero, fmt.Errorf("empty stack")
+		return zero, newEmptyStackError()
 	}
 	v := s.data[len(s.data)-1]
 	s.data = s.data[:len(s.data)-1]
@@ -29,7 +28,7 @@ func (s *stack[T]) Pop() (T, error) {
 func (s *stack[T]) Peek() (T, error) {
 	if len(s.data) == 0 {
 		var zero T
-		return zero, fmt.Errorf("empty stack")
+		return zero, newEmptyStackError()
 	}
 	return s.data[len(s.data)-1], nil
 }

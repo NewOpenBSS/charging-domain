@@ -1,6 +1,7 @@
 package ruleevaluator
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -32,20 +33,24 @@ func TestStack_Pop(t *testing.T) {
 	assert.Equal(t, "first", val)
 	assert.Equal(t, 0, s.Len())
 
-	// Empty stack pop
+	// Empty stack pop — expect a typed EvaluatorError with CodeEmptyStack
 	val, err = s.Pop()
 	assert.Error(t, err)
-	assert.Equal(t, "empty stack", err.Error())
+	var evalErr *EvaluatorError
+	assert.True(t, errors.As(err, &evalErr))
+	assert.Equal(t, CodeEmptyStack, evalErr.Code)
 	assert.Equal(t, "", val)
 }
 
 func TestStack_Peek(t *testing.T) {
 	s := newStack[float64]()
 
-	// Empty stack peek
+	// Empty stack peek — expect a typed EvaluatorError with CodeEmptyStack
 	val, err := s.Peek()
 	assert.Error(t, err)
-	assert.Equal(t, "empty stack", err.Error())
+	var evalErr *EvaluatorError
+	assert.True(t, errors.As(err, &evalErr))
+	assert.Equal(t, CodeEmptyStack, evalErr.Code)
 	assert.Equal(t, 0.0, val)
 
 	s.Push(1.5)
