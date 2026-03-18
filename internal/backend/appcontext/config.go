@@ -17,22 +17,24 @@ type BackendConfig struct {
 
 // ServerConfig holds HTTP server settings for the charging-backend.
 type ServerConfig struct {
-	Addr         string        `yaml:"addr"`
-	RestPath     string        `yaml:"restPath"`
-	GraphqlPath  string        `yaml:"graphqlPath"`
-	ReadTimeout  time.Duration `yaml:"readTimeout"`
-	WriteTimeout time.Duration `yaml:"writeTimeout"`
+	Addr                  string        `yaml:"addr"`
+	RestPath              string        `yaml:"restPath"`
+	GraphqlPath           string        `yaml:"graphqlPath"`
+	ReadTimeout           time.Duration `yaml:"readTimeout"`
+	WriteTimeout          time.Duration `yaml:"writeTimeout"`
+	TenantRefreshInterval time.Duration `yaml:"tenantRefreshInterval"`
 }
 
 // NewConfig loads the BackendConfig from the given YAML file, applying defaults first.
 func NewConfig(configFilename string) *BackendConfig {
 	cfg := &BackendConfig{
 		Server: ServerConfig{
-			Addr:         ":8081",
-			RestPath:     "/api/charging",
-			GraphqlPath:  "/api/charging/graphql",
-			ReadTimeout:  15 * time.Second,
-			WriteTimeout: 15 * time.Second,
+			Addr:                  ":8081",
+			RestPath:              "/api/charging",
+			GraphqlPath:           "/api/charging/graphql",
+			ReadTimeout:           15 * time.Second,
+			WriteTimeout:          15 * time.Second,
+			TenantRefreshInterval: 10 * time.Minute,
 		},
 		Auth: authconfig.NewKeycloakConfig(),
 	}

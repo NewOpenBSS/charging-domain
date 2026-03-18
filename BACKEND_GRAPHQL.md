@@ -1631,3 +1631,554 @@ type Resolver struct {
 | `internal/backend/graphql/generated/generated.go` | **Regenerate** | Run `gqlgen generate` |
 | `internal/backend/graphql/model/models_gen.go` | **Regenerate** | Run `gqlgen generate` |
 | `internal/backend/services/classification_service_test.go` | **New** | Unit tests following carrier_service_test.go pattern |
+
+---
+
+## 21. Pre-work: Multi-Tenant Middleware
+
+The RatePlan resource requires a **tenant resolver** that maps the HTTP `Host` header to the
+wholesaler's UUID. This UUID is stored in the request context and consumed by the RETAIL rate
+plan operations (`createRatePlan`, `latestRatePlanList`).
+
+### 21.1 Design
+
+| Concern | Decision |
+|---|---|
+| Storage | In-memory `map[string]pgtype.UUID` (hostname → wholesaler UUID) |
+| Data source | `wholesaler.hosts` column (PostgreSQL text array) |
+| Refresh | Background goroutine on configurable interval (default 10 minutes) |
+| Context key | `"tenant_wholesale_id"` stored by middleware, read via `tenant.WholesaleIDFromContext(ctx)` |
+| No match | Request proceeds without a wholesale ID in context; service layer decides whether to error |
+
+### 21.2 Configuration addition
+
+```yaml
+# cmd/charging-backend/backend-config.yaml
+server:
+  tenantRefreshInterval: 10m   # how often to reload the hostname→wholesaler map
+```
+
+```go
+// internal/backend/appcontext/config.go
+type ServerConfig struct {
+    // ... existing fields ...
+    TenantRefreshInterval time.Duration `yaml:"tenantRefreshInterval"`
+}
+```
+
+### 21.3 New package: `internal/auth/tenant/`
+
+**`resolver.go`** — loads wholesalers, builds map, runs background refresh:
+```go
+type Resolver struct {
+    store    *store.Store
+    mu       sync.RWMutex
+    hostsMap map[string]pgtype.UUID   // hostname → wholesaler UUID
+    interval time.Duration
+}
+
+func NewResolver(s *store.Store, interval time.Duration) *Resolver
+func (r *Resolver) Start(ctx context.Context)                      // background refresh goroutine
+func (r *Resolver) refresh(ctx context.Context)                    // load from DB, rebuild map
+func (r *Resolver) resolveHost(host string) (pgtype.UUID, bool)   // strip port, lookup
+```
+
+**`middleware.go`** — HTTP middleware that resolves Host → wholesaleId → context:
+```go
+const WholesaleIDContextKey contextKey = "tenant_wholesale_id"
+
+func Middleware(r *Resolver) func(http.Handler) http.Handler
+func WholesaleIDFromContext(ctx context.Context) (pgtype.UUID, bool)
+```
+
+### 21.4 SQL required
+
+New query in `internal/store/queries/wholesaler.sql`:
+```sql
+-- name: AllWholesalers :many
+-- Returns all wholesaler records for building the hostname lookup table.
+SELECT id, hosts FROM wholesaler WHERE active = true;
+```
+
+### 21.5 Wiring
+
+- `appcontext.AppContext` gains `TenantResolver *tenant.Resolver`
+- `NewAppContext` calls `tenant.NewResolver(s, cfg.Server.TenantRefreshInterval)`
+- `main.go` calls `appCtx.TenantResolver.Start(ctx)` after context is built
+- `router.go` inserts `tenant.Middleware(appCtx.TenantResolver)` before the keycloak middleware
+
+---
+
+## 22. RatePlanResource — Design
+
+### 22.1 Domain Overview
+
+The `rateplan` table stores versioned rate plans. A **logical plan** is identified by `plan_id`
+(UUID). Multiple rows may share the same `plan_id` — each row is a separate version with its own
+`effective_at` timestamp and lifecycle status.
+
+**The "current effective" plan** for charging is determined by the charging engine as:
+`WHERE plan_status = 'ACTIVE' AND effective_at <= NOW() ORDER BY effective_at DESC LIMIT 1`.
+
+**Table columns:**
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `bigserial` PK | Internal auto-increment — **not exposed in GraphQL** |
+| `plan_id` | `uuid` NOT NULL | Logical plan identifier; groups versions |
+| `modified_at` | `TIMESTAMPTZ` | Managed by the DB / application |
+| `plan_type` | `varchar` | `SETTLEMENT`, `WHOLESALE`, `RETAIL` |
+| `wholesale_id` | `uuid` nullable | Null for SETTLEMENT/WHOLESALE; set for RETAIL |
+| `plan_name` | `varchar` | Human-readable label |
+| `rateplan` | `jsonb` | Serialised `model.RatePlan` struct |
+| `plan_status` | `varchar` DEFAULT `'DRAFT'` | State machine |
+| `created_by` | `varchar` | Email from JWT |
+| `approved_by` | `varchar` nullable | Email from JWT at approval |
+| `effective_at` | `TIMESTAMPTZ` | When the plan version takes effect |
+
+### 22.2 Status State Machine
+
+```
+         submitForApproval            approve
+  DRAFT ───────────────────► PENDING ────────► ACTIVE ──► (RETIRED — future)
+    ▲                            │
+    └────────── decline ─────────┘
+                (resets to DRAFT)
+
+  Rules:
+  - Only DRAFT versions may be edited (updateRatePlan, updateRatePlanRules)
+  - Only DRAFT versions may be deleted
+  - ACTIVE versions are IMMUTABLE — no exceptions
+  - Multiple ACTIVE versions of the same plan_id may exist; effective_at determines precedence
+```
+
+### 22.3 wholesaleId Handling
+
+| Plan type | wholesaleId |
+|---|---|
+| `SETTLEMENT` | Always null |
+| `WHOLESALE` | Always null |
+| `RETAIL` | Set from the tenant middleware context (resolved from Host header) |
+
+`createRatePlan`: if `planType == RETAIL`, the service reads `tenant.WholesaleIDFromContext(ctx)`.
+If not present, returns an error. For other types, sets wholesaleId to null.
+
+### 22.4 Versioning and Clone
+
+- `createRatePlan` always generates a **new** `plan_id` UUID — this is a brand new logical plan.
+- `cloneRatePlan(planId)` finds the **latest version** of the source `plan_id` (highest
+  `effective_at, id DESC`) and creates a new DRAFT row with the **same** `plan_id`. This produces
+  a new version of the same logical plan, ready for editing while the current version remains active.
+  `createdBy` is the current JWT user; `approvedBy` is cleared; `plan_status` is `DRAFT`.
+
+### 22.5 `latestRatePlanList`
+
+Returns the **most recent version** (by `effective_at DESC, id DESC`) of each `plan_id` for a
+given `planType`. For `RETAIL`, also scopes to `wholesale_id` from the tenant context.
+
+This query is only called from a RETAIL portal context. If called for `RETAIL` and no
+`wholesale_id` is in context, the service returns an error.
+
+### 22.6 JSONB Sync
+
+The `rateplan` JSONB column stores a `model.RatePlan` struct, which includes embedded
+`RatePlanID`, `RatePlanName`, `RatePlanType`, and `EffectiveFrom` fields that mirror the table
+columns. The service keeps these in sync on every create/update so the charging engine always
+reads a consistent embedded document.
+
+### 22.7 updateRatePlan vs updateRatePlanRules
+
+Both mutations only operate on DRAFT plans. For now both are implemented:
+- `updateRatePlan` — updates `plan_name`, `plan_type`, `effective_at`, and the full `rateplan` JSONB.
+- `updateRatePlanRules` — updates only the `rateplan` JSONB (rate lines), leaving metadata unchanged.
+
+> **TODO:** Verify with the Java source which mutation is actually used in production and remove
+> the unused one.
+
+---
+
+## 23. RatePlanResource — GraphQL Schema
+
+**File:** `gql/schema/rateplan.graphql` — new file
+
+```graphql
+enum RatePlanType {
+  SETTLEMENT
+  WHOLESALE
+  RETAIL
+}
+
+enum RatePlanStatus {
+  DRAFT
+  PENDING
+  ACTIVE
+  RETIRED
+}
+
+# A versioned rate plan. planId groups logical versions; effective_at determines precedence.
+# The internal bigserial id column is not exposed — planId is the GraphQL identifier.
+type RatePlan {
+  planId:      ID!
+  planName:    String!
+  planType:    RatePlanType!
+  wholesaleId: String           # null for SETTLEMENT and WHOLESALE plans
+  planStatus:  RatePlanStatus!
+  createdBy:   String!
+  approvedBy:  String
+  effectiveAt: DateTime!
+  modifiedAt:  DateTime
+  rateLines:   [RateLine!]!
+}
+
+# A single rate line within a rate plan.
+# classificationKey is a dot-separated string: serviceType.sourceType.direction.category[.window]
+# Use the rateKeyInput query to obtain valid values for each component.
+# baseTariff and multiplier are decimal strings to preserve monetary precision.
+type RateLine {
+  classificationKey: String!
+  groupKey:          String
+  description:       String
+  tariffType:        String!     # ACTUAL | PERCENTAGE | MARKUP
+  unitType:          String!     # SECONDS | OCTETS | UNITS | MONETARY
+  baseTariff:        String!
+  unitOfMeasure:     Int!
+  multiplier:        String!
+  qosProfile:        String
+  minimumUnits:      Int!
+  roundingIncrement: Int!
+  barred:            Boolean!
+  monetaryOnly:      Boolean!
+}
+
+# ---------------------------------------------------------------------------
+# Input types
+# ---------------------------------------------------------------------------
+
+input RatePlanInput {
+  planName:    String!
+  planType:    RatePlanType!
+  effectiveAt: DateTime!
+  rateLines:   [RateLineInput!]!
+}
+
+input RateLineInput {
+  classificationKey: String!
+  groupKey:          String
+  description:       String
+  tariffType:        String!
+  unitType:          String!
+  baseTariff:        String!
+  unitOfMeasure:     Int!
+  multiplier:        String!
+  qosProfile:        String
+  minimumUnits:      Int!
+  roundingIncrement: Int!
+  barred:            Boolean!
+  monetaryOnly:      Boolean!
+}
+
+# ---------------------------------------------------------------------------
+# Queries
+# ---------------------------------------------------------------------------
+
+extend type Query {
+  # Returns a filtered, sorted, paginated list of rate plans (all versions).
+  ratePlanList(page: PageRequest, filter: FilterRequest): [RatePlan!]!
+
+  # Returns the total count of rate plans matching the filter.
+  countRatePlans(filter: FilterRequest): Int!
+
+  # Returns the latest version of a rate plan by its planId UUID.
+  ratePlan(planId: ID!): RatePlan
+
+  # Returns the latest version of each logical plan for the given planType.
+  # For RETAIL, scopes to the tenant's wholesaleId (resolved from Host header).
+  # Only intended for use from a RETAIL portal context.
+  latestRatePlanList(planType: RatePlanType!): [RatePlan!]!
+}
+
+# ---------------------------------------------------------------------------
+# Mutations
+# ---------------------------------------------------------------------------
+
+extend type Mutation {
+  # Creates a new rate plan in DRAFT status with a new planId.
+  # For RETAIL plans, wholesaleId is resolved from the tenant context (Host header).
+  createRatePlan(ratePlan: RatePlanInput!): RatePlan!
+
+  # Updates the name, type, effectiveAt, and rate lines of a DRAFT rate plan.
+  # Returns an error if the plan version is not in DRAFT status.
+  # TODO: confirm whether updateRatePlan or updateRatePlanRules is the one to keep.
+  updateRatePlan(planId: ID!, ratePlan: RatePlanInput!): RatePlan!
+
+  # Updates only the rate lines of a DRAFT rate plan, leaving metadata unchanged.
+  # TODO: confirm whether updateRatePlan or updateRatePlanRules is the one to keep.
+  updateRatePlanRules(planId: ID!, rateLines: [RateLineInput!]!): RatePlan!
+
+  # Creates a new DRAFT version of an existing rate plan (same planId, new row).
+  cloneRatePlan(planId: ID!): RatePlan!
+
+  # Transitions a DRAFT rate plan version to PENDING (awaiting approval).
+  submitRatePlanForApproval(planId: ID!): RatePlan!
+
+  # Transitions a PENDING rate plan version to ACTIVE.
+  # approvedBy is derived from the authenticated JWT.
+  approveRatePlan(planId: ID!): RatePlan!
+
+  # Transitions a PENDING rate plan version back to DRAFT.
+  declineRatePlan(planId: ID!): RatePlan!
+
+  # Permanently deletes the DRAFT version of a rate plan. Returns true on success.
+  # Returns an error if the plan version is not in DRAFT status.
+  deleteRatePlan(planId: ID!): Boolean!
+}
+```
+
+---
+
+## 24. RatePlanResource — SQL Queries
+
+**File:** `internal/store/queries/rateplan.sql` — append to existing (keep `FindActiveRatePlans`).
+
+```sql
+-- name: FindLatestRatePlanByPlanId :one
+-- Returns the most recent version of a logical rate plan by plan_id.
+SELECT id, plan_id, modified_at, plan_type, wholesale_id, plan_name,
+       rateplan, plan_status, created_by, approved_by, effective_at
+FROM rateplan
+WHERE plan_id = $1
+ORDER BY effective_at DESC, id DESC
+LIMIT 1;
+
+-- name: CreateRatePlan :one
+-- Inserts a new rate plan version in DRAFT status.
+-- plan_id is generated by the application. wholesale_id is null for non-RETAIL plans.
+INSERT INTO rateplan (plan_id, plan_type, wholesale_id, plan_name, rateplan, created_by, effective_at, plan_status, modified_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7, 'DRAFT', NOW())
+RETURNING id, plan_id, modified_at, plan_type, wholesale_id, plan_name,
+          rateplan, plan_status, created_by, approved_by, effective_at;
+
+-- name: UpdateRatePlan :one
+-- Updates the name, type, effectiveAt, and rateplan JSONB of the DRAFT version of a logical plan.
+-- Guards against modifying non-DRAFT versions.
+UPDATE rateplan
+SET plan_name    = $2,
+    plan_type    = $3,
+    effective_at = $4,
+    rateplan     = $5,
+    modified_at  = NOW()
+WHERE plan_id    = $1
+  AND plan_status = 'DRAFT'
+RETURNING id, plan_id, modified_at, plan_type, wholesale_id, plan_name,
+          rateplan, plan_status, created_by, approved_by, effective_at;
+
+-- name: UpdateRatePlanRules :one
+-- Updates only the rateplan JSONB of the DRAFT version of a logical plan.
+-- TODO: confirm whether this or UpdateRatePlan is the one to keep in production.
+UPDATE rateplan
+SET rateplan    = $2,
+    modified_at = NOW()
+WHERE plan_id    = $1
+  AND plan_status = 'DRAFT'
+RETURNING id, plan_id, modified_at, plan_type, wholesale_id, plan_name,
+          rateplan, plan_status, created_by, approved_by, effective_at;
+
+-- name: SubmitRatePlan :one
+-- Transitions the DRAFT version of a logical plan to PENDING.
+UPDATE rateplan
+SET plan_status = 'PENDING',
+    modified_at = NOW()
+WHERE plan_id    = $1
+  AND plan_status = 'DRAFT'
+RETURNING id, plan_id, modified_at, plan_type, wholesale_id, plan_name,
+          rateplan, plan_status, created_by, approved_by, effective_at;
+
+-- name: ApproveRatePlan :one
+-- Transitions the PENDING version of a logical plan to ACTIVE and records the approver.
+UPDATE rateplan
+SET plan_status = 'ACTIVE',
+    approved_by = $2,
+    modified_at = NOW()
+WHERE plan_id    = $1
+  AND plan_status = 'PENDING'
+RETURNING id, plan_id, modified_at, plan_type, wholesale_id, plan_name,
+          rateplan, plan_status, created_by, approved_by, effective_at;
+
+-- name: DeclineRatePlan :one
+-- Transitions the PENDING version of a logical plan back to DRAFT, clearing the approver.
+UPDATE rateplan
+SET plan_status = 'DRAFT',
+    approved_by = NULL,
+    modified_at = NOW()
+WHERE plan_id    = $1
+  AND plan_status = 'PENDING'
+RETURNING id, plan_id, modified_at, plan_type, wholesale_id, plan_name,
+          rateplan, plan_status, created_by, approved_by, effective_at;
+
+-- name: DeleteRatePlan :exec
+-- Permanently deletes the DRAFT version of a logical plan.
+DELETE FROM rateplan
+WHERE plan_id    = $1
+  AND plan_status = 'DRAFT';
+
+-- name: LatestRatePlanByType :many
+-- Returns the most recent version of each logical plan for the given planType.
+-- For RETAIL plans pass the tenant's wholesale_id; for others pass NULL.
+SELECT DISTINCT ON (plan_id)
+    id, plan_id, modified_at, plan_type, wholesale_id, plan_name,
+    rateplan, plan_status, created_by, approved_by, effective_at
+FROM rateplan
+WHERE plan_type = $1
+  AND ($2::uuid IS NULL OR wholesale_id = $2)
+ORDER BY plan_id, effective_at DESC, id DESC;
+```
+
+**File:** `internal/store/queries/wholesaler.sql` — new file:
+
+```sql
+-- name: AllWholesalers :many
+-- Returns all active wholesaler records. Used by the tenant resolver to build
+-- the hostname → wholesale_id lookup map.
+SELECT id, hosts FROM wholesaler WHERE active = true;
+```
+
+> **Note on `query_parameter_limit: 4`:** `CreateRatePlan` has 7 params and will generate a
+> `CreateRatePlanParams` struct. `UpdateRatePlan` has 5 params → `UpdateRatePlanParams` struct.
+> All other queries have ≤ 4 params and use individual arguments.
+
+---
+
+## 25. RatePlanResource — Store Layer
+
+**File:** `internal/store/rateplan_store.go` — new hand-written file.
+
+```go
+type ListRatePlansParams struct {
+    WhereSQL string
+    Args     []any
+    OrderSQL string
+    Limit    int
+    Offset   int
+}
+
+// ListRatePlans executes a dynamic rate plan query (all versions, no DISTINCT ON).
+func (s *Store) ListRatePlans(ctx context.Context, p ListRatePlansParams) ([]sqlc.Rateplan, error)
+
+// CountRatePlans executes a dynamic count query.
+func (s *Store) CountRatePlans(ctx context.Context, whereSQL string, args []any) (int64, error)
+```
+
+Wildcard columns (mirrors Java `RatePlanEntity.WILDCARD_FIELDS`):
+`plan_id`, `plan_name`, `plan_type`, `plan_status`
+
+Column map:
+```go
+var ratePlanColumns = map[string]string{
+    "planId":     "plan_id",
+    "planName":   "plan_name",
+    "planType":   "plan_type",
+    "planStatus": "plan_status",
+    "createdBy":  "created_by",
+    "approvedBy": "approved_by",
+    "effectiveAt":"effective_at",
+    "modifiedAt": "modified_at",
+    "wholesaleId":"wholesale_id",
+}
+```
+
+---
+
+## 26. RatePlanResource — Service Layer
+
+**File:** `internal/backend/services/rateplan_service.go` — new file.
+
+### 26.1 Service Methods
+
+```go
+type RatePlanService struct { store *store.Store }
+
+func NewRatePlanService(s *store.Store) *RatePlanService
+
+func (s *RatePlanService) ListRatePlans(ctx, page, filter) ([]*model.RatePlan, error)
+func (s *RatePlanService) CountRatePlans(ctx, filter) (int, error)
+func (s *RatePlanService) GetRatePlan(ctx, planId string) (*model.RatePlan, error)
+func (s *RatePlanService) LatestRatePlanList(ctx, planType model.RatePlanType) ([]*model.RatePlan, error)
+func (s *RatePlanService) CreateRatePlan(ctx, input model.RatePlanInput) (*model.RatePlan, error)
+func (s *RatePlanService) UpdateRatePlan(ctx, planId string, input model.RatePlanInput) (*model.RatePlan, error)
+func (s *RatePlanService) UpdateRatePlanRules(ctx, planId string, rateLines []*model.RateLineInput) (*model.RatePlan, error)
+func (s *RatePlanService) CloneRatePlan(ctx, planId string) (*model.RatePlan, error)
+func (s *RatePlanService) SubmitRatePlanForApproval(ctx, planId string) (*model.RatePlan, error)
+func (s *RatePlanService) ApproveRatePlan(ctx, planId string) (*model.RatePlan, error)
+func (s *RatePlanService) DeclineRatePlan(ctx, planId string) (*model.RatePlan, error)
+func (s *RatePlanService) DeleteRatePlan(ctx, planId string) (bool, error)
+```
+
+### 26.2 Key Mapping Decisions
+
+| Mapping | Detail |
+|---|---|
+| `sqlc.Rateplan.Rateplan []byte` → `model.RatePlan` | `json.Unmarshal` |
+| `model.RatePlan` → `graphqlmodel.RatePlan` | Field-by-field; rateLines converted |
+| `charging.RateKey` → `String` | `rk.String()` (dot-separated) |
+| `String` → `charging.RateKey` | `charging.ParseRateKey(s)` |
+| `decimal.Decimal` → `String` | `.String()` |
+| `String` → `decimal.Decimal` | `decimal.NewFromString(s)` |
+| `model.Quantity` → `Int` | `int(q)` |
+| `Int` → `model.Quantity` | `model.Quantity(n)` |
+| `pgtype.UUID wholesale_id` → `*String` | nil if not valid |
+| RETAIL create | Read `tenant.WholesaleIDFromContext(ctx)`; error if missing |
+
+### 26.3 JSONB Sync on Create/Update
+
+When building the `model.RatePlan` struct for the JSONB column, the service also sets:
+```go
+plan.RatePlanID   = planId          // new UUID string
+plan.RatePlanName = input.PlanName
+plan.RatePlanType = model.RatePlanType(input.PlanType)
+plan.EffectiveFrom = effectiveAt.Time
+```
+This ensures the charging engine always reads a self-consistent embedded document.
+
+---
+
+## 27. RatePlanResource — Resolver Layer
+
+**File:** `internal/backend/resolvers/rateplan.resolvers.go`
+
+All methods delegate to `RatePlanService` — zero business logic in the resolver.
+
+**`resolver.go` addition:**
+```go
+type Resolver struct {
+    CarrierSvc        *services.CarrierService
+    ClassificationSvc *services.ClassificationService
+    RatePlanSvc       *services.RatePlanService   // ADD
+}
+```
+
+---
+
+## 28. RatePlanResource — File Map
+
+| File | Action | Notes |
+|---|---|---|
+| `internal/store/queries/wholesaler.sql` | **New** | `AllWholesalers` query for tenant resolver |
+| `internal/store/queries/rateplan.sql` | **Append** | 9 new sqlc queries |
+| `internal/store/sqlc/wholesaler.sql.go` | **New (generated)** | `sqlc generate` |
+| `internal/store/sqlc/rateplan.sql.go` | **New (generated)** | `sqlc generate` |
+| `internal/backend/appcontext/config.go` | **Modify** | Add `TenantRefreshInterval` to `ServerConfig` |
+| `internal/auth/tenant/resolver.go` | **New** | In-memory host→wholesaleId map with background refresh |
+| `internal/auth/tenant/middleware.go` | **New** | HTTP middleware; `WholesaleIDFromContext` |
+| `gql/schema/rateplan.graphql` | **New** | Full schema: enums, types, inputs, queries, mutations |
+| `internal/store/sqlc/generated (models.go)` | **Regenerate** | `sqlc generate` (no changes needed) |
+| `internal/backend/graphql/generated/generated.go` | **Regenerate** | `gqlgen generate` |
+| `internal/backend/graphql/model/models_gen.go` | **Regenerate** | `gqlgen generate` |
+| `internal/store/rateplan_store.go` | **New** | `ListRatePlans`, `CountRatePlans` dynamic pgx |
+| `internal/backend/services/rateplan_service.go` | **New** | Full `RatePlanService` implementation |
+| `internal/backend/resolvers/rateplan.resolvers.go` | **New** | Thin resolver delegation |
+| `internal/backend/resolvers/resolver.go` | **Modify** | Add `RatePlanSvc` |
+| `internal/backend/appcontext/context.go` | **Modify** | Add `TenantResolver`, `RatePlanSvc` |
+| `internal/backend/handlers/graphql/router.go` | **Modify** | Add tenant middleware; pass `RatePlanSvc` |
+| `cmd/charging-backend/backend-config.yaml` | **Modify** | Add `tenantRefreshInterval` |
+| `internal/backend/services/rateplan_service_test.go` | **New** | Unit tests |
+| `RatePlanGraphQL.http` | **New** | HTTP test file for all queries and mutations |

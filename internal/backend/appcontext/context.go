@@ -2,6 +2,7 @@ package appcontext
 
 import (
 	"go-ocs/internal/auth/keycloak"
+	"go-ocs/internal/auth/tenant"
 	"go-ocs/internal/backend/services"
 	"go-ocs/internal/store"
 )
@@ -12,8 +13,10 @@ type AppContext struct {
 	Metrics           *AppMetrics
 	Store             *store.Store
 	Auth              *keycloak.Client // nil when auth.enabled = false
+	TenantResolver    *tenant.Resolver
 	CarrierSvc        *services.CarrierService
 	ClassificationSvc *services.ClassificationService
+	RatePlanSvc       *services.RatePlanService
 }
 
 // NewAppContext constructs a fully wired AppContext from the supplied config, store,
@@ -24,7 +27,9 @@ func NewAppContext(cfg *BackendConfig, s *store.Store, auth *keycloak.Client) *A
 		Metrics:           NewMetrics(),
 		Store:             s,
 		Auth:              auth,
+		TenantResolver:    tenant.NewResolver(s, cfg.Server.TenantRefreshInterval),
 		CarrierSvc:        services.NewCarrierService(s),
 		ClassificationSvc: services.NewClassificationService(s),
+		RatePlanSvc:       services.NewRatePlanService(s),
 	}
 }

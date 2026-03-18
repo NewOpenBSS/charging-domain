@@ -144,6 +144,58 @@ type RateKeyInput struct {
 	ServiceWindows    []*ServiceCategoryLookup `json:"serviceWindows"`
 }
 
+type RateLine struct {
+	ClassificationKey string  `json:"classificationKey"`
+	GroupKey          *string `json:"groupKey,omitempty"`
+	Description       *string `json:"description,omitempty"`
+	TariffType        string  `json:"tariffType"`
+	UnitType          string  `json:"unitType"`
+	BaseTariff        string  `json:"baseTariff"`
+	UnitOfMeasure     int     `json:"unitOfMeasure"`
+	Multiplier        string  `json:"multiplier"`
+	QosProfile        *string `json:"qosProfile,omitempty"`
+	MinimumUnits      int     `json:"minimumUnits"`
+	RoundingIncrement int     `json:"roundingIncrement"`
+	Barred            bool    `json:"barred"`
+	MonetaryOnly      bool    `json:"monetaryOnly"`
+}
+
+type RateLineInput struct {
+	ClassificationKey string  `json:"classificationKey"`
+	GroupKey          *string `json:"groupKey,omitempty"`
+	Description       *string `json:"description,omitempty"`
+	TariffType        string  `json:"tariffType"`
+	UnitType          string  `json:"unitType"`
+	BaseTariff        string  `json:"baseTariff"`
+	UnitOfMeasure     int     `json:"unitOfMeasure"`
+	Multiplier        string  `json:"multiplier"`
+	QosProfile        *string `json:"qosProfile,omitempty"`
+	MinimumUnits      int     `json:"minimumUnits"`
+	RoundingIncrement int     `json:"roundingIncrement"`
+	Barred            bool    `json:"barred"`
+	MonetaryOnly      bool    `json:"monetaryOnly"`
+}
+
+type RatePlan struct {
+	PlanID      string         `json:"planId"`
+	PlanName    string         `json:"planName"`
+	PlanType    RatePlanType   `json:"planType"`
+	WholesaleID *string        `json:"wholesaleId,omitempty"`
+	PlanStatus  RatePlanStatus `json:"planStatus"`
+	CreatedBy   string         `json:"createdBy"`
+	ApprovedBy  *string        `json:"approvedBy,omitempty"`
+	EffectiveAt string         `json:"effectiveAt"`
+	ModifiedAt  *string        `json:"modifiedAt,omitempty"`
+	RateLines   []*RateLine    `json:"rateLines"`
+}
+
+type RatePlanInput struct {
+	PlanName    string           `json:"planName"`
+	PlanType    RatePlanType     `json:"planType"`
+	EffectiveAt string           `json:"effectiveAt"`
+	RateLines   []*RateLineInput `json:"rateLines"`
+}
+
 type ServiceCategoryLookup struct {
 	Code            string `json:"code"`
 	Name            string `json:"name"`
@@ -231,6 +283,122 @@ func (e *ClassificationStatus) UnmarshalJSON(b []byte) error {
 }
 
 func (e ClassificationStatus) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type RatePlanStatus string
+
+const (
+	RatePlanStatusDraft   RatePlanStatus = "DRAFT"
+	RatePlanStatusPending RatePlanStatus = "PENDING"
+	RatePlanStatusActive  RatePlanStatus = "ACTIVE"
+	RatePlanStatusRetired RatePlanStatus = "RETIRED"
+)
+
+var AllRatePlanStatus = []RatePlanStatus{
+	RatePlanStatusDraft,
+	RatePlanStatusPending,
+	RatePlanStatusActive,
+	RatePlanStatusRetired,
+}
+
+func (e RatePlanStatus) IsValid() bool {
+	switch e {
+	case RatePlanStatusDraft, RatePlanStatusPending, RatePlanStatusActive, RatePlanStatusRetired:
+		return true
+	}
+	return false
+}
+
+func (e RatePlanStatus) String() string {
+	return string(e)
+}
+
+func (e *RatePlanStatus) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = RatePlanStatus(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid RatePlanStatus", str)
+	}
+	return nil
+}
+
+func (e RatePlanStatus) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *RatePlanStatus) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e RatePlanStatus) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type RatePlanType string
+
+const (
+	RatePlanTypeSettlement RatePlanType = "SETTLEMENT"
+	RatePlanTypeWholesale  RatePlanType = "WHOLESALE"
+	RatePlanTypeRetail     RatePlanType = "RETAIL"
+)
+
+var AllRatePlanType = []RatePlanType{
+	RatePlanTypeSettlement,
+	RatePlanTypeWholesale,
+	RatePlanTypeRetail,
+}
+
+func (e RatePlanType) IsValid() bool {
+	switch e {
+	case RatePlanTypeSettlement, RatePlanTypeWholesale, RatePlanTypeRetail:
+		return true
+	}
+	return false
+}
+
+func (e RatePlanType) String() string {
+	return string(e)
+}
+
+func (e *RatePlanType) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = RatePlanType(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid RatePlanType", str)
+	}
+	return nil
+}
+
+func (e RatePlanType) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *RatePlanType) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e RatePlanType) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil

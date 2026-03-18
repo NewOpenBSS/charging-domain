@@ -43,6 +43,11 @@ func main() {
 
 	appCtx := appcontext.NewAppContext(cfg, db, authClient)
 
+	// Start the background tenant resolver so the hostname → wholesaler map stays fresh.
+	tenantCtx, tenantCancel := context.WithCancel(context.Background())
+	defer tenantCancel()
+	appCtx.TenantResolver.Start(tenantCtx)
+
 	metricsSrv := appl.StartMetricsServer(&cfg.Base)
 	defer func() {
 		if metricsSrv != nil {

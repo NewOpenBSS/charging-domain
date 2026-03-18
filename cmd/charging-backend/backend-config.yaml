@@ -19,6 +19,7 @@ server:
   graphqlPath: "/api/charging/graphql"
   readTimeout: "15s"
   writeTimeout: "15s"
+  tenantRefreshInterval: "10m"
 
 auth:
   enabled: false
