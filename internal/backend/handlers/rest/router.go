@@ -23,7 +23,7 @@ func NewRouter(appCtx *appcontext.AppContext) http.Handler {
 	r.Use(logging.Middleware)
 	r.Use(keycloak.Middleware(appCtx.Auth))
 
-	r.Route("/", func(r chi.Router) {
+	r.Route(appCtx.Config.Server.RestPath, func(r chi.Router) {
 		r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
