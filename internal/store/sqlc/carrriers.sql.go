@@ -7,6 +7,8 @@ package sqlc
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const allCarriers = `-- name: AllCarriers :many
@@ -43,4 +45,142 @@ func (q *Queries) AllCarriers(ctx context.Context) ([]Carrier, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const carrierByPlmn = `-- name: CarrierByPlmn :one
+SELECT plmn, modified_on, mcc, mnc, carrier_name, source_group,
+       destination_group, country_name, iso
+FROM carrier
+WHERE plmn = $1
+`
+
+// Retrieves a single carrier record by its PLMN identifier.
+func (q *Queries) CarrierByPlmn(ctx context.Context, plmn string) (Carrier, error) {
+	row := q.db.QueryRow(ctx, carrierByPlmn, plmn)
+	var i Carrier
+	err := row.Scan(
+		&i.Plmn,
+		&i.ModifiedOn,
+		&i.Mcc,
+		&i.Mnc,
+		&i.CarrierName,
+		&i.SourceGroup,
+		&i.DestinationGroup,
+		&i.CountryName,
+		&i.Iso,
+	)
+	return i, err
+}
+
+const createCarrier = `-- name: CreateCarrier :one
+INSERT INTO carrier (
+    plmn, mcc, mnc, carrier_name, source_group,
+    destination_group, country_name, iso, modified_on
+) VALUES (
+    $1, $2, $3, $4, $5, $6, $7, $8, NOW()
+) RETURNING plmn, modified_on, mcc, mnc, carrier_name, source_group,
+            destination_group, country_name, iso
+`
+
+type CreateCarrierParams struct {
+	Plmn             string
+	Mcc              string
+	Mnc              pgtype.Text
+	CarrierName      string
+	SourceGroup      string
+	DestinationGroup string
+	CountryName      string
+	Iso              string
+}
+
+// Inserts a new carrier and returns the full persisted row including modified_on.
+func (q *Queries) CreateCarrier(ctx context.Context, arg CreateCarrierParams) (Carrier, error) {
+	row := q.db.QueryRow(ctx, createCarrier,
+		arg.Plmn,
+		arg.Mcc,
+		arg.Mnc,
+		arg.CarrierName,
+		arg.SourceGroup,
+		arg.DestinationGroup,
+		arg.CountryName,
+		arg.Iso,
+	)
+	var i Carrier
+	err := row.Scan(
+		&i.Plmn,
+		&i.ModifiedOn,
+		&i.Mcc,
+		&i.Mnc,
+		&i.CarrierName,
+		&i.SourceGroup,
+		&i.DestinationGroup,
+		&i.CountryName,
+		&i.Iso,
+	)
+	return i, err
+}
+
+const deleteCarrier = `-- name: DeleteCarrier :exec
+DELETE FROM carrier
+WHERE plmn = $1
+`
+
+// Deletes a carrier by PLMN.
+func (q *Queries) DeleteCarrier(ctx context.Context, plmn string) error {
+	_, err := q.db.Exec(ctx, deleteCarrier, plmn)
+	return err
+}
+
+const updateCarrier = `-- name: UpdateCarrier :one
+UPDATE carrier
+SET mcc               = $2,
+    mnc               = $3,
+    carrier_name      = $4,
+    source_group      = $5,
+    destination_group = $6,
+    country_name      = $7,
+    iso               = $8,
+    modified_on       = NOW()
+WHERE plmn = $1
+RETURNING plmn, modified_on, mcc, mnc, carrier_name, source_group,
+          destination_group, country_name, iso
+`
+
+type UpdateCarrierParams struct {
+	Plmn             string
+	Mcc              string
+	Mnc              pgtype.Text
+	CarrierName      string
+	SourceGroup      string
+	DestinationGroup string
+	CountryName      string
+	Iso              string
+}
+
+// Updates an existing carrier by PLMN and returns the updated row.
+// modified_on is refreshed to NOW() on every update.
+func (q *Queries) UpdateCarrier(ctx context.Context, arg UpdateCarrierParams) (Carrier, error) {
+	row := q.db.QueryRow(ctx, updateCarrier,
+		arg.Plmn,
+		arg.Mcc,
+		arg.Mnc,
+		arg.CarrierName,
+		arg.SourceGroup,
+		arg.DestinationGroup,
+		arg.CountryName,
+		arg.Iso,
+	)
+	var i Carrier
+	err := row.Scan(
+		&i.Plmn,
+		&i.ModifiedOn,
+		&i.Mcc,
+		&i.Mnc,
+		&i.CarrierName,
+		&i.SourceGroup,
+		&i.DestinationGroup,
+		&i.CountryName,
+		&i.Iso,
+	)
+	return i, err
 }

@@ -59,7 +59,7 @@ func minInt64(a, b int64) int64 {
 	return b
 }
 func (c *Counter) ReserveServiceUnits(reference uuid.UUID, nrServiceUnits int64, unitPrice decimal.Decimal,
-	multiplier decimal.Decimal, taxRate decimal.Decimal, reason ReasonCode, validityTime time.Duration) int64 {
+	multiplier decimal.Decimal, taxRate decimal.Decimal, reason ReasonCode, validityTime time.Duration, now time.Time) int64 {
 
 	if c.UnitType == charging.MONETARY {
 		return 0
@@ -68,7 +68,7 @@ func (c *Counter) ReserveServiceUnits(reference uuid.UUID, nrServiceUnits int64,
 	nrMultiplierUnits := multiplier.Mul(decimal.NewFromInt(nrServiceUnits)).IntPart()
 	reservedUnits := minInt64(c.AvailableServiceUnits(), nrMultiplierUnits)
 	if reservedUnits > 0 {
-		expiry := time.Now().Add(validityTime)
+		expiry := now.Add(validityTime)
 		res := NewReservation(decimal.Zero, reservedUnits, unitPrice, multiplier, taxRate, reason, expiry)
 		c.Reservations[reference] = *res
 	}
@@ -117,7 +117,7 @@ func (c *Counter) AvailableServiceUnits() int64 {
 	return c.Balance.IntPart() - totalReserved
 }
 
-func (c *Counter) ReserveValue(reference uuid.UUID, amount decimal.Decimal, unitPrice decimal.Decimal, multiplier decimal.Decimal, taxRate decimal.Decimal, reason ReasonCode, validityTime time.Duration) decimal.Decimal {
+func (c *Counter) ReserveValue(reference uuid.UUID, amount decimal.Decimal, unitPrice decimal.Decimal, multiplier decimal.Decimal, taxRate decimal.Decimal, reason ReasonCode, validityTime time.Duration, now time.Time) decimal.Decimal {
 
 	if c.UnitType != charging.MONETARY {
 		return decimal.Zero
@@ -136,7 +136,7 @@ func (c *Counter) ReserveValue(reference uuid.UUID, amount decimal.Decimal, unit
 	}
 
 	if amount.GreaterThan(decimal.Zero) {
-		expiry := time.Now().Add(validityTime)
+		expiry := now.Add(validityTime)
 		res := NewReservation(amount, 0, unitPrice, multiplier, taxRate, reason, expiry)
 		c.Reservations[reference] = *res
 

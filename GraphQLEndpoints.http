@@ -1,0 +1,136 @@
+### GraphQL Playground
+GET http://localhost:8081/api/charging/graphql/playground
+Accept: text/html
+
+### Carrier List — default page (first 10, sorted by plmn)
+POST http://localhost:8081/api/charging/graphql
+Content-Type: application/json
+
+{
+  "query": "query CarrierList($page: PageRequest, $filter: FilterRequest) { carrierList(page: $page, filter: $filter) { plmn mcc mnc carrierName sourceGroup destinationGroup countryName iso modifiedOn } }",
+  "variables": {
+    "page": {
+      "pageIndex": 0,
+      "pageSize": 10,
+      "sort": {
+        "key": "plmn",
+        "order": "asc"
+      }
+    },
+    "filter": null
+  }
+}
+
+### Carrier List — wildcard search
+POST http://localhost:8081/api/charging/graphql
+Content-Type: application/json
+
+{
+  "query": "query CarrierList($page: PageRequest, $filter: FilterRequest) { carrierList(page: $page, filter: $filter) { plmn mcc mnc carrierName sourceGroup destinationGroup countryName iso modifiedOn } }",
+  "variables": {
+    "page": {
+      "pageIndex": 0,
+      "pageSize": 10
+    },
+    "filter": {
+      "wildcard": "NZL"
+    }
+  }
+}
+
+### Carrier List — filtered by ISO country code
+POST http://localhost:8081/api/charging/graphql
+Content-Type: application/json
+
+{
+  "query": "query CarrierList($page: PageRequest, $filter: FilterRequest) { carrierList(page: $page, filter: $filter) { plmn mcc mnc carrierName sourceGroup destinationGroup countryName iso modifiedOn } }",
+  "variables": {
+    "page": {
+      "pageIndex": 0,
+      "pageSize": 20
+    },
+    "filter": {
+      "filters": [
+        {
+          "key": "iso",
+          "operation": "=",
+          "value": "NZ"
+        }
+      ]
+    }
+  }
+}
+
+### Carrier By PLMN
+POST http://localhost:8081/api/charging/graphql
+Content-Type: application/json
+
+{
+  "query": "query CarrierByPlmn($plmn: String!) { carrierByPlmn(plmn: $plmn) { plmn mcc mnc carrierName sourceGroup destinationGroup countryName iso modifiedOn } }",
+  "variables": {
+    "plmn": "53005"
+  }
+}
+
+### Count Carriers — total count with optional filter
+POST http://localhost:8081/api/charging/graphql
+Content-Type: application/json
+
+{
+  "query": "query CountCarriers($filter: FilterRequest) { countCarriers(filter: $filter) }",
+  "variables": {
+    "filter": null
+  }
+}
+
+### Create Carrier
+POST http://localhost:8081/api/charging/graphql
+Content-Type: application/json
+
+{
+  "query": "mutation CreateCarrier($carrier: CarrierInput!) { createCarrier(carrier: $carrier) { plmn mcc mnc carrierName sourceGroup destinationGroup countryName iso modifiedOn } }",
+  "variables": {
+    "carrier": {
+      "plmn": "53005",
+      "mcc": "530",
+      "mnc": "05",
+      "carrierName": "Spark NZ",
+      "sourceGroup": "NZL",
+      "destinationGroup": "MOBILE",
+      "countryName": "New Zealand",
+      "iso": "NZL"
+    }
+  }
+}
+
+### Update Carrier
+POST http://localhost:8081/api/charging/graphql
+Content-Type: application/json
+
+{
+  "query": "mutation UpdateCarrier($plmn: String!, $carrier: CarrierInput!) { updateCarrier(plmn: $plmn, carrier: $carrier) { plmn mcc mnc carrierName sourceGroup destinationGroup countryName iso modifiedOn } }",
+  "variables": {
+    "plmn": "53005",
+    "carrier": {
+      "plmn": "53005",
+      "mcc": "530",
+      "mnc": "05",
+      "carrierName": "Spark New Zealand",
+      "sourceGroup": "NZL",
+      "destinationGroup": "MOBILE",
+      "countryName": "New Zealand",
+      "iso": "NZL"
+    }
+  }
+}
+
+### Delete Carrier
+POST http://localhost:8081/api/charging/graphql
+Content-Type: application/json
+
+{
+  "query": "mutation DeleteCarrier($plmn: String!) { deleteCarrier(plmn: $plmn) }",
+  "variables": {
+    "plmn": "53005"
+  }
+}

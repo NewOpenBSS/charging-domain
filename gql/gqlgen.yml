@@ -1,0 +1,19 @@
+# gqlgen.yml - Configuration for gqlgen GraphQL code generation.
+# Run: go run github.com/99designs/gqlgen generate
+
+schema:
+  - gql/schema/*.graphql
+
+exec:
+  filename: internal/backend/graphql/generated/generated.go
+  package: generated
+
+model:
+  filename: internal/backend/graphql/model/models_gen.go
+  package: model
+
+resolver:
+  layout: follow-schema
+  dir: internal/backend/resolvers
+  package: resolvers
+  filename_template: "{name}.resolvers.go"

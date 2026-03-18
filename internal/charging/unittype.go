@@ -1,6 +1,5 @@
 package charging
 
-import "fmt"
 
 // UnitType represents the type of charging unit.
 type UnitType string
@@ -32,7 +31,7 @@ func (u UnitType) Description() string {
 func ParseUnitType(s string) (UnitType, error) {
 	u := UnitType(s)
 	if _, ok := descMap[u]; !ok {
-		return "", fmt.Errorf("invalid UnitType: %s", s)
+		return "", NewInvalidUnitType(s)
 	}
 	return u, nil
 }

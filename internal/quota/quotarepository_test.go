@@ -176,7 +176,7 @@ func TestQuotaRepository_Save(t *testing.T) {
 
 		mockDB.On("Exec", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(pgconn.NewCommandTag("UPDATE 1"), nil)
 
-		err := repo.Save(context.Background(), loaded)
+		err := repo.Save(context.Background(), loaded, time.Now())
 
 		assert.NoError(t, err)
 		assert.True(t, loaded.Version.After(oldVersion))
@@ -191,7 +191,7 @@ func TestQuotaRepository_Save(t *testing.T) {
 
 		mockDB.On("Exec", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(pgconn.NewCommandTag("UPDATE 0"), nil)
 
-		err := repo.Save(context.Background(), loaded)
+		err := repo.Save(context.Background(), loaded, time.Now())
 
 		assert.Error(t, err)
 		assert.IsType(t, &PessimisticLockError{}, err)
@@ -205,7 +205,7 @@ func TestQuotaRepository_Save(t *testing.T) {
 
 		mockDB.On("Exec", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(pgconn.CommandTag{}, errors.New("db error"))
 
-		err := repo.Save(context.Background(), loaded)
+		err := repo.Save(context.Background(), loaded, time.Now())
 
 		assert.Error(t, err)
 	})

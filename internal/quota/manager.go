@@ -19,8 +19,11 @@ var (
 )
 
 type QuotaManagerInterface interface {
-	ReserveQuota(ctx context.Context, reservationId uuid.UUID, subscriberId uuid.UUID, reason ReasonCode, rateKey charging.RateKey, unitType charging.UnitType, requestedUnits int64, unitPrice decimal.Decimal, multiplier decimal.Decimal, validityTime time.Duration, allowOOBCharging bool) (int64, error)
-	Debit(ctx context.Context, subscriberID uuid.UUID, requestId string, reservationId uuid.UUID, usedUnits int64, unitType charging.UnitType, reclaimUnusedUnits bool) (*DebitResponse, error)
+	// ReserveQuota reserves quota for a subscriber. now is the reference time for reservation expiry.
+	ReserveQuota(ctx context.Context, now time.Time, reservationId uuid.UUID, subscriberId uuid.UUID, reason ReasonCode, rateKey charging.RateKey, unitType charging.UnitType, requestedUnits int64, unitPrice decimal.Decimal, multiplier decimal.Decimal, validityTime time.Duration, allowOOBCharging bool) (int64, error)
+	// Debit applies used units against the subscriber's reservation. now is the reference time for journal timestamps.
+	Debit(ctx context.Context, now time.Time, subscriberID uuid.UUID, requestId string, reservationId uuid.UUID, usedUnits int64, unitType charging.UnitType, reclaimUnusedUnits bool) (*DebitResponse, error)
+	// Release releases an active quota reservation for a subscriber.
 	Release(ctx context.Context, subscriberId uuid.UUID, reservationId uuid.UUID) error
 }
 
@@ -56,6 +59,7 @@ func NewQuotaManager(store store.Store, retryLimit int, kafkaManager *events.Kaf
 
 func (m *QuotaManager) executeWithQuota(
 	ctx context.Context,
+	now time.Time,
 	subscriberID uuid.UUID,
 	op func(q *Quota) error,
 ) error {
@@ -76,7 +80,7 @@ func (m *QuotaManager) executeWithQuota(
 			}
 		} else {
 			// Remove expired entries
-			loaded.RemoveExpiredEntries()
+			loaded.RemoveExpiredEntries(now)
 		}
 
 		if err := op(loaded.Quota); err != nil {
@@ -85,14 +89,14 @@ func (m *QuotaManager) executeWithQuota(
 		}
 
 		// Remove expired entries (again)
-		loaded.RemoveExpiredEntries()
+		loaded.RemoveExpiredEntries(now)
 
 		// Check for usage notifications
 		// this might result in a message being sent more than once (if the save fails)
 		// but that's okay, as it will not happen that frequently
-		loaded.CheckForUsageNotifications(subscriberID)
+		loaded.CheckForUsageNotifications(m, subscriberID)
 
-		err = m.repo.Save(ctx, loaded)
+		err = m.repo.Save(ctx, loaded, now)
 		if err == nil {
 			return nil
 		}

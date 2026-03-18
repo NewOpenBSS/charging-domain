@@ -67,8 +67,11 @@ func NewReserveResponse(reservationId uuid.UUID, unitsGranted int64, validityTim
 	}
 }
 
+// ReserveQuota reserves quota units for a subscriber. now is the reference time used to
+// set reservation expiry timestamps, ensuring deterministic behaviour across the call chain.
 func (m *QuotaManager) ReserveQuota(
 	ctx context.Context,
+	now time.Time,
 	reservationId uuid.UUID,
 	subscriberId uuid.UUID,
 	reason ReasonCode,
@@ -81,15 +84,15 @@ func (m *QuotaManager) ReserveQuota(
 	allowOOBCharging bool) (int64, error) {
 
 	var grantedUnits int64
-	err := m.executeWithQuota(ctx, subscriberId, func(q *Quota) error {
+	err := m.executeWithQuota(ctx, now, subscriberId, func(q *Quota) error {
 		if unitType == charging.MONETARY {
-			grantedUnits = m.reserveMonetaryUnits(q, reservationId, subscriberId, reason, rateKey, unitType, requestedUnits, unitPrice, multiplier, validityTime)
+			grantedUnits = m.reserveMonetaryUnits(q, reservationId, subscriberId, reason, rateKey, unitType, requestedUnits, unitPrice, multiplier, validityTime, now)
 			return nil
 		}
 
-		grantedUnits = m.reserveServiceUnits(q, reservationId, subscriberId, reason, rateKey, unitType, requestedUnits, unitPrice, multiplier, validityTime)
+		grantedUnits = m.reserveServiceUnits(q, reservationId, subscriberId, reason, rateKey, unitType, requestedUnits, unitPrice, multiplier, validityTime, now)
 		if allowOOBCharging && grantedUnits < requestedUnits {
-			grantedUnits += m.reserveMonetaryUnits(q, reservationId, subscriberId, reason, rateKey, unitType, requestedUnits-grantedUnits, unitPrice, multiplier, validityTime)
+			grantedUnits += m.reserveMonetaryUnits(q, reservationId, subscriberId, reason, rateKey, unitType, requestedUnits-grantedUnits, unitPrice, multiplier, validityTime, now)
 		}
 
 		return nil
@@ -112,7 +115,8 @@ func (m *QuotaManager) reserveServiceUnits(
 	requestedUnits int64,
 	unitPrice decimal.Decimal,
 	multiplier decimal.Decimal,
-	validityTime time.Duration) int64 {
+	validityTime time.Duration,
+	now time.Time) int64 {
 
 	var grantedUnits int64
 	for _, c := range q.FindCounters(rateKey, unitType, reason) {
@@ -128,6 +132,7 @@ func (m *QuotaManager) reserveServiceUnits(
 			m.taxRate,
 			reason,
 			validityTime,
+			now,
 		)
 		grantedUnits += reserved
 	}
@@ -145,7 +150,8 @@ func (m *QuotaManager) reserveMonetaryUnits(
 	requestedUnits int64,
 	unitPrice decimal.Decimal,
 	multiplier decimal.Decimal,
-	validityTime time.Duration) int64 {
+	validityTime time.Duration,
+	now time.Time) int64 {
 
 	taxRateAddition := decimal.NewFromInt(1).Add(m.taxRate)
 
@@ -175,7 +181,7 @@ func (m *QuotaManager) reserveMonetaryUnits(
 				break
 			}
 
-			valueReserved = valueReserved.Add(c.ReserveValue(reservationId, totalValueWithTax.Sub(valueReserved), unitPrice, multiplier, m.taxRate, reason, validityTime))
+			valueReserved = valueReserved.Add(c.ReserveValue(reservationId, totalValueWithTax.Sub(valueReserved), unitPrice, multiplier, m.taxRate, reason, validityTime, now))
 		}
 	}
 

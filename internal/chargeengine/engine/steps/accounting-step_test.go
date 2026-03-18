@@ -38,13 +38,13 @@ type mockAccountingQuotaManager struct {
 	mock.Mock
 }
 
-func (m *mockAccountingQuotaManager) ReserveQuota(ctx context.Context, reservationId uuid.UUID, subscriberId uuid.UUID, reason quota.ReasonCode, rateKey charging.RateKey, unitType charging.UnitType, requestedUnits int64, unitPrice decimal.Decimal, multiplier decimal.Decimal, validityTime time.Duration, allowOOBCharging bool) (int64, error) {
-	args := m.Called(ctx, reservationId, subscriberId, reason, rateKey, unitType, requestedUnits, unitPrice, multiplier, validityTime, allowOOBCharging)
+func (m *mockAccountingQuotaManager) ReserveQuota(ctx context.Context, now time.Time, reservationId uuid.UUID, subscriberId uuid.UUID, reason quota.ReasonCode, rateKey charging.RateKey, unitType charging.UnitType, requestedUnits int64, unitPrice decimal.Decimal, multiplier decimal.Decimal, validityTime time.Duration, allowOOBCharging bool) (int64, error) {
+	args := m.Called(ctx, now, reservationId, subscriberId, reason, rateKey, unitType, requestedUnits, unitPrice, multiplier, validityTime, allowOOBCharging)
 	return int64(args.Int(0)), args.Error(1)
 }
 
-func (m *mockAccountingQuotaManager) Debit(ctx context.Context, subscriberID uuid.UUID, requestId string, reservationId uuid.UUID, usedUnits int64, unitType charging.UnitType, reclaimUnusedUnits bool) (*quota.DebitResponse, error) {
-	args := m.Called(ctx, subscriberID, requestId, reservationId, usedUnits, unitType, reclaimUnusedUnits)
+func (m *mockAccountingQuotaManager) Debit(ctx context.Context, now time.Time, subscriberID uuid.UUID, requestId string, reservationId uuid.UUID, usedUnits int64, unitType charging.UnitType, reclaimUnusedUnits bool) (*quota.DebitResponse, error) {
+	args := m.Called(ctx, now, subscriberID, requestId, reservationId, usedUnits, unitType, reclaimUnusedUnits)
 	return args.Get(0).(*quota.DebitResponse), args.Error(1)
 }
 
@@ -149,7 +149,7 @@ func TestAccounting_Success(t *testing.T) {
 	grant := dc.ChargingData.Grants[ratingGroup][0]
 	chargeRecordId := chargingId + ";1;" + grant.GrantId.String()
 
-	mockQM.On("Debit", mock.Anything, subscriberId, chargeRecordId, grant.GrantId, int64(usedSeconds), grant.UnitType, false).
+	mockQM.On("Debit", mock.Anything, mock.Anything, subscriberId, chargeRecordId, grant.GrantId, int64(usedSeconds), grant.UnitType, false).
 		Return(&quota.DebitResponse{
 			UnitsDebited: int64(usedSeconds),
 			UnitsValue:   decimal.NewFromFloat(1.5), // 30 * 0.05
@@ -170,6 +170,7 @@ func TestAccounting_ExpiredGrant(t *testing.T) {
 	chargingId := "test-charging-id"
 
 	dc := &engine.ChargingContext{
+		StartTime: time.Now(),
 		Request: &nchf.ChargingDataRequest{
 			ChargingId: &chargingId,
 			MultipleUnitUsage: []nchf.MultipleUnitUsage{

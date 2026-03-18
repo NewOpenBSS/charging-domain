@@ -32,13 +32,13 @@ type mockQuotaManager struct {
 	mock.Mock
 }
 
-func (m *mockQuotaManager) ReserveQuota(ctx context.Context, reservationId uuid.UUID, subscriberId uuid.UUID, reason quota.ReasonCode, rateKey charging.RateKey, unitType charging.UnitType, requestedUnits int64, unitPrice decimal.Decimal, multiplier decimal.Decimal, validityTime time.Duration, allowOOBCharging bool) (int64, error) {
-	args := m.Called(ctx, reservationId, subscriberId, reason, rateKey, unitType, requestedUnits, unitPrice, multiplier, validityTime, allowOOBCharging)
+func (m *mockQuotaManager) ReserveQuota(ctx context.Context, now time.Time, reservationId uuid.UUID, subscriberId uuid.UUID, reason quota.ReasonCode, rateKey charging.RateKey, unitType charging.UnitType, requestedUnits int64, unitPrice decimal.Decimal, multiplier decimal.Decimal, validityTime time.Duration, allowOOBCharging bool) (int64, error) {
+	args := m.Called(ctx, now, reservationId, subscriberId, reason, rateKey, unitType, requestedUnits, unitPrice, multiplier, validityTime, allowOOBCharging)
 	return int64(args.Int(0)), args.Error(1)
 }
 
-func (m *mockQuotaManager) Debit(ctx context.Context, subscriberID uuid.UUID, requestId string, reservationId uuid.UUID, usedUnits int64, unitType charging.UnitType, reclaimUnusedUnits bool) (*quota.DebitResponse, error) {
-	args := m.Called(ctx, subscriberID, requestId, reservationId, usedUnits, unitType, reclaimUnusedUnits)
+func (m *mockQuotaManager) Debit(ctx context.Context, now time.Time, subscriberID uuid.UUID, requestId string, reservationId uuid.UUID, usedUnits int64, unitType charging.UnitType, reclaimUnusedUnits bool) (*quota.DebitResponse, error) {
+	args := m.Called(ctx, now, subscriberID, requestId, reservationId, usedUnits, unitType, reclaimUnusedUnits)
 	return args.Get(0).(*quota.DebitResponse), args.Error(1)
 }
 
@@ -72,7 +72,7 @@ func TestReserveQuota_MonetaryUnits(t *testing.T) {
 		},
 	}
 
-	mockQM.On("ReserveQuota", mock.Anything, reservationId, subscriberId, reason, rateKey, unitType, requestedUnits, unitPrice, multiplier, validityTime, allowOOBCharging).
+	mockQM.On("ReserveQuota", mock.Anything, mock.Anything, reservationId, subscriberId, reason, rateKey, unitType, requestedUnits, unitPrice, multiplier, validityTime, allowOOBCharging).
 		Return(int(requestedUnits), nil)
 
 	grantedUnits, err := ReserveQuota(
@@ -116,7 +116,7 @@ func TestDebitQuota(t *testing.T) {
 		UnaccountedUnits: 0,
 	}
 
-	mockQM.On("Debit", mock.Anything, subscriberId, requestId, reservationId, usedUnits, unitType, reclaimUnusedUnits).
+	mockQM.On("Debit", mock.Anything, mock.Anything, subscriberId, requestId, reservationId, usedUnits, unitType, reclaimUnusedUnits).
 		Return(mockResp, nil)
 
 	result, err := DebitQuota(
@@ -163,7 +163,7 @@ func TestReserveQuota_ServiceUnits(t *testing.T) {
 		},
 	}
 
-	mockQM.On("ReserveQuota", mock.Anything, reservationId, subscriberId, reason, rateKey, unitType, requestedUnits, unitPrice, multiplier, validityTime, allowOOBCharging).
+	mockQM.On("ReserveQuota", mock.Anything, mock.Anything, reservationId, subscriberId, reason, rateKey, unitType, requestedUnits, unitPrice, multiplier, validityTime, allowOOBCharging).
 		Return(int(requestedUnits), nil)
 
 	grantedUnits, err := ReserveQuota(

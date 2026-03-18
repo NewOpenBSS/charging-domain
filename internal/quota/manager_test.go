@@ -36,7 +36,7 @@ func (m *MockRepository) Create(ctx context.Context, subscriberID uuid.UUID) (*L
 	return args.Get(0).(*LoadedQuota), args.Error(1)
 }
 
-func (m *MockRepository) Save(ctx context.Context, loaded *LoadedQuota) error {
+func (m *MockRepository) Save(ctx context.Context, loaded *LoadedQuota, now time.Time) error {
 	args := m.Called(ctx, loaded)
 	return args.Error(0)
 }
@@ -44,6 +44,7 @@ func (m *MockRepository) Save(ctx context.Context, loaded *LoadedQuota) error {
 func TestQuotaManager_ExecuteWithQuota(t *testing.T) {
 	subscriberID := uuid.New()
 	ctx := context.Background()
+	now := time.Now()
 
 	t.Run("successful execution", func(t *testing.T) {
 		mockRepo := new(MockRepository)
@@ -59,7 +60,7 @@ func TestQuotaManager_ExecuteWithQuota(t *testing.T) {
 		mockRepo.On("Load", ctx, subscriberID).Return(loadedQuota, nil)
 		mockRepo.On("Save", ctx, loadedQuota).Return(nil)
 
-		err := manager.executeWithQuota(ctx, subscriberID, func(q *Quota) error {
+		err := manager.executeWithQuota(ctx, now, subscriberID, func(q *Quota) error {
 			assert.Equal(t, loadedQuota.Quota, q)
 			return nil
 		})
@@ -83,7 +84,7 @@ func TestQuotaManager_ExecuteWithQuota(t *testing.T) {
 		mockRepo.On("Create", ctx, subscriberID).Return(newQuota, nil)
 		mockRepo.On("Save", ctx, newQuota).Return(nil)
 
-		err := manager.executeWithQuota(ctx, subscriberID, func(q *Quota) error {
+		err := manager.executeWithQuota(ctx, now, subscriberID, func(q *Quota) error {
 			assert.Equal(t, newQuota.Quota, q)
 			return nil
 		})
@@ -110,7 +111,7 @@ func TestQuotaManager_ExecuteWithQuota(t *testing.T) {
 		mockRepo.On("Load", ctx, subscriberID).Return(loadedQuota2, nil).Once()
 		mockRepo.On("Save", ctx, loadedQuota2).Return(nil).Once()
 
-		err := manager.executeWithQuota(ctx, subscriberID, func(q *Quota) error {
+		err := manager.executeWithQuota(ctx, now, subscriberID, func(q *Quota) error {
 			return nil
 		})
 
@@ -130,7 +131,7 @@ func TestQuotaManager_ExecuteWithQuota(t *testing.T) {
 		mockRepo.On("Load", ctx, subscriberID).Return(loadedQuota, nil).Twice()
 		mockRepo.On("Save", ctx, loadedQuota).Return(ErrConflict).Twice()
 
-		err := manager.executeWithQuota(ctx, subscriberID, func(q *Quota) error {
+		err := manager.executeWithQuota(ctx, now, subscriberID, func(q *Quota) error {
 			return nil
 		})
 
@@ -148,7 +149,7 @@ func TestQuotaManager_ExecuteWithQuota(t *testing.T) {
 		expectedErr := errors.New("load failed")
 		mockRepo.On("Load", ctx, subscriberID).Return(nil, expectedErr)
 
-		err := manager.executeWithQuota(ctx, subscriberID, func(q *Quota) error {
+		err := manager.executeWithQuota(ctx, now, subscriberID, func(q *Quota) error {
 			return nil
 		})
 
@@ -167,7 +168,7 @@ func TestQuotaManager_ExecuteWithQuota(t *testing.T) {
 		mockRepo.On("Load", ctx, subscriberID).Return(loadedQuota, nil)
 
 		expectedErr := errors.New("op failed")
-		err := manager.executeWithQuota(ctx, subscriberID, func(q *Quota) error {
+		err := manager.executeWithQuota(ctx, now, subscriberID, func(q *Quota) error {
 			return expectedErr
 		})
 
@@ -180,6 +181,7 @@ func TestQuotaManager_ReserveQuota(t *testing.T) {
 	subscriberID := uuid.New()
 	reservationID := uuid.New()
 	ctx := context.Background()
+	now := time.Now()
 
 	t.Run("reserve service units successfully", func(t *testing.T) {
 		mockRepo := new(MockRepository)
@@ -222,7 +224,7 @@ func TestQuotaManager_ReserveQuota(t *testing.T) {
 		mockRepo.On("Load", ctx, subscriberID).Return(loadedQuota, nil)
 		mockRepo.On("Save", ctx, loadedQuota).Return(nil)
 
-		granted, err := manager.ReserveQuota(ctx, reservationID, subscriberID, ReasonServiceUsage, rateKey, unitType, requestedUnits, unitPrice, multiplier, validityTime, false)
+		granted, err := manager.ReserveQuota(ctx, now, reservationID, subscriberID, ReasonServiceUsage, rateKey, unitType, requestedUnits, unitPrice, multiplier, validityTime, false)
 
 		assert.NoError(t, err)
 		assert.Equal(t, int64(100), granted)
@@ -237,6 +239,7 @@ func TestQuotaManager_Debit(t *testing.T) {
 	subscriberID := uuid.New()
 	reservationID := uuid.New()
 	ctx := context.Background()
+	now := time.Now()
 
 	t.Run("debit service units successfully", func(t *testing.T) {
 		// Mock Kafka client to avoid panic in PublishJournalEvent
@@ -292,7 +295,7 @@ func TestQuotaManager_Debit(t *testing.T) {
 		mockRepo.On("Load", ctx, subscriberID).Return(loadedQuota, nil)
 		mockRepo.On("Save", ctx, loadedQuota).Return(nil)
 
-		resp, err := manager.Debit(ctx, subscriberID, "req-1", reservationID, 50, unitType, false)
+		resp, err := manager.Debit(ctx, now, subscriberID, "req-1", reservationID, 50, unitType, false)
 
 		assert.NoError(t, err)
 		assert.Equal(t, int64(50), resp.UnitsDebited)

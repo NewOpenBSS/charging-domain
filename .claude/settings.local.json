@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(go mod:*)",
+      "Bash(go build:*)",
+      "Bash(go test:*)",
+      "mcp__Desktop_Commander__list_directory",
+      "Bash(sqlc generate:*)",
+      "Bash(go run:*)",
+      "Bash(go get:*)",
+      "Bash(go install:*)",
+      "Bash(gqlgen generate:*)",
+      "Bash(curl:*)"
+    ]
+  }
+}

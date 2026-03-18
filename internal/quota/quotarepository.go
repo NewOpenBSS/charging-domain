@@ -15,7 +15,9 @@ import (
 type Repository interface {
 	Load(ctx context.Context, subscriberID uuid.UUID) (*LoadedQuota, error)
 	Create(ctx context.Context, subscriberID uuid.UUID) (*LoadedQuota, error)
-	Save(ctx context.Context, loaded *LoadedQuota) error
+	// Save persists the loaded quota. now is the version timestamp used for optimistic locking
+	// and must be provided by the caller to ensure deterministic versioning.
+	Save(ctx context.Context, loaded *LoadedQuota, now time.Time) error
 }
 
 type QuotaRepository struct {
@@ -92,15 +94,16 @@ func (r *QuotaRepository) Create(ctx context.Context, subscriberId uuid.UUID) (*
 	return l, nil
 }
 
-func (r *QuotaRepository) Save(ctx context.Context, loaded *LoadedQuota) error {
+// Save persists the loaded quota to the database using now as the new version timestamp.
+// Returns a PessimisticLockError if another writer has modified the quota since it was loaded.
+func (r *QuotaRepository) Save(ctx context.Context, loaded *LoadedQuota, now time.Time) error {
 
 	q, err := json.Marshal(loaded.Quota)
 	if err != nil {
 		return err
 	}
 
-	version := time.Now()
-	rows, err := r.store.Q.UpdateQuota(ctx, toUUID(loaded.Quota.QuotaID), pgtype.Timestamptz{Time: loaded.Version, Valid: true}, q, pgtype.Timestamptz{Time: version, Valid: true})
+	rows, err := r.store.Q.UpdateQuota(ctx, toUUID(loaded.Quota.QuotaID), pgtype.Timestamptz{Time: loaded.Version, Valid: true}, q, pgtype.Timestamptz{Time: now, Valid: true})
 	if err != nil {
 		return err
 	}
@@ -108,7 +111,7 @@ func (r *QuotaRepository) Save(ctx context.Context, loaded *LoadedQuota) error {
 		return CreatePessimisticLockError("failed to update quota")
 	}
 
-	loaded.Version = version
+	loaded.Version = now
 
 	return nil
 }

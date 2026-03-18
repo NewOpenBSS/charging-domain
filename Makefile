@@ -3,8 +3,10 @@
 # Variables
 BINARY_DRA := charging-dra
 BINARY_ENGINE := charging-engine
+BINARY_BACKEND := charging-backend
 CMD_DRA := ./cmd/charging-dra
 CMD_ENGINE := ./cmd/charging-engine
+CMD_BACKEND := ./cmd/charging-backend
 DB_URL := "postgres://gobss:gobss@localhost:5432/gobss?sslmode=disable"
 DB_SCHEMA := "&search_path=charging"
 MIGRATIONS_PATH := db/migrations
@@ -16,7 +18,7 @@ all: build
 
 # Build targets
 .PHONY: build
-build: build-dra build-engine
+build: build-dra build-engine build-backend
 
 .PHONY: build-dra
 build-dra:
@@ -25,6 +27,10 @@ build-dra:
 .PHONY: build-engine
 build-engine:
 	go build -o $(BINARY_ENGINE) $(CMD_ENGINE)
+
+.PHONY: build-backend
+build-backend:
+	go build -o $(BINARY_BACKEND) $(CMD_BACKEND)
 
 # Database migration targets
 .PHONY: migrate-up
@@ -48,15 +54,16 @@ seed:
 # Clean targets
 .PHONY: clean
 clean:
-	rm -f $(BINARY_DRA) $(BINARY_ENGINE)
+	rm -f $(BINARY_DRA) $(BINARY_ENGINE) $(BINARY_BACKEND)
 
 # Help target
 .PHONY: help
 help:
 	@echo "Available targets:"
-	@echo "  build         Build both all the applications"
-	@echo "  build-dra     Build charging-dra"
-	@echo "  build-engine  Build charging-engine"
+	@echo "  build          Build all the applications"
+	@echo "  build-dra      Build charging-dra"
+	@echo "  build-engine   Build charging-engine"
+	@echo "  build-backend  Build charging-backend"
 	@echo "  migrate-up    Apply all migrations"
 	@echo "  migrate-down  Rollback the last migration"
 	@echo "  migrate-clean Clean the database"

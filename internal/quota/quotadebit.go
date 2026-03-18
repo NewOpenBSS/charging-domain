@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"go-ocs/internal/charging"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
@@ -49,7 +50,10 @@ func NewDebitResponse(unitsDebited int64, unitsValue decimal.Decimal, valueUnits
 	}
 }
 
+// Debit applies used units against the subscriber's quota reservation. now is the reference
+// time for journal event timestamps, ensuring deterministic audit records.
 func (m *QuotaManager) Debit(ctx context.Context,
+	now time.Time,
 	subscriberId uuid.UUID,
 	requestId string,
 	reservationId uuid.UUID,
@@ -58,18 +62,18 @@ func (m *QuotaManager) Debit(ctx context.Context,
 	reclaimUnusedUnits bool) (*DebitResponse, error) {
 
 	resp := NewDebitResponse(0, decimal.Zero, 0, 0)
-	err := m.executeWithQuota(ctx, subscriberId, func(q *Quota) error {
+	err := m.executeWithQuota(ctx, now, subscriberId, func(q *Quota) error {
 		var unitsDebited int64 = 0
 		unitsRemaining := usedUnits
 
 		if unitType != charging.MONETARY {
-			serviceUnits := debitServiceReservations(m, q, requestId, reservationId, unitType, reclaimUnusedUnits, usedUnits, subscriberId)
+			serviceUnits := debitServiceReservations(m, q, requestId, reservationId, unitType, reclaimUnusedUnits, usedUnits, subscriberId, now)
 			unitsDebited += serviceUnits
 			unitsRemaining = usedUnits - serviceUnits
 		}
 
 		if unitsRemaining > 0 {
-			resp = debitMonetaryReservations(m, q, requestId, reservationId, unitType, reclaimUnusedUnits, unitsRemaining, subscriberId)
+			resp = debitMonetaryReservations(m, q, requestId, reservationId, unitType, reclaimUnusedUnits, unitsRemaining, subscriberId, now)
 			resp.UnitsDebited += unitsDebited
 		} else {
 			resp.UnitsDebited = unitsDebited
@@ -82,7 +86,7 @@ func (m *QuotaManager) Debit(ctx context.Context,
 	return resp, err
 }
 
-func debitServiceReservations(m *QuotaManager, q *Quota, chargingId string, reservationId uuid.UUID, unitType charging.UnitType, reclaimUnusedUnits bool, usedUnits int64, subscriberId uuid.UUID) int64 {
+func debitServiceReservations(m *QuotaManager, q *Quota, chargingId string, reservationId uuid.UUID, unitType charging.UnitType, reclaimUnusedUnits bool, usedUnits int64, subscriberId uuid.UUID, now time.Time) int64 {
 
 	unitsRemaining := usedUnits
 	counters := q.FindCountersByReservationAndType(reservationId, unitType)
@@ -116,7 +120,8 @@ func debitServiceReservations(m *QuotaManager, q *Quota, chargingId string, rese
 			unitType,
 			CalculateTax(r.UnitPrice.Mul(decimal.NewFromInt(accountUnits)), *r.TaxRate),
 			subscriberId,
-			nil)
+			nil,
+			now)
 
 		if reclaimUnusedUnits || *r.Units == 0 {
 			c.ReleaseReservation(reservationId)
@@ -128,7 +133,7 @@ func debitServiceReservations(m *QuotaManager, q *Quota, chargingId string, rese
 	return usedUnits - unitsRemaining
 }
 
-func debitMonetaryReservations(m *QuotaManager, q *Quota, chargingId string, reservationId uuid.UUID, unitType charging.UnitType, reclaimUnusedUnits bool, usedUnits int64, subscriberId uuid.UUID) *DebitResponse {
+func debitMonetaryReservations(m *QuotaManager, q *Quota, chargingId string, reservationId uuid.UUID, unitType charging.UnitType, reclaimUnusedUnits bool, usedUnits int64, subscriberId uuid.UUID, now time.Time) *DebitResponse {
 
 	counters := q.FindCountersByReservationAndType(reservationId, charging.MONETARY)
 	if len(counters) == 0 {
@@ -174,7 +179,8 @@ func debitMonetaryReservations(m *QuotaManager, q *Quota, chargingId string, res
 				unitType,
 				CalculateTax(r.UnitPrice.Mul(accountValue), *r.TaxRate),
 				subscriberId,
-				nil)
+				nil,
+				now)
 
 			if reclaimUnusedUnits || r.Value.IsZero() {
 				c.ReleaseReservation(reservationId)

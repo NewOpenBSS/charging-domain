@@ -43,7 +43,7 @@ func ReserveQuota(
 	validityTime time.Duration,
 	allowOOBCharging bool) (int64, error) {
 
-	grantedUnits, err := dc.AppContext.QuotaManager.ReserveQuota(context.Background(), reservationId, subscriberId, reason, rateKey, unitType, requestedUnits, unitPrice, multiplier, validityTime, allowOOBCharging)
+	grantedUnits, err := dc.AppContext.QuotaManager.ReserveQuota(context.Background(), dc.StartTime, reservationId, subscriberId, reason, rateKey, unitType, requestedUnits, unitPrice, multiplier, validityTime, allowOOBCharging)
 	if err != nil {
 		return 0, ocserrors.CreateGeneralError("Error reserving quota:" + err.Error())
 	}
@@ -79,7 +79,7 @@ type DebitResult struct {
 //   - error: Non-nil if the debit could not be completed.
 func DebitQuota(dc *engine.ChargingContext, subscriberId uuid.UUID, requestId string, reservationId uuid.UUID, usedUnits int64, unitType charging.UnitType, reclaimUnusedUnits bool) (*DebitResult, error) {
 
-	resp, err := dc.AppContext.QuotaManager.Debit(context.Background(), subscriberId, requestId, reservationId, usedUnits, unitType, reclaimUnusedUnits)
+	resp, err := dc.AppContext.QuotaManager.Debit(context.Background(), dc.StartTime, subscriberId, requestId, reservationId, usedUnits, unitType, reclaimUnusedUnits)
 	if err != nil {
 		return nil, err
 	}

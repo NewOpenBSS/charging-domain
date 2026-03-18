@@ -202,7 +202,7 @@ func Accounting(dc *engine.ChargingContext) error {
 		validGrants := []model.Grants{}
 		for _, grant := range grants {
 			// Check if the grant is still valid
-			if grant.GrantedTime.Add(time.Duration(grant.ValidityTime) * time.Second).After(time.Now()) {
+			if grant.GrantedTime.Add(time.Duration(grant.ValidityTime) * time.Second).After(dc.StartTime) {
 				validGrants = append(validGrants, grant)
 			}
 		}

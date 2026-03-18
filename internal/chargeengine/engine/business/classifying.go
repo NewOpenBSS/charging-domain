@@ -129,7 +129,7 @@ func ClassifyService(dc *engine.ChargingContext) (map[int64]model.Classification
 		//Calculate the service window
 		serviceWindow := ""
 		if plan.UseServiceWindows {
-			serviceWindow = GetServiceWindow(plan.ServiceWindows, serviceType.ServiceWindowMap, plan.DefaultServiceWindow, time.Now())
+			serviceWindow = GetServiceWindow(plan.ServiceWindows, serviceType.ServiceWindowMap, plan.DefaultServiceWindow, dc.StartTime)
 		} //if
 
 		for _, unit := range dc.Request.MultipleUnitUsage {

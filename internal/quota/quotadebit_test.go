@@ -70,7 +70,7 @@ func TestQuotaManager_Debit_Comprehensive(t *testing.T) {
 		mockRepo.On("Load", ctx, subscriberID).Return(loadedQuota, nil)
 		mockRepo.On("Save", ctx, loadedQuota).Return(nil)
 
-		resp, err := manager.Debit(ctx, subscriberID, "req-1", reservationID, 40, charging.UNITS, false)
+		resp, err := manager.Debit(ctx, time.Now(), subscriberID, "req-1", reservationID, 40, charging.UNITS, false)
 
 		assert.NoError(t, err)
 		assert.Equal(t, int64(40), resp.UnitsDebited)
@@ -114,7 +114,7 @@ func TestQuotaManager_Debit_Comprehensive(t *testing.T) {
 		mockRepo.On("Load", ctx, subscriberID).Return(loadedQuota, nil)
 		mockRepo.On("Save", ctx, loadedQuota).Return(nil)
 
-		resp, err := manager.Debit(ctx, subscriberID, "req-2", reservationID, 40, charging.UNITS, true)
+		resp, err := manager.Debit(ctx, time.Now(), subscriberID, "req-2", reservationID, 40, charging.UNITS, true)
 
 		assert.NoError(t, err)
 		assert.Equal(t, int64(40), resp.UnitsDebited)
@@ -157,7 +157,7 @@ func TestQuotaManager_Debit_Comprehensive(t *testing.T) {
 		mockRepo.On("Load", ctx, subscriberID).Return(loadedQuota, nil)
 		mockRepo.On("Save", ctx, loadedQuota).Return(nil)
 
-		resp, err := manager.Debit(ctx, subscriberID, "req-3", reservationID, 10, charging.UNITS, false)
+		resp, err := manager.Debit(ctx, time.Now(), subscriberID, "req-3", reservationID, 10, charging.UNITS, false)
 
 		assert.NoError(t, err)
 		assert.Equal(t, int64(10), resp.UnitsDebited)
@@ -214,7 +214,7 @@ func TestQuotaManager_Debit_Comprehensive(t *testing.T) {
 		mockRepo.On("Load", ctx, subscriberID).Return(loadedQuota, nil)
 		mockRepo.On("Save", ctx, loadedQuota).Return(nil)
 
-		resp, err := manager.Debit(ctx, subscriberID, "req-4", reservationID, 80, charging.UNITS, false)
+		resp, err := manager.Debit(ctx, time.Now(), subscriberID, "req-4", reservationID, 80, charging.UNITS, false)
 
 		assert.NoError(t, err)
 		assert.Equal(t, int64(80), resp.UnitsDebited)
@@ -278,7 +278,7 @@ func TestQuotaManager_Debit_Comprehensive(t *testing.T) {
 		mockRepo.On("Save", ctx, loadedQuota).Return(nil)
 
 		// Debit 10 units. Each costs $5. Total $50.
-		resp, err := manager.Debit(ctx, subscriberID, "req-5", reservationID, 10, charging.MONETARY, false)
+		resp, err := manager.Debit(ctx, time.Now(), subscriberID, "req-5", reservationID, 10, charging.MONETARY, false)
 
 		assert.NoError(t, err)
 		assert.Equal(t, int64(10), resp.UnitsDebited)
