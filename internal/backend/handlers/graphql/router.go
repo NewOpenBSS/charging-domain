@@ -40,6 +40,7 @@ func NewRouter(appCtx *appcontext.AppContext) http.Handler {
 	resolver := &resolvers.Resolver{
 		CarrierSvc:        appCtx.CarrierSvc,
 		ClassificationSvc: appCtx.ClassificationSvc,
+		NumberPlanSvc:     appCtx.NumberPlanSvc,
 		RatePlanSvc:       appCtx.RatePlanSvc,
 	}
 

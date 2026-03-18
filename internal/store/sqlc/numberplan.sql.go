@@ -54,3 +54,100 @@ func (q *Queries) AllNumbers(ctx context.Context) ([]AllNumbersRow, error) {
 	}
 	return items, nil
 }
+
+const createNumberPlan = `-- name: CreateNumberPlan :one
+INSERT INTO number_plan (name, plmn, number_range, number_length, modified_on)
+VALUES ($1, $2, $3, $4, NOW())
+RETURNING number_id, modified_on, name, plmn, number_range, number_length
+`
+
+// Inserts a new number plan row and returns it with the generated number_id and modified_on.
+func (q *Queries) CreateNumberPlan(ctx context.Context, name string, plmn string, numberRange string, numberLength int32) (NumberPlan, error) {
+	row := q.db.QueryRow(ctx, createNumberPlan,
+		name,
+		plmn,
+		numberRange,
+		numberLength,
+	)
+	var i NumberPlan
+	err := row.Scan(
+		&i.NumberID,
+		&i.ModifiedOn,
+		&i.Name,
+		&i.Plmn,
+		&i.NumberRange,
+		&i.NumberLength,
+	)
+	return i, err
+}
+
+const deleteNumberPlan = `-- name: DeleteNumberPlan :exec
+DELETE FROM number_plan WHERE number_id = $1
+`
+
+// Permanently deletes a number plan row by its primary key.
+func (q *Queries) DeleteNumberPlan(ctx context.Context, numberID int64) error {
+	_, err := q.db.Exec(ctx, deleteNumberPlan, numberID)
+	return err
+}
+
+const findNumberPlanByID = `-- name: FindNumberPlanByID :one
+SELECT number_id, modified_on, name, plmn, number_range, number_length
+FROM number_plan
+WHERE number_id = $1
+`
+
+// Returns a single number plan row by its primary key.
+func (q *Queries) FindNumberPlanByID(ctx context.Context, numberID int64) (NumberPlan, error) {
+	row := q.db.QueryRow(ctx, findNumberPlanByID, numberID)
+	var i NumberPlan
+	err := row.Scan(
+		&i.NumberID,
+		&i.ModifiedOn,
+		&i.Name,
+		&i.Plmn,
+		&i.NumberRange,
+		&i.NumberLength,
+	)
+	return i, err
+}
+
+const updateNumberPlan = `-- name: UpdateNumberPlan :one
+UPDATE number_plan
+SET name          = $2,
+    plmn          = $3,
+    number_range  = $4,
+    number_length = $5,
+    modified_on   = NOW()
+WHERE number_id = $1
+RETURNING number_id, modified_on, name, plmn, number_range, number_length
+`
+
+type UpdateNumberPlanParams struct {
+	NumberID     int64
+	Name         string
+	Plmn         string
+	NumberRange  string
+	NumberLength int32
+}
+
+// Updates all mutable fields of a number plan row and stamps modified_on.
+func (q *Queries) UpdateNumberPlan(ctx context.Context, arg UpdateNumberPlanParams) (NumberPlan, error) {
+	row := q.db.QueryRow(ctx, updateNumberPlan,
+		arg.NumberID,
+		arg.Name,
+		arg.Plmn,
+		arg.NumberRange,
+		arg.NumberLength,
+	)
+	var i NumberPlan
+	err := row.Scan(
+		&i.NumberID,
+		&i.ModifiedOn,
+		&i.Name,
+		&i.Plmn,
+		&i.NumberRange,
+		&i.NumberLength,
+	)
+	return i, err
+}

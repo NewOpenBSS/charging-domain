@@ -1,0 +1,144 @@
+
+### Number Plan List — default page (first 10, sorted by numberRange)
+POST http://localhost:8083/api/charging/graphql
+Content-Type: application/json
+
+{
+  "query": "query NumberPlanList($page: PageRequest, $filter: FilterRequest) { numberPlanList(page: $page, filter: $filter) { numberId name plmn numberRange numberLength modifiedOn } }",
+  "variables": {
+    "page": {
+      "pageIndex": 0,
+      "pageSize": 10,
+      "sort": {
+        "key": "numberRange",
+        "order": "asc"
+      }
+    },
+    "filter": null
+  }
+}
+
+### Number Plan List — wildcard search (searches name, numberRange)
+POST http://localhost:8083/api/charging/graphql
+Content-Type: application/json
+
+{
+  "query": "query NumberPlanList($page: PageRequest, $filter: FilterRequest) { numberPlanList(page: $page, filter: $filter) { numberId name plmn numberRange numberLength } }",
+  "variables": {
+    "page": {
+      "pageIndex": 0,
+      "pageSize": 10
+    },
+    "filter": {
+      "wildcard": "6421"
+    }
+  }
+}
+
+### Number Plan List — filtered by carrier PLMN
+POST http://localhost:8083/api/charging/graphql
+Content-Type: application/json
+
+{
+  "query": "query NumberPlanList($page: PageRequest, $filter: FilterRequest) { numberPlanList(page: $page, filter: $filter) { numberId name plmn numberRange numberLength } }",
+  "variables": {
+    "page": {
+      "pageIndex": 0,
+      "pageSize": 20
+    },
+    "filter": {
+      "filters": [
+        {
+          "key": "plmn",
+          "operation": "=",
+          "value": "53005"
+        }
+      ]
+    }
+  }
+}
+
+### Count Number Plans — total count with optional filter
+POST http://localhost:8083/api/charging/graphql
+Content-Type: application/json
+
+{
+  "query": "query CountNumberPlans($filter: FilterRequest) { countNumberPlans(filter: $filter) }",
+  "variables": {
+    "filter": null
+  }
+}
+
+### Count Number Plans — for a specific carrier
+POST http://localhost:8083/api/charging/graphql
+Content-Type: application/json
+
+{
+  "query": "query CountNumberPlans($filter: FilterRequest) { countNumberPlans(filter: $filter) }",
+  "variables": {
+    "filter": {
+      "filters": [
+        {
+          "key": "plmn",
+          "operation": "=",
+          "value": "53005"
+        }
+      ]
+    }
+  }
+}
+
+### Get Number Plan by ID
+POST http://localhost:8083/api/charging/graphql
+Content-Type: application/json
+
+{
+  "query": "query NumberPlan($numberId: ID!) { numberPlan(numberId: $numberId) { numberId name plmn numberRange numberLength modifiedOn } }",
+  "variables": {
+    "numberId": "1"
+  }
+}
+
+### Create Number Plan
+POST http://localhost:8083/api/charging/graphql
+Content-Type: application/json
+
+{
+  "query": "mutation CreateNumberPlan($numberPlan: NumberPlanInput!) { createNumberPlan(numberPlan: $numberPlan) { numberId name plmn numberRange numberLength modifiedOn } }",
+  "variables": {
+    "numberPlan": {
+      "name": "Vodafone NZ Mobile",
+      "plmn": "53005",
+      "numberRange": "6421",
+      "numberLength": 11
+    }
+  }
+}
+
+### Update Number Plan — replace numberId with a real ID
+POST http://localhost:8083/api/charging/graphql
+Content-Type: application/json
+
+{
+  "query": "mutation UpdateNumberPlan($numberId: ID!, $numberPlan: NumberPlanInput!) { updateNumberPlan(numberId: $numberId, numberPlan: $numberPlan) { numberId name plmn numberRange numberLength modifiedOn } }",
+  "variables": {
+    "numberId": "1",
+    "numberPlan": {
+      "name": "Vodafone NZ Mobile (updated)",
+      "plmn": "53005",
+      "numberRange": "6421",
+      "numberLength": 12
+    }
+  }
+}
+
+### Delete Number Plan — replace numberId with a real ID
+POST http://localhost:8083/api/charging/graphql
+Content-Type: application/json
+
+{
+  "query": "mutation DeleteNumberPlan($numberId: ID!) { deleteNumberPlan(numberId: $numberId) }",
+  "variables": {
+    "numberId": "1"
+  }
+}

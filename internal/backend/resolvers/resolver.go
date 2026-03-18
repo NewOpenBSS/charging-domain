@@ -11,5 +11,6 @@ import "go-ocs/internal/backend/services"
 type Resolver struct {
 	CarrierSvc        *services.CarrierService
 	ClassificationSvc *services.ClassificationService
+	NumberPlanSvc     *services.NumberPlanService
 	RatePlanSvc       *services.RatePlanService
 }

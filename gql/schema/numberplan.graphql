@@ -1,0 +1,59 @@
+# NumberPlan domain GraphQL types.
+#
+# A number plan maps a number prefix (numberRange) to a carrier (plmn) so that
+# the charging engine can resolve the destination group for a dialled number by
+# matching against the longest prefix. This is a simple CRUD resource — there is
+# no lifecycle or versioning.
+
+# A single number plan entry.
+# numberId is the stable primary-key identifier exposed in GraphQL.
+# plmn references the carrier that owns this number range.
+type NumberPlan {
+  numberId:     ID!
+  name:         String!
+  plmn:         String!
+  numberRange:  String!
+  numberLength: Int!
+  modifiedOn:   String
+}
+
+# ---------------------------------------------------------------------------
+# Input types
+# ---------------------------------------------------------------------------
+
+input NumberPlanInput {
+  name:         String
+  plmn:         String!
+  numberRange:  String!
+  numberLength: Int!
+}
+
+# ---------------------------------------------------------------------------
+# Queries
+# ---------------------------------------------------------------------------
+
+extend type Query {
+  # Returns a filtered, sorted, paginated list of number plan rows.
+  numberPlanList(page: PageRequest, filter: FilterRequest): [NumberPlan!]!
+
+  # Returns the total count of number plan rows matching the filter.
+  countNumberPlans(filter: FilterRequest): Int!
+
+  # Returns a single number plan by its primary-key ID, or null if not found.
+  numberPlan(numberId: ID!): NumberPlan
+}
+
+# ---------------------------------------------------------------------------
+# Mutations
+# ---------------------------------------------------------------------------
+
+extend type Mutation {
+  # Creates a new number plan row.
+  createNumberPlan(numberPlan: NumberPlanInput!): NumberPlan!
+
+  # Updates all mutable fields of an existing number plan row.
+  updateNumberPlan(numberId: ID!, numberPlan: NumberPlanInput!): NumberPlan!
+
+  # Permanently deletes a number plan row. Returns true on success.
+  deleteNumberPlan(numberId: ID!): Boolean!
+}

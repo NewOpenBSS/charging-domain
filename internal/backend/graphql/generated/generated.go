@@ -104,19 +104,31 @@ type ComplexityRoot struct {
 		CloneRatePlan                   func(childComplexity int, planID string) int
 		CreateCarrier                   func(childComplexity int, carrier model.CarrierInput) int
 		CreateClassification            func(childComplexity int, classification model.ClassificationInput) int
+		CreateNumberPlan                func(childComplexity int, numberPlan model.NumberPlanInput) int
 		CreateRatePlan                  func(childComplexity int, ratePlan model.RatePlanInput) int
 		DeclineClassificationPlan       func(childComplexity int, classificationID string) int
 		DeclineRatePlan                 func(childComplexity int, planID string) int
 		DeleteCarrier                   func(childComplexity int, plmn string) int
 		DeleteClassification            func(childComplexity int, classificationID string) int
+		DeleteNumberPlan                func(childComplexity int, numberID string) int
 		DeleteRatePlan                  func(childComplexity int, planID string) int
 		Empty                           func(childComplexity int) int
 		SubmitClassificationForApproval func(childComplexity int, classificationID string) int
 		SubmitRatePlanForApproval       func(childComplexity int, planID string) int
 		UpdateCarrier                   func(childComplexity int, plmn string, carrier model.CarrierInput) int
 		UpdateClassificationPlan        func(childComplexity int, classificationID string, classification model.ClassificationInput) int
+		UpdateNumberPlan                func(childComplexity int, numberID string, numberPlan model.NumberPlanInput) int
 		UpdateRatePlan                  func(childComplexity int, planID string, ratePlan model.RatePlanInput) int
 		UpdateRatePlanRules             func(childComplexity int, planID string, rateLines []*model.RateLineInput) int
+	}
+
+	NumberPlan struct {
+		ModifiedOn   func(childComplexity int) int
+		Name         func(childComplexity int) int
+		NumberID     func(childComplexity int) int
+		NumberLength func(childComplexity int) int
+		NumberRange  func(childComplexity int) int
+		Plmn         func(childComplexity int) int
 	}
 
 	Query struct {
@@ -126,9 +138,12 @@ type ComplexityRoot struct {
 		ClassificationList   func(childComplexity int, page *model.PageRequest, filter *model.FilterRequest) int
 		CountCarriers        func(childComplexity int, filter *model.FilterRequest) int
 		CountClassifications func(childComplexity int, filter *model.FilterRequest) int
+		CountNumberPlans     func(childComplexity int, filter *model.FilterRequest) int
 		CountRatePlans       func(childComplexity int, filter *model.FilterRequest) int
 		Empty                func(childComplexity int) int
 		LatestRatePlanList   func(childComplexity int, planType model.RatePlanType) int
+		NumberPlan           func(childComplexity int, numberID string) int
+		NumberPlanList       func(childComplexity int, page *model.PageRequest, filter *model.FilterRequest) int
 		RateKeyInput         func(childComplexity int) int
 		RatePlan             func(childComplexity int, planID string) int
 		RatePlanList         func(childComplexity int, page *model.PageRequest, filter *model.FilterRequest) int
@@ -201,6 +216,9 @@ type MutationResolver interface {
 	ApproveClassificationPlan(ctx context.Context, classificationID string) (*model.Classification, error)
 	DeclineClassificationPlan(ctx context.Context, classificationID string) (*model.Classification, error)
 	DeleteClassification(ctx context.Context, classificationID string) (bool, error)
+	CreateNumberPlan(ctx context.Context, numberPlan model.NumberPlanInput) (*model.NumberPlan, error)
+	UpdateNumberPlan(ctx context.Context, numberID string, numberPlan model.NumberPlanInput) (*model.NumberPlan, error)
+	DeleteNumberPlan(ctx context.Context, numberID string) (bool, error)
 	CreateRatePlan(ctx context.Context, ratePlan model.RatePlanInput) (*model.RatePlan, error)
 	UpdateRatePlan(ctx context.Context, planID string, ratePlan model.RatePlanInput) (*model.RatePlan, error)
 	UpdateRatePlanRules(ctx context.Context, planID string, rateLines []*model.RateLineInput) (*model.RatePlan, error)
@@ -219,6 +237,9 @@ type QueryResolver interface {
 	CountClassifications(ctx context.Context, filter *model.FilterRequest) (int, error)
 	RateKeyInput(ctx context.Context) (*model.RateKeyInput, error)
 	Classification(ctx context.Context, classificationID string) (*model.Classification, error)
+	NumberPlanList(ctx context.Context, page *model.PageRequest, filter *model.FilterRequest) ([]*model.NumberPlan, error)
+	CountNumberPlans(ctx context.Context, filter *model.FilterRequest) (int, error)
+	NumberPlan(ctx context.Context, numberID string) (*model.NumberPlan, error)
 	RatePlanList(ctx context.Context, page *model.PageRequest, filter *model.FilterRequest) ([]*model.RatePlan, error)
 	CountRatePlans(ctx context.Context, filter *model.FilterRequest) (int, error)
 	RatePlan(ctx context.Context, planID string) (*model.RatePlan, error)
@@ -575,6 +596,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.CreateClassification(childComplexity, args["classification"].(model.ClassificationInput)), true
+	case "Mutation.createNumberPlan":
+		if e.ComplexityRoot.Mutation.CreateNumberPlan == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_createNumberPlan_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.CreateNumberPlan(childComplexity, args["numberPlan"].(model.NumberPlanInput)), true
 	case "Mutation.createRatePlan":
 		if e.ComplexityRoot.Mutation.CreateRatePlan == nil {
 			break
@@ -630,6 +662,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.DeleteClassification(childComplexity, args["classificationId"].(string)), true
+	case "Mutation.deleteNumberPlan":
+		if e.ComplexityRoot.Mutation.DeleteNumberPlan == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_deleteNumberPlan_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.DeleteNumberPlan(childComplexity, args["numberId"].(string)), true
 	case "Mutation.deleteRatePlan":
 		if e.ComplexityRoot.Mutation.DeleteRatePlan == nil {
 			break
@@ -691,6 +734,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.UpdateClassificationPlan(childComplexity, args["classificationId"].(string), args["classification"].(model.ClassificationInput)), true
+	case "Mutation.updateNumberPlan":
+		if e.ComplexityRoot.Mutation.UpdateNumberPlan == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateNumberPlan_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.UpdateNumberPlan(childComplexity, args["numberId"].(string), args["numberPlan"].(model.NumberPlanInput)), true
 	case "Mutation.updateRatePlan":
 		if e.ComplexityRoot.Mutation.UpdateRatePlan == nil {
 			break
@@ -713,6 +767,43 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.UpdateRatePlanRules(childComplexity, args["planId"].(string), args["rateLines"].([]*model.RateLineInput)), true
+
+	case "NumberPlan.modifiedOn":
+		if e.ComplexityRoot.NumberPlan.ModifiedOn == nil {
+			break
+		}
+
+		return e.ComplexityRoot.NumberPlan.ModifiedOn(childComplexity), true
+	case "NumberPlan.name":
+		if e.ComplexityRoot.NumberPlan.Name == nil {
+			break
+		}
+
+		return e.ComplexityRoot.NumberPlan.Name(childComplexity), true
+	case "NumberPlan.numberId":
+		if e.ComplexityRoot.NumberPlan.NumberID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.NumberPlan.NumberID(childComplexity), true
+	case "NumberPlan.numberLength":
+		if e.ComplexityRoot.NumberPlan.NumberLength == nil {
+			break
+		}
+
+		return e.ComplexityRoot.NumberPlan.NumberLength(childComplexity), true
+	case "NumberPlan.numberRange":
+		if e.ComplexityRoot.NumberPlan.NumberRange == nil {
+			break
+		}
+
+		return e.ComplexityRoot.NumberPlan.NumberRange(childComplexity), true
+	case "NumberPlan.plmn":
+		if e.ComplexityRoot.NumberPlan.Plmn == nil {
+			break
+		}
+
+		return e.ComplexityRoot.NumberPlan.Plmn(childComplexity), true
 
 	case "Query.carrierByPlmn":
 		if e.ComplexityRoot.Query.CarrierByPlmn == nil {
@@ -780,6 +871,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.CountClassifications(childComplexity, args["filter"].(*model.FilterRequest)), true
+	case "Query.countNumberPlans":
+		if e.ComplexityRoot.Query.CountNumberPlans == nil {
+			break
+		}
+
+		args, err := ec.field_Query_countNumberPlans_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.CountNumberPlans(childComplexity, args["filter"].(*model.FilterRequest)), true
 	case "Query.countRatePlans":
 		if e.ComplexityRoot.Query.CountRatePlans == nil {
 			break
@@ -809,6 +911,28 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.LatestRatePlanList(childComplexity, args["planType"].(model.RatePlanType)), true
+	case "Query.numberPlan":
+		if e.ComplexityRoot.Query.NumberPlan == nil {
+			break
+		}
+
+		args, err := ec.field_Query_numberPlan_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.NumberPlan(childComplexity, args["numberId"].(string)), true
+	case "Query.numberPlanList":
+		if e.ComplexityRoot.Query.NumberPlanList == nil {
+			break
+		}
+
+		args, err := ec.field_Query_numberPlanList_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.NumberPlanList(childComplexity, args["page"].(*model.PageRequest), args["filter"].(*model.FilterRequest)), true
 	case "Query.rateKeyInput":
 		if e.ComplexityRoot.Query.RateKeyInput == nil {
 			break
@@ -1074,6 +1198,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputClassificationServiceTypeInput,
 		ec.unmarshalInputFilterInput,
 		ec.unmarshalInputFilterRequest,
+		ec.unmarshalInputNumberPlanInput,
 		ec.unmarshalInputPageRequest,
 		ec.unmarshalInputRateLineInput,
 		ec.unmarshalInputRatePlanInput,
@@ -1393,6 +1518,66 @@ extend type Mutation {
   deleteClassification(classificationId: ID!): Boolean!
 }
 `, BuiltIn: false},
+	{Name: "../../../../gql/schema/numberplan.graphql", Input: `# NumberPlan domain GraphQL types.
+#
+# A number plan maps a number prefix (numberRange) to a carrier (plmn) so that
+# the charging engine can resolve the destination group for a dialled number by
+# matching against the longest prefix. This is a simple CRUD resource — there is
+# no lifecycle or versioning.
+
+# A single number plan entry.
+# numberId is the stable primary-key identifier exposed in GraphQL.
+# plmn references the carrier that owns this number range.
+type NumberPlan {
+  numberId:     ID!
+  name:         String!
+  plmn:         String!
+  numberRange:  String!
+  numberLength: Int!
+  modifiedOn:   String
+}
+
+# ---------------------------------------------------------------------------
+# Input types
+# ---------------------------------------------------------------------------
+
+input NumberPlanInput {
+  name:         String
+  plmn:         String!
+  numberRange:  String!
+  numberLength: Int!
+}
+
+# ---------------------------------------------------------------------------
+# Queries
+# ---------------------------------------------------------------------------
+
+extend type Query {
+  # Returns a filtered, sorted, paginated list of number plan rows.
+  numberPlanList(page: PageRequest, filter: FilterRequest): [NumberPlan!]!
+
+  # Returns the total count of number plan rows matching the filter.
+  countNumberPlans(filter: FilterRequest): Int!
+
+  # Returns a single number plan by its primary-key ID, or null if not found.
+  numberPlan(numberId: ID!): NumberPlan
+}
+
+# ---------------------------------------------------------------------------
+# Mutations
+# ---------------------------------------------------------------------------
+
+extend type Mutation {
+  # Creates a new number plan row.
+  createNumberPlan(numberPlan: NumberPlanInput!): NumberPlan!
+
+  # Updates all mutable fields of an existing number plan row.
+  updateNumberPlan(numberId: ID!, numberPlan: NumberPlanInput!): NumberPlan!
+
+  # Permanently deletes a number plan row. Returns true on success.
+  deleteNumberPlan(numberId: ID!): Boolean!
+}
+`, BuiltIn: false},
 	{Name: "../../../../gql/schema/rateplan.graphql", Input: `# RatePlan domain GraphQL types.
 #
 # A logical rate plan is identified by planId (UUID). Multiple rows in the database
@@ -1667,6 +1852,17 @@ func (ec *executionContext) field_Mutation_createClassification_args(ctx context
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_createNumberPlan_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "numberPlan", ec.unmarshalNNumberPlanInput2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐNumberPlanInput)
+	if err != nil {
+		return nil, err
+	}
+	args["numberPlan"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_createRatePlan_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -1719,6 +1915,17 @@ func (ec *executionContext) field_Mutation_deleteClassification_args(ctx context
 		return nil, err
 	}
 	args["classificationId"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_deleteNumberPlan_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "numberId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["numberId"] = arg0
 	return args, nil
 }
 
@@ -1784,6 +1991,22 @@ func (ec *executionContext) field_Mutation_updateClassificationPlan_args(ctx con
 		return nil, err
 	}
 	args["classification"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_updateNumberPlan_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "numberId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["numberId"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "numberPlan", ec.unmarshalNNumberPlanInput2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐNumberPlanInput)
+	if err != nil {
+		return nil, err
+	}
+	args["numberPlan"] = arg1
 	return args, nil
 }
 
@@ -1906,6 +2129,17 @@ func (ec *executionContext) field_Query_countClassifications_args(ctx context.Co
 	return args, nil
 }
 
+func (ec *executionContext) field_Query_countNumberPlans_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "filter", ec.unmarshalOFilterRequest2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐFilterRequest)
+	if err != nil {
+		return nil, err
+	}
+	args["filter"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Query_countRatePlans_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -1925,6 +2159,33 @@ func (ec *executionContext) field_Query_latestRatePlanList_args(ctx context.Cont
 		return nil, err
 	}
 	args["planType"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_numberPlanList_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "page", ec.unmarshalOPageRequest2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐPageRequest)
+	if err != nil {
+		return nil, err
+	}
+	args["page"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "filter", ec.unmarshalOFilterRequest2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐFilterRequest)
+	if err != nil {
+		return nil, err
+	}
+	args["filter"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_numberPlan_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "numberId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["numberId"] = arg0
 	return args, nil
 }
 
@@ -3926,6 +4187,157 @@ func (ec *executionContext) fieldContext_Mutation_deleteClassification(ctx conte
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_createNumberPlan(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_createNumberPlan,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().CreateNumberPlan(ctx, fc.Args["numberPlan"].(model.NumberPlanInput))
+		},
+		nil,
+		ec.marshalNNumberPlan2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐNumberPlan,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_createNumberPlan(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "numberId":
+				return ec.fieldContext_NumberPlan_numberId(ctx, field)
+			case "name":
+				return ec.fieldContext_NumberPlan_name(ctx, field)
+			case "plmn":
+				return ec.fieldContext_NumberPlan_plmn(ctx, field)
+			case "numberRange":
+				return ec.fieldContext_NumberPlan_numberRange(ctx, field)
+			case "numberLength":
+				return ec.fieldContext_NumberPlan_numberLength(ctx, field)
+			case "modifiedOn":
+				return ec.fieldContext_NumberPlan_modifiedOn(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type NumberPlan", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_createNumberPlan_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_updateNumberPlan(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_updateNumberPlan,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().UpdateNumberPlan(ctx, fc.Args["numberId"].(string), fc.Args["numberPlan"].(model.NumberPlanInput))
+		},
+		nil,
+		ec.marshalNNumberPlan2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐNumberPlan,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateNumberPlan(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "numberId":
+				return ec.fieldContext_NumberPlan_numberId(ctx, field)
+			case "name":
+				return ec.fieldContext_NumberPlan_name(ctx, field)
+			case "plmn":
+				return ec.fieldContext_NumberPlan_plmn(ctx, field)
+			case "numberRange":
+				return ec.fieldContext_NumberPlan_numberRange(ctx, field)
+			case "numberLength":
+				return ec.fieldContext_NumberPlan_numberLength(ctx, field)
+			case "modifiedOn":
+				return ec.fieldContext_NumberPlan_modifiedOn(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type NumberPlan", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateNumberPlan_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_deleteNumberPlan(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_deleteNumberPlan,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().DeleteNumberPlan(ctx, fc.Args["numberId"].(string))
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_deleteNumberPlan(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_deleteNumberPlan_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Mutation_createRatePlan(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -4408,6 +4820,180 @@ func (ec *executionContext) fieldContext_Mutation_deleteRatePlan(ctx context.Con
 	return fc, nil
 }
 
+func (ec *executionContext) _NumberPlan_numberId(ctx context.Context, field graphql.CollectedField, obj *model.NumberPlan) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NumberPlan_numberId,
+		func(ctx context.Context) (any, error) {
+			return obj.NumberID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_NumberPlan_numberId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NumberPlan",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _NumberPlan_name(ctx context.Context, field graphql.CollectedField, obj *model.NumberPlan) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NumberPlan_name,
+		func(ctx context.Context) (any, error) {
+			return obj.Name, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_NumberPlan_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NumberPlan",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _NumberPlan_plmn(ctx context.Context, field graphql.CollectedField, obj *model.NumberPlan) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NumberPlan_plmn,
+		func(ctx context.Context) (any, error) {
+			return obj.Plmn, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_NumberPlan_plmn(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NumberPlan",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _NumberPlan_numberRange(ctx context.Context, field graphql.CollectedField, obj *model.NumberPlan) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NumberPlan_numberRange,
+		func(ctx context.Context) (any, error) {
+			return obj.NumberRange, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_NumberPlan_numberRange(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NumberPlan",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _NumberPlan_numberLength(ctx context.Context, field graphql.CollectedField, obj *model.NumberPlan) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NumberPlan_numberLength,
+		func(ctx context.Context) (any, error) {
+			return obj.NumberLength, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_NumberPlan_numberLength(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NumberPlan",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _NumberPlan_modifiedOn(ctx context.Context, field graphql.CollectedField, obj *model.NumberPlan) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NumberPlan_modifiedOn,
+		func(ctx context.Context) (any, error) {
+			return obj.ModifiedOn, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_NumberPlan_modifiedOn(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NumberPlan",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query__empty(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -4794,6 +5380,157 @@ func (ec *executionContext) fieldContext_Query_classification(ctx context.Contex
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Query_classification_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_numberPlanList(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_numberPlanList,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().NumberPlanList(ctx, fc.Args["page"].(*model.PageRequest), fc.Args["filter"].(*model.FilterRequest))
+		},
+		nil,
+		ec.marshalNNumberPlan2ᚕᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐNumberPlanᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_numberPlanList(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "numberId":
+				return ec.fieldContext_NumberPlan_numberId(ctx, field)
+			case "name":
+				return ec.fieldContext_NumberPlan_name(ctx, field)
+			case "plmn":
+				return ec.fieldContext_NumberPlan_plmn(ctx, field)
+			case "numberRange":
+				return ec.fieldContext_NumberPlan_numberRange(ctx, field)
+			case "numberLength":
+				return ec.fieldContext_NumberPlan_numberLength(ctx, field)
+			case "modifiedOn":
+				return ec.fieldContext_NumberPlan_modifiedOn(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type NumberPlan", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_numberPlanList_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_countNumberPlans(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_countNumberPlans,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().CountNumberPlans(ctx, fc.Args["filter"].(*model.FilterRequest))
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_countNumberPlans(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_countNumberPlans_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_numberPlan(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_numberPlan,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().NumberPlan(ctx, fc.Args["numberId"].(string))
+		},
+		nil,
+		ec.marshalONumberPlan2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐNumberPlan,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_numberPlan(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "numberId":
+				return ec.fieldContext_NumberPlan_numberId(ctx, field)
+			case "name":
+				return ec.fieldContext_NumberPlan_name(ctx, field)
+			case "plmn":
+				return ec.fieldContext_NumberPlan_plmn(ctx, field)
+			case "numberRange":
+				return ec.fieldContext_NumberPlan_numberRange(ctx, field)
+			case "numberLength":
+				return ec.fieldContext_NumberPlan_numberLength(ctx, field)
+			case "modifiedOn":
+				return ec.fieldContext_NumberPlan_modifiedOn(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type NumberPlan", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_numberPlan_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -8073,6 +8810,57 @@ func (ec *executionContext) unmarshalInputFilterRequest(ctx context.Context, obj
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputNumberPlanInput(ctx context.Context, obj any) (model.NumberPlanInput, error) {
+	var it model.NumberPlanInput
+	if obj == nil {
+		return it, nil
+	}
+
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"name", "plmn", "numberRange", "numberLength"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "name":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Name = data
+		case "plmn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("plmn"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Plmn = data
+		case "numberRange":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("numberRange"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NumberRange = data
+		case "numberLength":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("numberLength"))
+			data, err := ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NumberLength = data
+		}
+	}
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputPageRequest(ctx context.Context, obj any) (model.PageRequest, error) {
 	var it model.PageRequest
 	if obj == nil {
@@ -8874,6 +9662,27 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "createNumberPlan":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_createNumberPlan(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "updateNumberPlan":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateNumberPlan(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "deleteNumberPlan":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_deleteNumberPlan(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "createRatePlan":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_createRatePlan(ctx, field)
@@ -8930,6 +9739,67 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var numberPlanImplementors = []string{"NumberPlan"}
+
+func (ec *executionContext) _NumberPlan(ctx context.Context, sel ast.SelectionSet, obj *model.NumberPlan) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, numberPlanImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("NumberPlan")
+		case "numberId":
+			out.Values[i] = ec._NumberPlan_numberId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "name":
+			out.Values[i] = ec._NumberPlan_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "plmn":
+			out.Values[i] = ec._NumberPlan_plmn(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "numberRange":
+			out.Values[i] = ec._NumberPlan_numberRange(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "numberLength":
+			out.Values[i] = ec._NumberPlan_numberLength(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "modifiedOn":
+			out.Values[i] = ec._NumberPlan_modifiedOn(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -9130,6 +10000,69 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_classification(ctx, field)
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "numberPlanList":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_numberPlanList(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "countNumberPlans":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_countNumberPlans(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "numberPlan":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_numberPlan(ctx, field)
 				return res
 			}
 
@@ -10176,6 +11109,41 @@ func (ec *executionContext) marshalNLookupData2ᚖgoᚑocsᚋinternalᚋbackend�
 	return ec._LookupData(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNNumberPlan2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐNumberPlan(ctx context.Context, sel ast.SelectionSet, v model.NumberPlan) graphql.Marshaler {
+	return ec._NumberPlan(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNNumberPlan2ᚕᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐNumberPlanᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.NumberPlan) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNNumberPlan2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐNumberPlan(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNNumberPlan2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐNumberPlan(ctx context.Context, sel ast.SelectionSet, v *model.NumberPlan) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._NumberPlan(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNNumberPlanInput2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐNumberPlanInput(ctx context.Context, v any) (model.NumberPlanInput, error) {
+	res, err := ec.unmarshalInputNumberPlanInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) marshalNRateKeyInput2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐRateKeyInput(ctx context.Context, sel ast.SelectionSet, v model.RateKeyInput) graphql.Marshaler {
 	return ec._RateKeyInput(ctx, sel, &v)
 }
@@ -10657,6 +11625,13 @@ func (ec *executionContext) marshalOInt2ᚖint(ctx context.Context, sel ast.Sele
 	_ = ctx
 	res := graphql.MarshalInt(*v)
 	return res
+}
+
+func (ec *executionContext) marshalONumberPlan2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐNumberPlan(ctx context.Context, sel ast.SelectionSet, v *model.NumberPlan) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._NumberPlan(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOPageRequest2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐPageRequest(ctx context.Context, v any) (*model.PageRequest, error) {

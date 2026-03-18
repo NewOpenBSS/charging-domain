@@ -127,6 +127,22 @@ type LookupData struct {
 type Mutation struct {
 }
 
+type NumberPlan struct {
+	NumberID     string  `json:"numberId"`
+	Name         string  `json:"name"`
+	Plmn         string  `json:"plmn"`
+	NumberRange  string  `json:"numberRange"`
+	NumberLength int     `json:"numberLength"`
+	ModifiedOn   *string `json:"modifiedOn,omitempty"`
+}
+
+type NumberPlanInput struct {
+	Name         *string `json:"name,omitempty"`
+	Plmn         string  `json:"plmn"`
+	NumberRange  string  `json:"numberRange"`
+	NumberLength int     `json:"numberLength"`
+}
+
 type PageRequest struct {
 	PageIndex *int       `json:"pageIndex,omitempty"`
 	PageSize  *int       `json:"pageSize,omitempty"`

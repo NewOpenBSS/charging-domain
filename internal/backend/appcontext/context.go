@@ -16,6 +16,7 @@ type AppContext struct {
 	TenantResolver    *tenant.Resolver
 	CarrierSvc        *services.CarrierService
 	ClassificationSvc *services.ClassificationService
+	NumberPlanSvc     *services.NumberPlanService
 	RatePlanSvc       *services.RatePlanService
 }
 
@@ -30,6 +31,7 @@ func NewAppContext(cfg *BackendConfig, s *store.Store, auth *keycloak.Client) *A
 		TenantResolver:    tenant.NewResolver(s, cfg.Server.TenantRefreshInterval),
 		CarrierSvc:        services.NewCarrierService(s),
 		ClassificationSvc: services.NewClassificationService(s),
+		NumberPlanSvc:     services.NewNumberPlanService(s),
 		RatePlanSvc:       services.NewRatePlanService(s),
 	}
 }
