@@ -6,7 +6,7 @@ import (
 	"go-ocs/internal/chargeengine/appcontext"
 	"go-ocs/internal/chargeengine/engine"
 	"go-ocs/internal/chargeengine/engine/providers/carriers"
-	"go-ocs/internal/chargeengine/model"
+	"go-ocs/internal/model"
 	"go-ocs/internal/chargeengine/ocserrors"
 	"go-ocs/internal/nchf"
 	"go-ocs/internal/store/sqlc"
@@ -35,9 +35,9 @@ type mockAuthInfra struct {
 	mock.Mock
 }
 
-func (m *mockAuthInfra) FetchClassificationPlan() (*model.Plan, error) {
+func (m *mockAuthInfra) FetchClassificationPlan() (*model.ClassificationPlan, error) {
 	args := m.Called()
-	return args.Get(0).(*model.Plan), args.Error(1)
+	return args.Get(0).(*model.ClassificationPlan), args.Error(1)
 }
 
 func (m *mockAuthInfra) FetchCarrierContainer() (*carriers.CarrierContainer, error) {

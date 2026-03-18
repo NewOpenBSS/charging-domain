@@ -2,6 +2,13 @@
 
 package model
 
+import (
+	"bytes"
+	"fmt"
+	"io"
+	"strconv"
+)
+
 type AdminUser struct {
 	ID        string   `json:"id"`
 	Username  string   `json:"username"`
@@ -34,6 +41,73 @@ type CarrierInput struct {
 	Iso              string  `json:"iso"`
 }
 
+type Classification struct {
+	ClassificationID string               `json:"classificationId"`
+	Name             string               `json:"name"`
+	CreatedOn        *string              `json:"createdOn,omitempty"`
+	EffectiveTime    string               `json:"effectiveTime"`
+	CreatedBy        string               `json:"createdBy"`
+	ApprovedBy       *string              `json:"approvedBy,omitempty"`
+	Status           ClassificationStatus `json:"status"`
+	Plan             *ClassificationPlan  `json:"plan"`
+}
+
+type ClassificationInput struct {
+	Name          string                   `json:"name"`
+	EffectiveTime string                   `json:"effectiveTime"`
+	Plan          *ClassificationPlanInput `json:"plan"`
+}
+
+type ClassificationPlan struct {
+	RuleSetID            *string                      `json:"ruleSetId,omitempty"`
+	RuleSetName          *string                      `json:"ruleSetName,omitempty"`
+	UseServiceWindows    bool                         `json:"useServiceWindows"`
+	DefaultServiceWindow string                       `json:"defaultServiceWindow"`
+	DefaultSourceType    string                       `json:"defaultSourceType"`
+	ServiceWindows       []*ServiceWindowEntry        `json:"serviceWindows,omitempty"`
+	ServiceTypes         []*ClassificationServiceType `json:"serviceTypes,omitempty"`
+}
+
+type ClassificationPlanInput struct {
+	RuleSetID            *string                           `json:"ruleSetId,omitempty"`
+	RuleSetName          *string                           `json:"ruleSetName,omitempty"`
+	UseServiceWindows    bool                              `json:"useServiceWindows"`
+	DefaultServiceWindow string                            `json:"defaultServiceWindow"`
+	DefaultSourceType    string                            `json:"defaultSourceType"`
+	ServiceWindows       []*ServiceWindowEntryInput        `json:"serviceWindows,omitempty"`
+	ServiceTypes         []*ClassificationServiceTypeInput `json:"serviceTypes"`
+}
+
+type ClassificationServiceType struct {
+	Type                   string                     `json:"type"`
+	ChargingInformation    string                     `json:"chargingInformation"`
+	ServiceTypeRule        *string                    `json:"serviceTypeRule,omitempty"`
+	Description            *string                    `json:"description,omitempty"`
+	SourceType             string                     `json:"sourceType"`
+	ServiceDirection       string                     `json:"serviceDirection"`
+	ServiceCategory        string                     `json:"serviceCategory"`
+	ServiceIdentifier      *string                    `json:"serviceIdentifier,omitempty"`
+	DefaultServiceCategory *string                    `json:"defaultServiceCategory,omitempty"`
+	UnitType               string                     `json:"unitType"`
+	ServiceWindows         []string                   `json:"serviceWindows,omitempty"`
+	ServiceCategoryMap     []*ServiceCategoryMapEntry `json:"serviceCategoryMap,omitempty"`
+}
+
+type ClassificationServiceTypeInput struct {
+	Type                   string                          `json:"type"`
+	ChargingInformation    string                          `json:"chargingInformation"`
+	ServiceTypeRule        *string                         `json:"serviceTypeRule,omitempty"`
+	Description            *string                         `json:"description,omitempty"`
+	SourceType             string                          `json:"sourceType"`
+	ServiceDirection       string                          `json:"serviceDirection"`
+	ServiceCategory        string                          `json:"serviceCategory"`
+	ServiceIdentifier      *string                         `json:"serviceIdentifier,omitempty"`
+	DefaultServiceCategory *string                         `json:"defaultServiceCategory,omitempty"`
+	UnitType               string                          `json:"unitType"`
+	ServiceWindows         []string                        `json:"serviceWindows,omitempty"`
+	ServiceCategoryMap     []*ServiceCategoryMapEntryInput `json:"serviceCategoryMap,omitempty"`
+}
+
 type FilterInput struct {
 	Key       string `json:"key"`
 	Operation string `json:"operation"`
@@ -43,6 +117,11 @@ type FilterInput struct {
 type FilterRequest struct {
 	Filters  []*FilterInput `json:"filters,omitempty"`
 	Wildcard *string        `json:"wildcard,omitempty"`
+}
+
+type LookupData struct {
+	Code string `json:"code"`
+	Name string `json:"name"`
 }
 
 type Mutation struct {
@@ -57,7 +136,102 @@ type PageRequest struct {
 type Query struct {
 }
 
+type RateKeyInput struct {
+	ServiceTypes      []*LookupData            `json:"serviceTypes"`
+	SourceTypes       []*LookupData            `json:"sourceTypes"`
+	ServiceDirections []*LookupData            `json:"serviceDirections"`
+	ServiceCategories []*ServiceCategoryLookup `json:"serviceCategories"`
+	ServiceWindows    []*ServiceCategoryLookup `json:"serviceWindows"`
+}
+
+type ServiceCategoryLookup struct {
+	Code            string `json:"code"`
+	Name            string `json:"name"`
+	ServiceTypeCode string `json:"serviceTypeCode"`
+}
+
+type ServiceCategoryMapEntry struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+}
+
+type ServiceCategoryMapEntryInput struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+}
+
+type ServiceWindowEntry struct {
+	Name      string `json:"name"`
+	StartTime string `json:"startTime"`
+	EndTime   string `json:"endTime"`
+}
+
+type ServiceWindowEntryInput struct {
+	Name      string `json:"name"`
+	StartTime string `json:"startTime"`
+	EndTime   string `json:"endTime"`
+}
+
 type SortInput struct {
 	Key   string `json:"key"`
 	Order string `json:"order"`
+}
+
+type ClassificationStatus string
+
+const (
+	ClassificationStatusDraft   ClassificationStatus = "DRAFT"
+	ClassificationStatusPending ClassificationStatus = "PENDING"
+	ClassificationStatusActive  ClassificationStatus = "ACTIVE"
+	ClassificationStatusRetired ClassificationStatus = "RETIRED"
+)
+
+var AllClassificationStatus = []ClassificationStatus{
+	ClassificationStatusDraft,
+	ClassificationStatusPending,
+	ClassificationStatusActive,
+	ClassificationStatusRetired,
+}
+
+func (e ClassificationStatus) IsValid() bool {
+	switch e {
+	case ClassificationStatusDraft, ClassificationStatusPending, ClassificationStatusActive, ClassificationStatusRetired:
+		return true
+	}
+	return false
+}
+
+func (e ClassificationStatus) String() string {
+	return string(e)
+}
+
+func (e *ClassificationStatus) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = ClassificationStatus(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid ClassificationStatus", str)
+	}
+	return nil
+}
+
+func (e ClassificationStatus) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *ClassificationStatus) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e ClassificationStatus) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
 }

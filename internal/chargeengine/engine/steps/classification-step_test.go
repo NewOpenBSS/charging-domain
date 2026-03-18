@@ -13,7 +13,7 @@ import (
 	"go-ocs/internal/chargeengine/appcontext"
 	"go-ocs/internal/chargeengine/engine"
 	"go-ocs/internal/chargeengine/engine/providers/carriers"
-	"go-ocs/internal/chargeengine/model"
+	"go-ocs/internal/model"
 	"go-ocs/internal/charging"
 	"go-ocs/internal/nchf"
 	"go-ocs/internal/store/sqlc"
@@ -25,12 +25,12 @@ type mockClassifyInfra struct {
 	mock.Mock
 }
 
-func (m *mockClassifyInfra) FetchClassificationPlan() (*model.Plan, error) {
+func (m *mockClassifyInfra) FetchClassificationPlan() (*model.ClassificationPlan, error) {
 	args := m.Called()
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*model.Plan), args.Error(1)
+	return args.Get(0).(*model.ClassificationPlan), args.Error(1)
 }
 
 func (m *mockClassifyInfra) FetchCarrierContainer() (*carriers.CarrierContainer, error) {
@@ -116,7 +116,7 @@ func TestClassify_FetchClassificationPlanError(t *testing.T) {
 
 func TestClassify_Success(t *testing.T) {
 	rg := int64(1)
-	plan := &model.Plan{
+	plan := &model.ClassificationPlan{
 		ServiceTypes: []model.ServiceType{
 			{
 				ServiceIdentifier:   "voice",
@@ -143,7 +143,7 @@ func TestClassify_Success(t *testing.T) {
 
 func TestClassify_ClassificationsStoredOnContext(t *testing.T) {
 	rg := int64(42)
-	plan := &model.Plan{
+	plan := &model.ClassificationPlan{
 		ServiceTypes: []model.ServiceType{
 			{
 				ServiceIdentifier:   "sms",

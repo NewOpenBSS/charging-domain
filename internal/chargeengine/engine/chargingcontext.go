@@ -3,7 +3,7 @@ package engine
 import (
 	"go-ocs/internal/chargeengine/appcontext"
 	"go-ocs/internal/chargeengine/engine/business/interfaces"
-	"go-ocs/internal/chargeengine/model"
+	"go-ocs/internal/model"
 	"go-ocs/internal/nchf"
 	"time"
 )

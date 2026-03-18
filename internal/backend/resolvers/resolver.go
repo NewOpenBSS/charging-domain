@@ -9,5 +9,6 @@ import "go-ocs/internal/backend/services"
 
 // Resolver is the root dependency container injected into all generated resolver types.
 type Resolver struct {
-	CarrierSvc *services.CarrierService
+	CarrierSvc         *services.CarrierService
+	ClassificationSvc  *services.ClassificationService
 }

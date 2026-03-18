@@ -3,7 +3,7 @@ package steps
 import (
 	"go-ocs/internal/chargeengine/engine"
 	"go-ocs/internal/chargeengine/engine/business"
-	"go-ocs/internal/chargeengine/model"
+	"go-ocs/internal/model"
 	"go-ocs/internal/chargeengine/ocserrors"
 	"go-ocs/internal/charging"
 	"go-ocs/internal/events"

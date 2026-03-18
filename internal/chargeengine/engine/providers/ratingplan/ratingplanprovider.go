@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"go-ocs/internal/chargeengine/appcontext"
-	"go-ocs/internal/chargeengine/model"
+	"go-ocs/internal/model"
 	"go-ocs/internal/logging"
 	"log"
 	"sync"

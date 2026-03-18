@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-type Plan struct {
+type ClassificationPlan struct {
 	RuleSetId string `json:"ruleSetId" yaml:"ruleSetId"`
 
 	RuleSetName string `json:"ruleSetName" yaml:"ruleSetName"`

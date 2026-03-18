@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"go-ocs/internal/chargeengine/appcontext"
 	"go-ocs/internal/chargeengine/engine/providers/carriers"
-	"go-ocs/internal/chargeengine/model"
+	"go-ocs/internal/model"
 	"go-ocs/internal/charging"
 	"go-ocs/internal/nchf"
 	"go-ocs/internal/quota"
@@ -26,9 +26,9 @@ type MockInfrastructure struct {
 	mock.Mock
 }
 
-func (m *MockInfrastructure) FetchClassificationPlan() (*model.Plan, error) {
+func (m *MockInfrastructure) FetchClassificationPlan() (*model.ClassificationPlan, error) {
 	args := m.Called()
-	return args.Get(0).(*model.Plan), args.Error(1)
+	return args.Get(0).(*model.ClassificationPlan), args.Error(1)
 }
 
 func (m *MockInfrastructure) FetchCarrierContainer() (*carriers.CarrierContainer, error) {
@@ -123,7 +123,7 @@ func TestProcessCharging(t *testing.T) {
 
 	mockInfra.On("FindSubscriber", "0123456789").Return(subscriber, nil)
 
-	classificationPlan := &model.Plan{
+	classificationPlan := &model.ClassificationPlan{
 		ServiceTypes: []model.ServiceType{
 			{
 				ServiceIdentifier:   "test-service",
@@ -227,7 +227,7 @@ func TestProcessOneTimeCharging(t *testing.T) {
 
 	mockInfra.On("FindSubscriber", "0123456789").Return(subscriber, nil)
 
-	classificationPlan := &model.Plan{
+	classificationPlan := &model.ClassificationPlan{
 		ServiceTypes: []model.ServiceType{
 			{
 				ServiceIdentifier:   "test-service",
@@ -333,7 +333,7 @@ func TestUpdateChargingData(t *testing.T) {
 
 	mockInfra.On("FindSubscriber", "0123456789").Return(subscriber, nil)
 
-	classificationPlan := &model.Plan{
+	classificationPlan := &model.ClassificationPlan{
 		ServiceTypes: []model.ServiceType{
 			{
 				ServiceIdentifier:   "test-service",

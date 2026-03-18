@@ -1,0 +1,298 @@
+
+### Classification List — default page (first 10, sorted by name)
+POST http://localhost:8083/api/charging/graphql
+Content-Type: application/json
+
+{
+  "query": "query ClassificationList($page: PageRequest, $filter: FilterRequest) { classificationList(page: $page, filter: $filter) { classificationId name createdOn effectiveTime createdBy approvedBy status plan { ruleSetId ruleSetName useServiceWindows defaultServiceWindow defaultSourceType serviceWindows { name startTime endTime } serviceTypes { type chargingInformation sourceType serviceDirection serviceCategory unitType serviceWindows serviceCategoryMap { key value } } } } }",
+  "variables": {
+    "page": {
+      "pageIndex": 0,
+      "pageSize": 10,
+      "sort": {
+        "key": "name",
+        "order": "asc"
+      }
+    },
+    "filter": null
+  }
+}
+
+### Classification List — wildcard search (searches classificationId, name, status)
+POST http://localhost:8083/api/charging/graphql
+Content-Type: application/json
+
+{
+  "query": "query ClassificationList($page: PageRequest, $filter: FilterRequest) { classificationList(page: $page, filter: $filter) { classificationId name status effectiveTime createdBy approvedBy } }",
+  "variables": {
+    "page": {
+      "pageIndex": 0,
+      "pageSize": 10
+    },
+    "filter": {
+      "wildcard": "DRAFT"
+    }
+  }
+}
+
+### Classification List — filtered by status
+POST http://localhost:8083/api/charging/graphql
+Content-Type: application/json
+
+{
+  "query": "query ClassificationList($page: PageRequest, $filter: FilterRequest) { classificationList(page: $page, filter: $filter) { classificationId name status effectiveTime createdBy approvedBy } }",
+  "variables": {
+    "page": {
+      "pageIndex": 0,
+      "pageSize": 20
+    },
+    "filter": {
+      "filters": [
+        {
+          "key": "status",
+          "operation": "=",
+          "value": "ACTIVE"
+        }
+      ]
+    }
+  }
+}
+
+### Count Classifications — total count with optional filter
+POST http://localhost:8083/api/charging/graphql
+Content-Type: application/json
+
+{
+  "query": "query CountClassifications($filter: FilterRequest) { countClassifications(filter: $filter) }",
+  "variables": {
+    "filter": null
+  }
+}
+
+### Count Classifications — DRAFT only
+POST http://localhost:8083/api/charging/graphql
+Content-Type: application/json
+
+{
+  "query": "query CountClassifications($filter: FilterRequest) { countClassifications(filter: $filter) }",
+  "variables": {
+    "filter": {
+      "filters": [
+        {
+          "key": "status",
+          "operation": "=",
+          "value": "DRAFT"
+        }
+      ]
+    }
+  }
+}
+
+### Get Classification by ID
+POST http://localhost:8083/api/charging/graphql
+Content-Type: application/json
+
+{
+  "query": "query Classification($classificationId: ID!) { classification(classificationId: $classificationId) { classificationId name createdOn effectiveTime createdBy approvedBy status plan { ruleSetId ruleSetName useServiceWindows defaultServiceWindow defaultSourceType serviceWindows { name startTime endTime } serviceTypes { type chargingInformation sourceType serviceDirection serviceCategory unitType serviceWindows serviceCategoryMap { key value } } } } }",
+  "variables": {
+    "classificationId": "00000000-0000-0000-0000-000000000001"
+  }
+}
+
+### Rate Key Input — lookup data derived from the active classification plan
+POST http://localhost:8083/api/charging/graphql
+Content-Type: application/json
+
+{
+  "query": "query RateKeyInput { rateKeyInput { serviceTypes { code name } sourceTypes { code name } serviceDirections { code name } serviceCategories { code name serviceTypeCode } serviceWindows { code name serviceTypeCode } } }"
+}
+
+### Create Classification (DRAFT)
+POST http://localhost:8083/api/charging/graphql
+Content-Type: application/json
+
+{
+  "query": "mutation CreateClassification($classification: ClassificationInput!) { createClassification(classification: $classification) { classificationId name status effectiveTime createdBy createdOn plan { useServiceWindows defaultServiceWindow defaultSourceType } } }",
+  "variables": {
+    "classification": {
+      "name": "NZ Domestic Classification v1",
+      "effectiveTime": "2024-07-01T00:00:00Z",
+      "plan": {
+        "ruleSetId": "RS-001",
+        "ruleSetName": "NZ Domestic Rules",
+        "useServiceWindows": true,
+        "defaultServiceWindow": "peak",
+        "defaultSourceType": "Home",
+        "serviceWindows": [
+          {
+            "name": "peak",
+            "startTime": "08:00",
+            "endTime": "20:00"
+          },
+          {
+            "name": "offpeak",
+            "startTime": "20:00",
+            "endTime": "08:00"
+          }
+        ],
+        "serviceTypes": [
+          {
+            "type": "voice",
+            "chargingInformation": "IMS",
+            "serviceTypeRule": "VOICE_MO",
+            "description": "Mobile Originated Voice",
+            "sourceType": "Home",
+            "serviceDirection": "MO",
+            "serviceCategory": "local",
+            "unitType": "SECONDS",
+            "serviceWindows": [
+              "peak",
+              "offpeak"
+            ],
+            "serviceCategoryMap": [
+              {
+                "key": "LOCAL",
+                "value": "Local Voice"
+              },
+              {
+                "key": "NATIONAL",
+                "value": "National Voice"
+              }
+            ]
+          },
+          {
+            "type": "sms",
+            "chargingInformation": "SMS",
+            "description": "Short Message Service",
+            "sourceType": "Home",
+            "serviceDirection": "MO",
+            "serviceCategory": "local",
+            "unitType": "EVENTS",
+            "serviceWindows": [],
+            "serviceCategoryMap": [
+              {
+                "key": "LOCAL",
+                "value": "Local SMS"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}
+
+### Clone Classification — creates a new DRAFT copy of an existing classification
+POST http://localhost:8083/api/charging/graphql
+Content-Type: application/json
+
+{
+  "query": "mutation CloneClassification($classificationId: ID!) { cloneClassification(classificationId: $classificationId) { classificationId name status createdBy createdOn effectiveTime } }",
+  "variables": {
+    "classificationId": "00000000-0000-0000-0000-000000000001"
+  }
+}
+
+### Update Classification Plan — name, effectiveTime, and plan (DRAFT only)
+POST http://localhost:8083/api/charging/graphql
+Content-Type: application/json
+
+{
+  "query": "mutation UpdateClassificationPlan($classificationId: ID!, $classification: ClassificationInput!) { updateClassificationPlan(classificationId: $classificationId, classification: $classification) { classificationId name status effectiveTime plan { ruleSetId useServiceWindows defaultServiceWindow defaultSourceType } } }",
+  "variables": {
+    "classificationId": "00000000-0000-0000-0000-000000000001",
+    "classification": {
+      "name": "NZ Domestic Classification v1 (revised)",
+      "effectiveTime": "2024-08-01T00:00:00Z",
+      "plan": {
+        "ruleSetId": "RS-001",
+        "ruleSetName": "NZ Domestic Rules (revised)",
+        "useServiceWindows": true,
+        "defaultServiceWindow": "peak",
+        "defaultSourceType": "Home",
+        "serviceWindows": [
+          {
+            "name": "peak",
+            "startTime": "07:00",
+            "endTime": "21:00"
+          },
+          {
+            "name": "offpeak",
+            "startTime": "21:00",
+            "endTime": "07:00"
+          }
+        ],
+        "serviceTypes": [
+          {
+            "type": "voice",
+            "chargingInformation": "IMS",
+            "serviceTypeRule": "VOICE_MO",
+            "description": "Mobile Originated Voice (updated hours)",
+            "sourceType": "Home",
+            "serviceDirection": "MO",
+            "serviceCategory": "local",
+            "unitType": "SECONDS",
+            "serviceWindows": [
+              "peak",
+              "offpeak"
+            ],
+            "serviceCategoryMap": [
+              {
+                "key": "LOCAL",
+                "value": "Local Voice"
+              },
+              {
+                "key": "NATIONAL",
+                "value": "National Voice"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}
+
+### Submit Classification for Approval — DRAFT → PENDING
+POST http://localhost:8083/api/charging/graphql
+Content-Type: application/json
+
+{
+  "query": "mutation SubmitClassificationForApproval($classificationId: ID!) { submitClassificationForApproval(classificationId: $classificationId) { classificationId name status } }",
+  "variables": {
+    "classificationId": "00000000-0000-0000-0000-000000000001"
+  }
+}
+
+### Approve Classification Plan — PENDING → ACTIVE (approvedBy set from JWT)
+POST http://localhost:8083/api/charging/graphql
+Content-Type: application/json
+
+{
+  "query": "mutation ApproveClassificationPlan($classificationId: ID!) { approveClassificationPlan(classificationId: $classificationId) { classificationId name status approvedBy } }",
+  "variables": {
+    "classificationId": "00000000-0000-0000-0000-000000000001"
+  }
+}
+
+### Decline Classification Plan — PENDING → DRAFT (clears approvedBy)
+POST http://localhost:8083/api/charging/graphql
+Content-Type: application/json
+
+{
+  "query": "mutation DeclineClassificationPlan($classificationId: ID!) { declineClassificationPlan(classificationId: $classificationId) { classificationId name status approvedBy } }",
+  "variables": {
+    "classificationId": "00000000-0000-0000-0000-000000000001"
+  }
+}
+
+### Delete Classification — permanently removes a DRAFT classification
+POST http://localhost:8083/api/charging/graphql
+Content-Type: application/json
+
+{
+  "query": "mutation DeleteClassification($classificationId: ID!) { deleteClassification(classificationId: $classificationId) }",
+  "variables": {
+    "classificationId": "00000000-0000-0000-0000-000000000001"
+  }
+}

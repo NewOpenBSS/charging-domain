@@ -3,7 +3,8 @@
 GraphQL API design and implementation guide for the `charging-backend` application.
 
 This document covers the common pagination/filter framework shared by all list endpoints,
-and the first concrete resource implementation: **CarrierResource**.
+the first concrete resource implementation (**CarrierResource**), and the second:
+**ClassificationResource**.
 
 The design is a port of the Java/Quarkus/Panache solution. The Go implementation:
 - Uses **gqlgen** for GraphQL code generation
@@ -27,6 +28,14 @@ The design is a port of the Java/Quarkus/Panache solution. The Go implementation
 10. [gqlgen.yml Updates](#10-gqlgenyml-updates)
 11. [File Map](#11-file-map)
 12. [Generation Commands](#12-generation-commands)
+13. [Pre-work: Model Package Refactor](#13-pre-work-model-package-refactor)
+14. [ClassificationResource — Design](#14-classificationresource--design)
+15. [ClassificationResource — GraphQL Schema](#15-classificationresource--graphql-schema)
+16. [ClassificationResource — SQL Queries](#16-classificationresource--sql-queries)
+17. [ClassificationResource — Store Layer](#17-classificationresource--store-layer)
+18. [ClassificationResource — Service Layer](#18-classificationresource--service-layer)
+19. [ClassificationResource — Resolver Layer](#19-classificationresource--resolver-layer)
+20. [ClassificationResource — File Map](#20-classificationresource--file-map)
 
 ---
 
@@ -856,3 +865,769 @@ go test ./...
 > **Important:** gqlgen's `generate` command will regenerate the resolver skeleton files.
 > It preserves existing method bodies but will add new method stubs. Always review the
 > diff after running `gqlgen generate` to confirm nothing was overwritten unexpectedly.
+
+---
+
+## 13. Pre-work: Model Package Refactor
+
+Before implementing the ClassificationResource two preparatory changes must be made.
+Both are **pure refactors** — no behaviour changes, no new files outside the model package.
+
+### 13.1 Rename `Plan` → `ClassificationPlan`
+
+`internal/chargeengine/model/classificationplan.go` currently names the root struct `Plan`.
+This is ambiguous (every resource has a "plan") and conflicts with the new GraphQL type name.
+Rename it to `ClassificationPlan` throughout.
+
+Files affected by the rename (use your editor's global rename):
+
+| File | Change |
+|---|---|
+| `internal/chargeengine/model/classificationplan.go` | `type Plan struct` → `type ClassificationPlan struct` |
+| `internal/chargeengine/model/classificationplan_test.go` | All `model.Plan{...}` → `model.ClassificationPlan{...}` |
+| `internal/chargeengine/engine/providers/classificationplan/classificationprovider.go` | `*model.Plan` → `*model.ClassificationPlan` (×4) |
+| `internal/chargeengine/engine/providers/classificationplan/classificationprovider_test.go` | Test helper types if any |
+| `internal/chargeengine/engine/business/interfaces/infra.go` | `FetchClassificationPlan() (*model.Plan, error)` |
+| `internal/chargeengine/engine/steps/classification-step_test.go` | Mock return type `*model.Plan` |
+
+> **Note:** `classificationprovider.go` also uses `model.Plan{}` as a local variable — update all
+> instances, not just the function signatures.
+
+### 13.2 Move `internal/chargeengine/model/` → `internal/model/`
+
+The model package is now required by both `charging-engine` and `charging-backend`. Keeping it
+under `internal/chargeengine/` signals it is private to that application, which is no longer true.
+
+**Procedure:**
+
+```bash
+# 1. Create the new package directory
+mkdir -p internal/model
+
+# 2. Copy all non-test source files (test files move too)
+#    Then update the package declaration from "package model" (unchanged — same name).
+#    Only the import path changes.
+
+# 3. Global search/replace in the repository:
+#    OLD:  "go-ocs/internal/chargeengine/model"
+#    NEW:  "go-ocs/internal/model"
+#
+#    25 files require this update (confirmed by grep):
+```
+
+Files that import `go-ocs/internal/chargeengine/model` (25 files):
+
+```
+internal/chargeengine/engine/steps/classification-step_test.go
+internal/chargeengine/engine/steps/trace-step_test.go
+internal/chargeengine/engine/steps/chargedata-step_test.go
+internal/chargeengine/engine/steps/error-step_test.go
+internal/chargeengine/engine/steps/response-step_test.go
+internal/chargeengine/engine/steps/accounting-step_test.go
+internal/chargeengine/engine/steps/rating-step_test.go
+internal/chargeengine/chargeservice_test.go
+internal/chargeengine/engine/steps/authentication-step_test.go
+internal/chargeengine/engine/business/classifying.go
+internal/chargeengine/engine/steps/accounting-step.go
+internal/chargeengine/engine/steps/rating-step.go
+internal/chargeengine/engine/chargingcontext.go
+internal/chargeengine/engine/business/rating_test.go
+internal/chargeengine/engine/business/classifying_test.go
+internal/chargeengine/engine/business/rating.go
+internal/chargeengine/engine/servicecontext.go
+internal/chargeengine/engine/business/interfaces/infra.go
+internal/chargeengine/engine/providers/subscribers/subscriberprovider_test.go
+internal/chargeengine/engine/providers/subscribers/subscriberprovider.go
+internal/chargeengine/engine/providers/ratingplan/ratingplanprovider_test.go
+internal/chargeengine/engine/providers/classificationplan/classificationprovider.go
+internal/chargeengine/engine/providers/classificationplan/classificationprovider_test.go
+internal/chargeengine/engine/providers/ratingplan/ratingplanprovider.go
+internal/chargeengine/engine/steps/chargedata-step.go
+```
+
+```bash
+# 4. Delete the old package directory after confirming the build passes
+rm -rf internal/chargeengine/model
+
+# 5. Verify
+go build ./...
+go test ./...
+```
+
+> **Commit separately:** The rename + move should be a single dedicated commit
+> (`refactor: move model package to internal/model and rename Plan to ClassificationPlan`)
+> before any ClassificationResource code is added. This keeps the diff clean and reviewable.
+
+---
+
+## 14. ClassificationResource — Design
+
+### 14.1 Domain Overview
+
+The `classification` table stores versioned Classification Plans. Each row is a full
+classification configuration (the embedded `plan` JSONB column) plus lifecycle metadata.
+
+**Table schema (from `000001_init.up.sql`):**
+
+| Column | Type | Notes |
+|---|---|---|
+| `classification_id` | `uuid` PK | Generated by the application (not the DB) |
+| `name` | `varchar` NOT NULL | Human-readable label |
+| `created_on` | `timestamp` DEFAULT now() | Set by DB |
+| `effective_time` | `TIMESTAMPTZ` NOT NULL | When the plan becomes effective |
+| `created_by` | `varchar` NOT NULL | Username from JWT |
+| `approved_by` | `varchar` nullable | Username from JWT at approval |
+| `status` | `varchar` DEFAULT `'DRAFT'` | State machine: DRAFT → PENDING → ACTIVE / DRAFT |
+| `plan` | `jsonb` NOT NULL | Serialised `ClassificationPlan` struct |
+
+**Status state machine (mirrors Java `Status` enum):**
+
+```
+         submitForApproval          approve
+  DRAFT ─────────────────► PENDING ────────► ACTIVE
+    ▲                          │
+    └──────── decline ─────────┘
+              (status resets to DRAFT)
+
+  Any DRAFT may be deleted.
+  Active and RETIRED plans are read-only.
+```
+
+### 14.2 The `rateKeyInput()` Query
+
+This query powers the frontend dropdowns used when building rate plans. It derives its data
+from the **active** classification plan (the one currently driving charging decisions).
+
+The service:
+1. Calls `FindActiveClassification` to get the raw JSONB.
+2. Unmarshals into `model.ClassificationPlan`.
+3. Iterates `ServiceTypes` to extract unique values for each lookup list.
+
+| Response field | Source |
+|---|---|
+| `serviceTypes` | Unique `st.ServiceType` values across all `ServiceTypes` |
+| `sourceTypes` | Unique `st.SourceType` values |
+| `serviceDirections` | Unique `st.ServiceDirection` values (typically `MO`, `MT`) |
+| `serviceCategories` | All entries in `st.ServiceCategoryMap` (key → code, value → name), with `serviceTypeCode = st.ServiceType` |
+| `serviceWindows` | All entries in `st.ServiceWindows` (the per-service-type slice of window names), with `serviceTypeCode = st.ServiceType` |
+
+### 14.3 Map Flattening
+
+The `ClassificationPlan` struct uses Go maps (`map[string]ServiceWindow`,
+`map[string]string`) for two fields. GraphQL has no native map type, so both are
+represented as key-value lists:
+
+| Go field | GraphQL type |
+|---|---|
+| `ClassificationPlan.ServiceWindows map[string]ServiceWindow` | `[ServiceWindowEntry!]` where `ServiceWindowEntry { name, startTime, endTime }` |
+| `ServiceType.ServiceCategoryMap map[string]string` | `[ServiceCategoryMapEntry!]` where `ServiceCategoryMapEntry { key, value }` |
+
+The service layer handles the conversion in both directions:
+- **Read path:** Go map → GraphQL list (iterate map, emit one entry per key).
+- **Write path:** GraphQL list → Go map (build map from input entries).
+
+### 14.4 `createdBy` / `approvedBy` Population
+
+`createdBy` (on create/clone) and `approvedBy` (on approve/decline) are populated from
+the authenticated user's JWT, not from the client payload. The value used is
+`KeycloakClaims.Email` — the verified email address of the authenticated user.
+
+### 14.5 `cloneClassification` Behaviour
+
+The clone:
+- Gets a new `classification_id` (new UUID).
+- Inherits `name`, `effectiveTime`, and `plan` from the source.
+- Status is forced to `DRAFT`.
+- `createdBy` is the current user (from JWT). `approvedBy` is cleared.
+- `created_on` is set to now() by the database.
+
+---
+
+## 15. ClassificationResource — GraphQL Schema
+
+**File:** `gql/schema/classification.graphql` — **new file**
+
+```graphql
+# Classification status lifecycle.
+# Transitions: DRAFT → PENDING → ACTIVE (approve) or back to DRAFT (decline).
+# Only DRAFT plans may be edited or deleted.
+enum ClassificationStatus {
+  DRAFT
+  PENDING
+  ACTIVE
+  RETIRED
+}
+
+# The full classification entity — metadata wrapper around an embedded ClassificationPlan.
+# Mirrors Java ClassificationEntity.
+type Classification {
+  classificationId: ID!
+  name:             String!
+  createdOn:        DateTime
+  effectiveTime:    DateTime!
+  createdBy:        String!
+  approvedBy:       String
+  status:           ClassificationStatus!
+  plan:             ClassificationPlan!
+}
+
+# The embedded classification plan (stored as JSONB).
+# Mirrors the Go model.ClassificationPlan struct (formerly Plan).
+type ClassificationPlan {
+  ruleSetId:            String
+  ruleSetName:          String
+  useServiceWindows:    Boolean!
+  defaultServiceWindow: String!
+  defaultSourceType:    String!
+  serviceWindows:       [ServiceWindowEntry!]
+  serviceTypes:         [ClassificationServiceType!]
+}
+
+# A named service window (flattened from map[string]ServiceWindow).
+type ServiceWindowEntry {
+  name:      String!
+  startTime: String!   # "HH:mm" format
+  endTime:   String!   # "HH:mm" format
+}
+
+# A single service type classification rule.
+type ClassificationServiceType {
+  type:                   String!
+  chargingInformation:    String!
+  serviceTypeRule:        String
+  description:            String
+  sourceType:             String!
+  serviceDirection:       String!
+  serviceCategory:        String!
+  serviceIdentifier:      String
+  defaultServiceCategory: String
+  unitType:               String!
+  serviceWindows:         [String!]
+  serviceCategoryMap:     [ServiceCategoryMapEntry!]
+}
+
+# A key-value pair (flattened from map[string]string).
+type ServiceCategoryMapEntry {
+  key:   String!
+  value: String!
+}
+
+# ---------------------------------------------------------------------------
+# RateKeyInput — lookup data derived from the active classification plan.
+# Used by the frontend to populate dropdowns when building rate plans.
+# Mirrors Java RateKeyInputResponseDto.
+# ---------------------------------------------------------------------------
+
+type LookupData {
+  code: String!
+  name: String!
+}
+
+type ServiceCategoryLookup {
+  code:            String!
+  name:            String!
+  serviceTypeCode: String!
+}
+
+type RateKeyInput {
+  serviceTypes:      [LookupData!]!
+  sourceTypes:       [LookupData!]!
+  serviceDirections: [LookupData!]!
+  serviceCategories: [ServiceCategoryLookup!]!
+  serviceWindows:    [ServiceCategoryLookup!]!
+}
+
+# ---------------------------------------------------------------------------
+# Input types
+# ---------------------------------------------------------------------------
+
+input ClassificationInput {
+  name:          String!
+  effectiveTime: DateTime!
+  plan:          ClassificationPlanInput!
+}
+
+input ClassificationPlanInput {
+  ruleSetId:            String
+  ruleSetName:          String
+  useServiceWindows:    Boolean!
+  defaultServiceWindow: String!
+  defaultSourceType:    String!
+  serviceWindows:       [ServiceWindowEntryInput!]
+  serviceTypes:         [ClassificationServiceTypeInput!]!
+}
+
+input ServiceWindowEntryInput {
+  name:      String!
+  startTime: String!
+  endTime:   String!
+}
+
+input ClassificationServiceTypeInput {
+  type:                   String!
+  chargingInformation:    String!
+  serviceTypeRule:        String
+  description:            String
+  sourceType:             String!
+  serviceDirection:       String!
+  serviceCategory:        String!
+  serviceIdentifier:      String
+  defaultServiceCategory: String
+  unitType:               String!
+  serviceWindows:         [String!]
+  serviceCategoryMap:     [ServiceCategoryMapEntryInput!]
+}
+
+input ServiceCategoryMapEntryInput {
+  key:   String!
+  value: String!
+}
+
+# ---------------------------------------------------------------------------
+# Queries
+# ---------------------------------------------------------------------------
+
+extend type Query {
+  # Returns a filtered, sorted, paginated list of classification plans.
+  classificationList(page: PageRequest, filter: FilterRequest): [Classification!]!
+
+  # Returns the total count of classification plans matching the filter.
+  countClassifications(filter: FilterRequest): Int!
+
+  # Returns lookup data derived from the active classification plan.
+  # Used to populate rate-plan configuration dropdowns in the frontend.
+  rateKeyInput: RateKeyInput!
+
+  # Returns a single classification plan by ID, or null if not found.
+  classification(classificationId: ID!): Classification
+}
+
+# ---------------------------------------------------------------------------
+# Mutations
+# ---------------------------------------------------------------------------
+
+extend type Mutation {
+  # Creates a new classification plan in DRAFT status.
+  # createdBy is derived from the authenticated JWT; it is not a client input.
+  createClassification(classification: ClassificationInput!): Classification!
+
+  # Creates a DRAFT copy of an existing classification plan.
+  cloneClassification(classificationId: ID!): Classification!
+
+  # Updates the name, effectiveTime, and plan of a DRAFT classification.
+  # Returns an error if the classification is not in DRAFT status.
+  updateClassificationPlan(classificationId: ID!, classification: ClassificationInput!): Classification!
+
+  # Transitions a DRAFT classification to PENDING (awaiting approval).
+  submitClassificationForApproval(classificationId: ID!): Classification!
+
+  # Transitions a PENDING classification to ACTIVE.
+  # approvedBy is derived from the authenticated JWT.
+  approveClassificationPlan(classificationId: ID!): Classification!
+
+  # Transitions a PENDING classification back to DRAFT.
+  declineClassificationPlan(classificationId: ID!): Classification!
+
+  # Permanently deletes a DRAFT classification. Returns true on success.
+  # Returns an error if the classification is not in DRAFT status.
+  deleteClassification(classificationId: ID!): Boolean!
+}
+```
+
+---
+
+## 16. ClassificationResource — SQL Queries
+
+**File:** `db/queries/classification.sql` — new file (or append to existing)
+
+The existing `FindActiveClassification` query is retained in `classification.sql.go` (generated).
+All new queries are added to this file then `sqlc generate` is run.
+
+```sql
+-- name: FindClassificationByID :one
+-- Retrieves a single classification record by its UUID.
+SELECT classification_id, name, created_on, effective_time,
+       created_by, approved_by, status, plan
+FROM classification
+WHERE classification_id = $1;
+
+-- name: CreateClassification :one
+-- Inserts a new classification in DRAFT status and returns the full persisted row.
+-- classification_id is generated by the application (uuid.New()).
+INSERT INTO classification (classification_id, name, effective_time, created_by, plan, status)
+VALUES ($1, $2, $3, $4, $5, 'DRAFT')
+RETURNING classification_id, name, created_on, effective_time,
+          created_by, approved_by, status, plan;
+
+-- name: UpdateClassificationPlan :one
+-- Updates the name, effectiveTime, and plan of an existing DRAFT classification.
+-- Returns an error if no row matches (classification not found or not DRAFT).
+UPDATE classification
+SET name           = $2,
+    effective_time = $3,
+    plan           = $4
+WHERE classification_id = $1
+  AND status = 'DRAFT'
+RETURNING classification_id, name, created_on, effective_time,
+          created_by, approved_by, status, plan;
+
+-- name: SubmitClassification :one
+-- Transitions a DRAFT classification to PENDING (submitted for approval).
+UPDATE classification
+SET status = 'PENDING'
+WHERE classification_id = $1
+  AND status = 'DRAFT'
+RETURNING classification_id, name, created_on, effective_time,
+          created_by, approved_by, status, plan;
+
+-- name: ApproveClassification :one
+-- Transitions a PENDING classification to ACTIVE and records the approver.
+UPDATE classification
+SET status      = 'ACTIVE',
+    approved_by = $2
+WHERE classification_id = $1
+  AND status = 'PENDING'
+RETURNING classification_id, name, created_on, effective_time,
+          created_by, approved_by, status, plan;
+
+-- name: DeclineClassification :one
+-- Transitions a PENDING classification back to DRAFT, clearing the approver.
+UPDATE classification
+SET status      = 'DRAFT',
+    approved_by = NULL
+WHERE classification_id = $1
+  AND status = 'PENDING'
+RETURNING classification_id, name, created_on, effective_time,
+          created_by, approved_by, status, plan;
+
+-- name: DeleteClassification :exec
+-- Permanently deletes a DRAFT classification.
+-- The application layer must verify status = DRAFT before calling this.
+DELETE FROM classification
+WHERE classification_id = $1
+  AND status = 'DRAFT';
+```
+
+> **Note on clone:** `cloneClassification` is implemented at the application layer by calling
+> `FindClassificationByID` then `CreateClassification` with a new UUID — no dedicated SQL query.
+
+> **Note on dynamic queries:** `classificationList` and `countClassifications` use runtime-constructed
+> WHERE clauses (same pattern as carrier). These are in the store layer (Section 17), not sqlc.
+
+---
+
+## 17. ClassificationResource — Store Layer
+
+**File:** `internal/store/classification_store.go` — new hand-written file.
+
+Mirrors `carrier_store.go`. Wildcard columns match Java `ClassificationEntity.WILDCARD_FIELDS`:
+`classificationId`, `name`, `status`.
+
+```go
+package store
+
+import (
+    "context"
+    "fmt"
+
+    "go-ocs/internal/store/sqlc"
+)
+
+// ListClassificationsParams holds runtime-constructed SQL fragments for a dynamic
+// classification query. WhereSQL and Args come from filter.BuildWhere;
+// OrderSQL from filter.BuildOrderBy.
+type ListClassificationsParams struct {
+    WhereSQL string
+    Args     []any
+    OrderSQL string
+    Limit    int
+    Offset   int
+}
+
+// ListClassifications executes a dynamic classification query with optional filtering,
+// sorting, and pagination.
+func (s *Store) ListClassifications(
+    ctx context.Context,
+    p ListClassificationsParams,
+) ([]sqlc.Classification, error) {
+    limitIdx  := len(p.Args) + 1
+    offsetIdx := limitIdx + 1
+
+    q := fmt.Sprintf(
+        `SELECT classification_id, name, created_on, effective_time,
+                created_by, approved_by, status, plan
+         FROM classification %s %s LIMIT $%d OFFSET $%d`,
+        p.WhereSQL, p.OrderSQL, limitIdx, offsetIdx,
+    )
+    args := append(p.Args, p.Limit, p.Offset)
+
+    rows, err := s.DB.Query(ctx, q, args...)
+    if err != nil {
+        return nil, err
+    }
+    defer rows.Close()
+
+    var items []sqlc.Classification
+    for rows.Next() {
+        var c sqlc.Classification
+        if err := rows.Scan(
+            &c.ClassificationID, &c.Name, &c.CreatedOn, &c.EffectiveTime,
+            &c.CreatedBy, &c.ApprovedBy, &c.Status, &c.Plan,
+        ); err != nil {
+            return nil, err
+        }
+        items = append(items, c)
+    }
+    return items, rows.Err()
+}
+
+// CountClassifications executes a dynamic count query with optional filtering.
+func (s *Store) CountClassifications(
+    ctx context.Context,
+    whereSQL string,
+    args []any,
+) (int64, error) {
+    q := fmt.Sprintf("SELECT COUNT(*) FROM classification %s", whereSQL)
+    var n int64
+    if err := s.DB.QueryRow(ctx, q, args...).Scan(&n); err != nil {
+        return 0, err
+    }
+    return n, nil
+}
+```
+
+---
+
+## 18. ClassificationResource — Service Layer
+
+**File:** `internal/backend/services/classification_service.go` — new file.
+
+### 18.1 Column / Wildcard Maps
+
+```go
+// classificationColumns maps GraphQL field names to SQL column names.
+var classificationColumns = map[string]string{
+    "classificationId": "classification_id",
+    "name":             "name",
+    "status":           "status",
+    "createdBy":        "created_by",
+    "approvedBy":       "approved_by",
+    "effectiveTime":    "effective_time",
+    "createdOn":        "created_on",
+}
+
+// classificationWildcardCols mirrors Java ClassificationEntity.WILDCARD_FIELDS.
+var classificationWildcardCols = []string{
+    "classification_id", "name", "status",
+}
+```
+
+### 18.2 Service Methods
+
+```go
+type ClassificationService struct {
+    store *store.Store
+}
+
+func NewClassificationService(s *store.Store) *ClassificationService
+
+// ListClassifications — paginated, filtered list.
+func (s *ClassificationService) ListClassifications(
+    ctx context.Context,
+    page *graphqlmodel.PageRequest,
+    filterReq *graphqlmodel.FilterRequest,
+) ([]*graphqlmodel.Classification, error)
+
+// CountClassifications — total count with optional filter.
+func (s *ClassificationService) CountClassifications(
+    ctx context.Context,
+    filterReq *graphqlmodel.FilterRequest,
+) (int, error)
+
+// GetClassification — single lookup by ID.
+func (s *ClassificationService) GetClassification(
+    ctx context.Context,
+    id string,
+) (*graphqlmodel.Classification, error)
+
+// RateKeyInput — derives lookup data from the active classification plan.
+func (s *ClassificationService) RateKeyInput(
+    ctx context.Context,
+) (*graphqlmodel.RateKeyInput, error)
+
+// CreateClassification — inserts a new DRAFT.
+// createdBy is extracted from ctx (JWT claims).
+func (s *ClassificationService) CreateClassification(
+    ctx context.Context,
+    input graphqlmodel.ClassificationInput,
+) (*graphqlmodel.Classification, error)
+
+// CloneClassification — creates a DRAFT copy of an existing classification.
+// createdBy is extracted from ctx (JWT claims).
+func (s *ClassificationService) CloneClassification(
+    ctx context.Context,
+    classificationId string,
+) (*graphqlmodel.Classification, error)
+
+// UpdateClassificationPlan — updates name, effectiveTime, plan of a DRAFT.
+func (s *ClassificationService) UpdateClassificationPlan(
+    ctx context.Context,
+    classificationId string,
+    input graphqlmodel.ClassificationInput,
+) (*graphqlmodel.Classification, error)
+
+// SubmitClassificationForApproval — DRAFT → PENDING.
+func (s *ClassificationService) SubmitClassificationForApproval(
+    ctx context.Context,
+    classificationId string,
+) (*graphqlmodel.Classification, error)
+
+// ApproveClassificationPlan — PENDING → ACTIVE.
+// approvedBy is extracted from ctx (JWT claims).
+func (s *ClassificationService) ApproveClassificationPlan(
+    ctx context.Context,
+    classificationId string,
+) (*graphqlmodel.Classification, error)
+
+// DeclineClassificationPlan — PENDING → DRAFT.
+func (s *ClassificationService) DeclineClassificationPlan(
+    ctx context.Context,
+    classificationId string,
+) (*graphqlmodel.Classification, error)
+
+// DeleteClassification — removes a DRAFT. Returns true on success.
+func (s *ClassificationService) DeleteClassification(
+    ctx context.Context,
+    classificationId string,
+) (bool, error)
+```
+
+### 18.3 Model Mapping
+
+The service is responsible for translating between:
+- `sqlc.Classification` (raw DB row with JSONB `Plan []byte`)
+- `model.ClassificationPlan` (the decoded Go struct, formerly `Plan`)
+- `graphqlmodel.Classification` and `graphqlmodel.ClassificationPlan` (the gqlgen-generated types)
+
+**Key mapping decisions:**
+
+| Mapping | Detail |
+|---|---|
+| `sqlc.Classification.Plan []byte` → `model.ClassificationPlan` | `json.Unmarshal` |
+| `model.ClassificationPlan` → `graphqlmodel.ClassificationPlan` | Field-by-field; maps flattened to slices |
+| `model.ClassificationPlan.ServiceWindows map[string]ServiceWindow` → `[]*graphqlmodel.ServiceWindowEntry` | Iterate map; emit `{Name: k, StartTime: sw.StartTime.Format("15:04"), EndTime: sw.EndTime.Format("15:04")}` |
+| `graphqlmodel.ServiceWindowEntryInput` → `map[string]model.ServiceWindow` | Build map from input list; parse `"HH:mm"` strings back to `common.LocalTime` |
+| `model.ServiceType.ServiceCategoryMap map[string]string` → `[]*graphqlmodel.ServiceCategoryMapEntry` | Iterate map; emit `{Key: k, Value: v}` |
+| `graphqlmodel.ServiceCategoryMapEntryInput` → `map[string]string` | Build map from input list |
+| `sqlc.Classification.EffectiveTime pgtype.Timestamptz` → `*string` (DateTime scalar) | Format as RFC3339 |
+| `graphqlmodel.ClassificationInput.EffectiveTime string` → `pgtype.Timestamptz` | Parse RFC3339 |
+
+### 18.4 `RateKeyInput` Derivation Logic
+
+```
+1. rec = store.Q.FindActiveClassification(ctx)       // returns sqlc.Classification
+2. plan = json.Unmarshal(rec.Plan, &model.ClassificationPlan{})
+3. For each st in plan.ServiceTypes:
+   a. serviceTypes:      add {code: st.ServiceType, name: st.ServiceType} if not seen
+   b. sourceTypes:       add {code: st.SourceType, name: st.SourceType} if not seen
+   c. serviceDirections: add {code: st.ServiceDirection, name: st.ServiceDirection} if not seen
+   d. serviceCategories: for each (k, v) in st.ServiceCategoryMap:
+                           add {code: k, name: v, serviceTypeCode: st.ServiceType}
+   e. serviceWindows:    for each windowName in st.ServiceWindows:
+                           add {code: windowName, name: windowName, serviceTypeCode: st.ServiceType}
+4. Return RateKeyInput{...}
+```
+
+### 18.5 `createdBy` / `approvedBy` Extraction
+
+```go
+// emailFromContext extracts the authenticated user's email address from the request context.
+// Uses keycloak.ClaimsFromContext (defined in internal/auth/keycloak/middleware.go).
+// Returns "unknown" if auth is disabled or no claims are present.
+func emailFromContext(ctx context.Context) string {
+    claims, ok := keycloak.ClaimsFromContext(ctx)
+    if !ok || claims == nil {
+        return "unknown"
+    }
+    return claims.Email
+}
+```
+
+> `keycloak.ClaimsFromContext` reads from `ClaimsContextKey` ("keycloak_claims") which the
+> auth middleware stores on every authenticated request. When auth is disabled the middleware
+> is a no-op, so no claims are present and "unknown" is returned.
+
+---
+
+## 19. ClassificationResource — Resolver Layer
+
+**File:** `internal/backend/resolvers/classification.resolvers.go` (gqlgen-generated skeleton, bodies filled in)
+
+All methods delegate to `ClassificationService` — zero business logic in the resolver.
+
+```go
+// Queries
+func (r *queryResolver) ClassificationList(ctx, page, filter) ([]*model.Classification, error)
+    → r.ClassificationSvc.ListClassifications(ctx, page, filter)
+
+func (r *queryResolver) CountClassifications(ctx, filter) (int, error)
+    → r.ClassificationSvc.CountClassifications(ctx, filter)
+
+func (r *queryResolver) RateKeyInput(ctx) (*model.RateKeyInput, error)
+    → r.ClassificationSvc.RateKeyInput(ctx)
+
+func (r *queryResolver) Classification(ctx, classificationId) (*model.Classification, error)
+    → r.ClassificationSvc.GetClassification(ctx, classificationId)
+
+// Mutations
+func (r *mutationResolver) CreateClassification(ctx, classification) (*model.Classification, error)
+    → r.ClassificationSvc.CreateClassification(ctx, classification)
+
+func (r *mutationResolver) CloneClassification(ctx, classificationId) (*model.Classification, error)
+    → r.ClassificationSvc.CloneClassification(ctx, classificationId)
+
+func (r *mutationResolver) UpdateClassificationPlan(ctx, classificationId, classification) (*model.Classification, error)
+    → r.ClassificationSvc.UpdateClassificationPlan(ctx, classificationId, classification)
+
+func (r *mutationResolver) SubmitClassificationForApproval(ctx, classificationId) (*model.Classification, error)
+    → r.ClassificationSvc.SubmitClassificationForApproval(ctx, classificationId)
+
+func (r *mutationResolver) ApproveClassificationPlan(ctx, classificationId) (*model.Classification, error)
+    → r.ClassificationSvc.ApproveClassificationPlan(ctx, classificationId)
+
+func (r *mutationResolver) DeclineClassificationPlan(ctx, classificationId) (*model.Classification, error)
+    → r.ClassificationSvc.DeclineClassificationPlan(ctx, classificationId)
+
+func (r *mutationResolver) DeleteClassification(ctx, classificationId) (bool, error)
+    → r.ClassificationSvc.DeleteClassification(ctx, classificationId)
+```
+
+**`resolver.go` additions:**
+
+```go
+type Resolver struct {
+    CarrierSvc        *services.CarrierService
+    ClassificationSvc *services.ClassificationService   // ADD
+}
+```
+
+---
+
+## 20. ClassificationResource — File Map
+
+| File | Action | Notes |
+|---|---|---|
+| `internal/chargeengine/model/classificationplan.go` | **Modify** | Rename `Plan` → `ClassificationPlan` |
+| *(25 files)* | **Modify** | Update import path from `chargeengine/model` → `model` |
+| `gql/schema/classification.graphql` | **New** | Full schema: types, inputs, queries, mutations |
+| `db/queries/classification.sql` | **New** | 7 new sqlc queries (FindByID, Create, Update, Submit, Approve, Decline, Delete) |
+| `internal/store/sqlc/classification.sql.go` | **Regenerate** | Run `sqlc generate` |
+| `internal/store/classification_store.go` | **New** | `ListClassifications()`, `CountClassifications()` dynamic pgx methods |
+| `internal/backend/services/classification_service.go` | **New** | Full `ClassificationService` implementation |
+| `internal/backend/resolvers/classification.resolvers.go` | **New** | gqlgen-generated skeleton + resolver bodies |
+| `internal/backend/resolvers/resolver.go` | **Modify** | Add `ClassificationSvc *services.ClassificationService` |
+| `internal/backend/appcontext/context.go` | **Modify** | Add `ClassificationSvc` field + initialisation |
+| `internal/backend/handlers/graphql/router.go` | **Modify** | Pass `ClassificationSvc` to `resolvers.NewResolver(...)` |
+| `internal/backend/graphql/generated/generated.go` | **Regenerate** | Run `gqlgen generate` |
+| `internal/backend/graphql/model/models_gen.go` | **Regenerate** | Run `gqlgen generate` |
+| `internal/backend/services/classification_service_test.go` | **New** | Unit tests following carrier_service_test.go pattern |

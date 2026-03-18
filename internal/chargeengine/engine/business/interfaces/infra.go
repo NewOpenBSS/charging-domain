@@ -2,14 +2,14 @@ package interfaces
 
 import (
 	"go-ocs/internal/chargeengine/engine/providers/carriers"
-	"go-ocs/internal/chargeengine/model"
+	"go-ocs/internal/model"
 	"go-ocs/internal/store/sqlc"
 
 	"github.com/google/uuid"
 )
 
 type ClassificationInterface interface {
-	FetchClassificationPlan() (*model.Plan, error)
+	FetchClassificationPlan() (*model.ClassificationPlan, error)
 }
 
 type CarrierInterface interface {

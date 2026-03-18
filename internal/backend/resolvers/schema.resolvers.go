@@ -7,7 +7,6 @@ package resolvers
 
 import (
 	"context"
-
 	"go-ocs/internal/backend/graphql/generated"
 )
 

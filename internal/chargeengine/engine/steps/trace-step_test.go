@@ -11,7 +11,7 @@ import (
 
 	"go-ocs/internal/chargeengine/appcontext"
 	"go-ocs/internal/chargeengine/engine"
-	"go-ocs/internal/chargeengine/model"
+	"go-ocs/internal/model"
 	"go-ocs/internal/chargeengine/ocserrors"
 	"go-ocs/internal/nchf"
 	"go-ocs/internal/store"

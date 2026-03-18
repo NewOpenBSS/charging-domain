@@ -7,7 +7,7 @@ import (
 	"go-ocs/internal/chargeengine/engine/providers/numberplan"
 	"go-ocs/internal/chargeengine/engine/providers/ratingplan"
 	"go-ocs/internal/chargeengine/engine/providers/subscribers"
-	"go-ocs/internal/chargeengine/model"
+	"go-ocs/internal/model"
 	"go-ocs/internal/store/sqlc"
 
 	"github.com/google/uuid"
@@ -40,7 +40,7 @@ func NewServiceContext(ctx *appcontext.AppContext) (*ServiceContext, func()) {
 		}
 }
 
-func (sc *ServiceContext) FetchClassificationPlan() (*model.Plan, error) {
+func (sc *ServiceContext) FetchClassificationPlan() (*model.ClassificationPlan, error) {
 	return sc.ClassificationService.FetchClassificationPlan()
 }
 
