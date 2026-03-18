@@ -3,6 +3,7 @@ package steps
 import (
 	"go-ocs/internal/chargeengine/engine"
 	"go-ocs/internal/chargeengine/ocserrors"
+	"go-ocs/internal/common"
 	"go-ocs/internal/logging"
 	"strings"
 )
@@ -25,7 +26,7 @@ func Authenticate(dc *engine.ChargingContext) error {
 		}
 	}
 
-	logging.Debug("Authentication Step:: Authenticating", "msisdn", msisdn)
+	logging.Debug("Authentication Step:: Authenticating", "msisdn", common.MaskMSISDN(msisdn))
 	subscriber, err := dc.Infra.FindSubscriber(msisdn)
 	if err != nil {
 		return ocserrors.CreateUnknownSubscriber(err.Error())
@@ -33,6 +34,6 @@ func Authenticate(dc *engine.ChargingContext) error {
 
 	dc.ChargingData.Subscriber = subscriber
 
-	logging.Debug("Authentication Step:: Subscriber known and active", "msisdn", msisdn)
+	logging.Debug("Authentication Step:: Subscriber known and active", "msisdn", common.MaskMSISDN(msisdn))
 	return nil
 }
