@@ -3,7 +3,7 @@ package subscribers
 import (
 	"context"
 	"errors"
-	"go-ocs/internal/chargeengine/model"
+	"go-ocs/internal/model"
 	"go-ocs/internal/store/sqlc"
 	"sync"
 	"testing"

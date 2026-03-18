@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go-ocs/internal/chargeengine/engine"
-	"go-ocs/internal/chargeengine/model"
+	"go-ocs/internal/model"
 	"go-ocs/internal/charging"
 	"go-ocs/internal/nchf"
 )

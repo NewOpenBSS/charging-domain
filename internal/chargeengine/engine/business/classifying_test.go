@@ -3,7 +3,7 @@ package business
 import (
 	"go-ocs/internal/chargeengine/engine"
 	"go-ocs/internal/chargeengine/engine/providers/carriers"
-	"go-ocs/internal/chargeengine/model"
+	"go-ocs/internal/model"
 	"go-ocs/internal/charging"
 	"go-ocs/internal/common"
 	"go-ocs/internal/logging"
@@ -20,14 +20,14 @@ import (
 )
 
 type mockInfra struct {
-	plan *model.Plan
+	plan *model.ClassificationPlan
 }
 
 func (m *mockInfra) FindSubscriber(msisdn string) (*model.Subscriber, error) {
 	return nil, nil
 }
 
-func (m *mockInfra) FetchClassificationPlan() (*model.Plan, error) {
+func (m *mockInfra) FetchClassificationPlan() (*model.ClassificationPlan, error) {
 	return m.plan, nil
 }
 
@@ -55,7 +55,7 @@ func (m *mockInfra) FindRatingPlan(uuid uuid.UUID) (*model.RatePlan, error) {
 	return nil, nil
 }
 
-func loadPlan(t *testing.T) *model.Plan {
+func loadPlan(t *testing.T) *model.ClassificationPlan {
 	// Adjust path to be relative to project root
 	data, err := os.ReadFile("../../../../internal/chargeengine/engine/providers/classificationplan/classificationPlan.yaml")
 	if err != nil {
@@ -78,7 +78,7 @@ func loadPlan(t *testing.T) *model.Plan {
 	content = strings.ReplaceAll(content, "serviceTypeRule: OneTimeEvent", "serviceTypeRule: \"Req.OneTimeEvent == true\"")
 	content = strings.ReplaceAll(content, "serviceTypeRule: not OneTimeEvent", "serviceTypeRule: \"Req.OneTimeEvent == false\"")
 
-	plan := &model.Plan{}
+	plan := &model.ClassificationPlan{}
 	err = yaml.Unmarshal([]byte(content), plan)
 	if err != nil {
 		t.Fatalf("Failed to unmarshal plan: %v", err)

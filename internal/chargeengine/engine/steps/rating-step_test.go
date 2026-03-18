@@ -5,7 +5,7 @@ import (
 	"go-ocs/internal/chargeengine/appcontext"
 	"go-ocs/internal/chargeengine/engine"
 	"go-ocs/internal/chargeengine/engine/providers/carriers"
-	"go-ocs/internal/chargeengine/model"
+	"go-ocs/internal/model"
 	"go-ocs/internal/chargeengine/ocserrors"
 	"go-ocs/internal/charging"
 	"go-ocs/internal/nchf"
@@ -163,7 +163,7 @@ func (m *mockInfra) FindRatingPlan(u uuid.UUID) (*model.RatePlan, error) {
 	}
 	return nil, ocserrors.CreateGeneralError("plan not found")
 }
-func (m *mockInfra) FetchClassificationPlan() (*model.Plan, error)              { return nil, nil }
+func (m *mockInfra) FetchClassificationPlan() (*model.ClassificationPlan, error)              { return nil, nil }
 func (m *mockInfra) FetchCarrierContainer() (*carriers.CarrierContainer, error) { return nil, nil }
 func (m *mockInfra) FindCarrierByMccMnc(mcc string, mnc string) (*sqlc.Carrier, error) {
 	return nil, nil

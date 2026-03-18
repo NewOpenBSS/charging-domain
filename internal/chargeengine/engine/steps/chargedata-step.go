@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"go-ocs/internal/chargeengine/engine"
-	"go-ocs/internal/chargeengine/model"
+	"go-ocs/internal/model"
 	"go-ocs/internal/chargeengine/ocserrors"
 	"go-ocs/internal/logging"
 	"go-ocs/internal/nchf"

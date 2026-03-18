@@ -56,18 +56,95 @@ type ComplexityRoot struct {
 		SourceGroup      func(childComplexity int) int
 	}
 
+	Classification struct {
+		ApprovedBy       func(childComplexity int) int
+		ClassificationID func(childComplexity int) int
+		CreatedBy        func(childComplexity int) int
+		CreatedOn        func(childComplexity int) int
+		EffectiveTime    func(childComplexity int) int
+		Name             func(childComplexity int) int
+		Plan             func(childComplexity int) int
+		Status           func(childComplexity int) int
+	}
+
+	ClassificationPlan struct {
+		DefaultServiceWindow func(childComplexity int) int
+		DefaultSourceType    func(childComplexity int) int
+		RuleSetID            func(childComplexity int) int
+		RuleSetName          func(childComplexity int) int
+		ServiceTypes         func(childComplexity int) int
+		ServiceWindows       func(childComplexity int) int
+		UseServiceWindows    func(childComplexity int) int
+	}
+
+	ClassificationServiceType struct {
+		ChargingInformation    func(childComplexity int) int
+		DefaultServiceCategory func(childComplexity int) int
+		Description            func(childComplexity int) int
+		ServiceCategory        func(childComplexity int) int
+		ServiceCategoryMap     func(childComplexity int) int
+		ServiceDirection       func(childComplexity int) int
+		ServiceIdentifier      func(childComplexity int) int
+		ServiceTypeRule        func(childComplexity int) int
+		ServiceWindows         func(childComplexity int) int
+		SourceType             func(childComplexity int) int
+		Type                   func(childComplexity int) int
+		UnitType               func(childComplexity int) int
+	}
+
+	LookupData struct {
+		Code func(childComplexity int) int
+		Name func(childComplexity int) int
+	}
+
 	Mutation struct {
-		CreateCarrier func(childComplexity int, carrier model.CarrierInput) int
-		DeleteCarrier func(childComplexity int, plmn string) int
-		Empty         func(childComplexity int) int
-		UpdateCarrier func(childComplexity int, plmn string, carrier model.CarrierInput) int
+		ApproveClassificationPlan       func(childComplexity int, classificationID string) int
+		CloneClassification             func(childComplexity int, classificationID string) int
+		CreateCarrier                   func(childComplexity int, carrier model.CarrierInput) int
+		CreateClassification            func(childComplexity int, classification model.ClassificationInput) int
+		DeclineClassificationPlan       func(childComplexity int, classificationID string) int
+		DeleteCarrier                   func(childComplexity int, plmn string) int
+		DeleteClassification            func(childComplexity int, classificationID string) int
+		Empty                           func(childComplexity int) int
+		SubmitClassificationForApproval func(childComplexity int, classificationID string) int
+		UpdateCarrier                   func(childComplexity int, plmn string, carrier model.CarrierInput) int
+		UpdateClassificationPlan        func(childComplexity int, classificationID string, classification model.ClassificationInput) int
 	}
 
 	Query struct {
-		CarrierByPlmn func(childComplexity int, plmn string) int
-		CarrierList   func(childComplexity int, page *model.PageRequest, filter *model.FilterRequest) int
-		CountCarriers func(childComplexity int, filter *model.FilterRequest) int
-		Empty         func(childComplexity int) int
+		CarrierByPlmn        func(childComplexity int, plmn string) int
+		CarrierList          func(childComplexity int, page *model.PageRequest, filter *model.FilterRequest) int
+		Classification       func(childComplexity int, classificationID string) int
+		ClassificationList   func(childComplexity int, page *model.PageRequest, filter *model.FilterRequest) int
+		CountCarriers        func(childComplexity int, filter *model.FilterRequest) int
+		CountClassifications func(childComplexity int, filter *model.FilterRequest) int
+		Empty                func(childComplexity int) int
+		RateKeyInput         func(childComplexity int) int
+	}
+
+	RateKeyInput struct {
+		ServiceCategories func(childComplexity int) int
+		ServiceDirections func(childComplexity int) int
+		ServiceTypes      func(childComplexity int) int
+		ServiceWindows    func(childComplexity int) int
+		SourceTypes       func(childComplexity int) int
+	}
+
+	ServiceCategoryLookup struct {
+		Code            func(childComplexity int) int
+		Name            func(childComplexity int) int
+		ServiceTypeCode func(childComplexity int) int
+	}
+
+	ServiceCategoryMapEntry struct {
+		Key   func(childComplexity int) int
+		Value func(childComplexity int) int
+	}
+
+	ServiceWindowEntry struct {
+		EndTime   func(childComplexity int) int
+		Name      func(childComplexity int) int
+		StartTime func(childComplexity int) int
 	}
 }
 
@@ -76,12 +153,23 @@ type MutationResolver interface {
 	CreateCarrier(ctx context.Context, carrier model.CarrierInput) (*model.Carrier, error)
 	UpdateCarrier(ctx context.Context, plmn string, carrier model.CarrierInput) (*model.Carrier, error)
 	DeleteCarrier(ctx context.Context, plmn string) (bool, error)
+	CreateClassification(ctx context.Context, classification model.ClassificationInput) (*model.Classification, error)
+	CloneClassification(ctx context.Context, classificationID string) (*model.Classification, error)
+	UpdateClassificationPlan(ctx context.Context, classificationID string, classification model.ClassificationInput) (*model.Classification, error)
+	SubmitClassificationForApproval(ctx context.Context, classificationID string) (*model.Classification, error)
+	ApproveClassificationPlan(ctx context.Context, classificationID string) (*model.Classification, error)
+	DeclineClassificationPlan(ctx context.Context, classificationID string) (*model.Classification, error)
+	DeleteClassification(ctx context.Context, classificationID string) (bool, error)
 }
 type QueryResolver interface {
 	Empty(ctx context.Context) (*string, error)
 	CarrierList(ctx context.Context, page *model.PageRequest, filter *model.FilterRequest) ([]*model.Carrier, error)
 	CarrierByPlmn(ctx context.Context, plmn string) (*model.Carrier, error)
 	CountCarriers(ctx context.Context, filter *model.FilterRequest) (int, error)
+	ClassificationList(ctx context.Context, page *model.PageRequest, filter *model.FilterRequest) ([]*model.Classification, error)
+	CountClassifications(ctx context.Context, filter *model.FilterRequest) (int, error)
+	RateKeyInput(ctx context.Context) (*model.RateKeyInput, error)
+	Classification(ctx context.Context, classificationID string) (*model.Classification, error)
 }
 
 type executableSchema graphql.ExecutableSchemaState[ResolverRoot, DirectiveRoot, ComplexityRoot]
@@ -190,6 +278,206 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Carrier.SourceGroup(childComplexity), true
 
+	case "Classification.approvedBy":
+		if e.ComplexityRoot.Classification.ApprovedBy == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Classification.ApprovedBy(childComplexity), true
+	case "Classification.classificationId":
+		if e.ComplexityRoot.Classification.ClassificationID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Classification.ClassificationID(childComplexity), true
+	case "Classification.createdBy":
+		if e.ComplexityRoot.Classification.CreatedBy == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Classification.CreatedBy(childComplexity), true
+	case "Classification.createdOn":
+		if e.ComplexityRoot.Classification.CreatedOn == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Classification.CreatedOn(childComplexity), true
+	case "Classification.effectiveTime":
+		if e.ComplexityRoot.Classification.EffectiveTime == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Classification.EffectiveTime(childComplexity), true
+	case "Classification.name":
+		if e.ComplexityRoot.Classification.Name == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Classification.Name(childComplexity), true
+	case "Classification.plan":
+		if e.ComplexityRoot.Classification.Plan == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Classification.Plan(childComplexity), true
+	case "Classification.status":
+		if e.ComplexityRoot.Classification.Status == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Classification.Status(childComplexity), true
+
+	case "ClassificationPlan.defaultServiceWindow":
+		if e.ComplexityRoot.ClassificationPlan.DefaultServiceWindow == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ClassificationPlan.DefaultServiceWindow(childComplexity), true
+	case "ClassificationPlan.defaultSourceType":
+		if e.ComplexityRoot.ClassificationPlan.DefaultSourceType == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ClassificationPlan.DefaultSourceType(childComplexity), true
+	case "ClassificationPlan.ruleSetId":
+		if e.ComplexityRoot.ClassificationPlan.RuleSetID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ClassificationPlan.RuleSetID(childComplexity), true
+	case "ClassificationPlan.ruleSetName":
+		if e.ComplexityRoot.ClassificationPlan.RuleSetName == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ClassificationPlan.RuleSetName(childComplexity), true
+	case "ClassificationPlan.serviceTypes":
+		if e.ComplexityRoot.ClassificationPlan.ServiceTypes == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ClassificationPlan.ServiceTypes(childComplexity), true
+	case "ClassificationPlan.serviceWindows":
+		if e.ComplexityRoot.ClassificationPlan.ServiceWindows == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ClassificationPlan.ServiceWindows(childComplexity), true
+	case "ClassificationPlan.useServiceWindows":
+		if e.ComplexityRoot.ClassificationPlan.UseServiceWindows == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ClassificationPlan.UseServiceWindows(childComplexity), true
+
+	case "ClassificationServiceType.chargingInformation":
+		if e.ComplexityRoot.ClassificationServiceType.ChargingInformation == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ClassificationServiceType.ChargingInformation(childComplexity), true
+	case "ClassificationServiceType.defaultServiceCategory":
+		if e.ComplexityRoot.ClassificationServiceType.DefaultServiceCategory == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ClassificationServiceType.DefaultServiceCategory(childComplexity), true
+	case "ClassificationServiceType.description":
+		if e.ComplexityRoot.ClassificationServiceType.Description == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ClassificationServiceType.Description(childComplexity), true
+	case "ClassificationServiceType.serviceCategory":
+		if e.ComplexityRoot.ClassificationServiceType.ServiceCategory == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ClassificationServiceType.ServiceCategory(childComplexity), true
+	case "ClassificationServiceType.serviceCategoryMap":
+		if e.ComplexityRoot.ClassificationServiceType.ServiceCategoryMap == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ClassificationServiceType.ServiceCategoryMap(childComplexity), true
+	case "ClassificationServiceType.serviceDirection":
+		if e.ComplexityRoot.ClassificationServiceType.ServiceDirection == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ClassificationServiceType.ServiceDirection(childComplexity), true
+	case "ClassificationServiceType.serviceIdentifier":
+		if e.ComplexityRoot.ClassificationServiceType.ServiceIdentifier == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ClassificationServiceType.ServiceIdentifier(childComplexity), true
+	case "ClassificationServiceType.serviceTypeRule":
+		if e.ComplexityRoot.ClassificationServiceType.ServiceTypeRule == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ClassificationServiceType.ServiceTypeRule(childComplexity), true
+	case "ClassificationServiceType.serviceWindows":
+		if e.ComplexityRoot.ClassificationServiceType.ServiceWindows == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ClassificationServiceType.ServiceWindows(childComplexity), true
+	case "ClassificationServiceType.sourceType":
+		if e.ComplexityRoot.ClassificationServiceType.SourceType == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ClassificationServiceType.SourceType(childComplexity), true
+	case "ClassificationServiceType.type":
+		if e.ComplexityRoot.ClassificationServiceType.Type == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ClassificationServiceType.Type(childComplexity), true
+	case "ClassificationServiceType.unitType":
+		if e.ComplexityRoot.ClassificationServiceType.UnitType == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ClassificationServiceType.UnitType(childComplexity), true
+
+	case "LookupData.code":
+		if e.ComplexityRoot.LookupData.Code == nil {
+			break
+		}
+
+		return e.ComplexityRoot.LookupData.Code(childComplexity), true
+	case "LookupData.name":
+		if e.ComplexityRoot.LookupData.Name == nil {
+			break
+		}
+
+		return e.ComplexityRoot.LookupData.Name(childComplexity), true
+
+	case "Mutation.approveClassificationPlan":
+		if e.ComplexityRoot.Mutation.ApproveClassificationPlan == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_approveClassificationPlan_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.ApproveClassificationPlan(childComplexity, args["classificationId"].(string)), true
+	case "Mutation.cloneClassification":
+		if e.ComplexityRoot.Mutation.CloneClassification == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_cloneClassification_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.CloneClassification(childComplexity, args["classificationId"].(string)), true
 	case "Mutation.createCarrier":
 		if e.ComplexityRoot.Mutation.CreateCarrier == nil {
 			break
@@ -201,6 +489,28 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.CreateCarrier(childComplexity, args["carrier"].(model.CarrierInput)), true
+	case "Mutation.createClassification":
+		if e.ComplexityRoot.Mutation.CreateClassification == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_createClassification_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.CreateClassification(childComplexity, args["classification"].(model.ClassificationInput)), true
+	case "Mutation.declineClassificationPlan":
+		if e.ComplexityRoot.Mutation.DeclineClassificationPlan == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_declineClassificationPlan_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.DeclineClassificationPlan(childComplexity, args["classificationId"].(string)), true
 	case "Mutation.deleteCarrier":
 		if e.ComplexityRoot.Mutation.DeleteCarrier == nil {
 			break
@@ -212,12 +522,34 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.DeleteCarrier(childComplexity, args["plmn"].(string)), true
+	case "Mutation.deleteClassification":
+		if e.ComplexityRoot.Mutation.DeleteClassification == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_deleteClassification_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.DeleteClassification(childComplexity, args["classificationId"].(string)), true
 	case "Mutation._empty":
 		if e.ComplexityRoot.Mutation.Empty == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Mutation.Empty(childComplexity), true
+	case "Mutation.submitClassificationForApproval":
+		if e.ComplexityRoot.Mutation.SubmitClassificationForApproval == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_submitClassificationForApproval_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.SubmitClassificationForApproval(childComplexity, args["classificationId"].(string)), true
 	case "Mutation.updateCarrier":
 		if e.ComplexityRoot.Mutation.UpdateCarrier == nil {
 			break
@@ -229,6 +561,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.UpdateCarrier(childComplexity, args["plmn"].(string), args["carrier"].(model.CarrierInput)), true
+	case "Mutation.updateClassificationPlan":
+		if e.ComplexityRoot.Mutation.UpdateClassificationPlan == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateClassificationPlan_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.UpdateClassificationPlan(childComplexity, args["classificationId"].(string), args["classification"].(model.ClassificationInput)), true
 
 	case "Query.carrierByPlmn":
 		if e.ComplexityRoot.Query.CarrierByPlmn == nil {
@@ -252,6 +595,28 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.CarrierList(childComplexity, args["page"].(*model.PageRequest), args["filter"].(*model.FilterRequest)), true
+	case "Query.classification":
+		if e.ComplexityRoot.Query.Classification == nil {
+			break
+		}
+
+		args, err := ec.field_Query_classification_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.Classification(childComplexity, args["classificationId"].(string)), true
+	case "Query.classificationList":
+		if e.ComplexityRoot.Query.ClassificationList == nil {
+			break
+		}
+
+		args, err := ec.field_Query_classificationList_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.ClassificationList(childComplexity, args["page"].(*model.PageRequest), args["filter"].(*model.FilterRequest)), true
 	case "Query.countCarriers":
 		if e.ComplexityRoot.Query.CountCarriers == nil {
 			break
@@ -263,12 +628,112 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.CountCarriers(childComplexity, args["filter"].(*model.FilterRequest)), true
+	case "Query.countClassifications":
+		if e.ComplexityRoot.Query.CountClassifications == nil {
+			break
+		}
+
+		args, err := ec.field_Query_countClassifications_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.CountClassifications(childComplexity, args["filter"].(*model.FilterRequest)), true
 	case "Query._empty":
 		if e.ComplexityRoot.Query.Empty == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Query.Empty(childComplexity), true
+
+	case "Query.rateKeyInput":
+		if e.ComplexityRoot.Query.RateKeyInput == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Query.RateKeyInput(childComplexity), true
+
+	case "RateKeyInput.serviceCategories":
+		if e.ComplexityRoot.RateKeyInput.ServiceCategories == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RateKeyInput.ServiceCategories(childComplexity), true
+	case "RateKeyInput.serviceDirections":
+		if e.ComplexityRoot.RateKeyInput.ServiceDirections == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RateKeyInput.ServiceDirections(childComplexity), true
+	case "RateKeyInput.serviceTypes":
+		if e.ComplexityRoot.RateKeyInput.ServiceTypes == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RateKeyInput.ServiceTypes(childComplexity), true
+	case "RateKeyInput.serviceWindows":
+		if e.ComplexityRoot.RateKeyInput.ServiceWindows == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RateKeyInput.ServiceWindows(childComplexity), true
+	case "RateKeyInput.sourceTypes":
+		if e.ComplexityRoot.RateKeyInput.SourceTypes == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RateKeyInput.SourceTypes(childComplexity), true
+
+	case "ServiceCategoryLookup.code":
+		if e.ComplexityRoot.ServiceCategoryLookup.Code == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ServiceCategoryLookup.Code(childComplexity), true
+	case "ServiceCategoryLookup.name":
+		if e.ComplexityRoot.ServiceCategoryLookup.Name == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ServiceCategoryLookup.Name(childComplexity), true
+	case "ServiceCategoryLookup.serviceTypeCode":
+		if e.ComplexityRoot.ServiceCategoryLookup.ServiceTypeCode == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ServiceCategoryLookup.ServiceTypeCode(childComplexity), true
+
+	case "ServiceCategoryMapEntry.key":
+		if e.ComplexityRoot.ServiceCategoryMapEntry.Key == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ServiceCategoryMapEntry.Key(childComplexity), true
+	case "ServiceCategoryMapEntry.value":
+		if e.ComplexityRoot.ServiceCategoryMapEntry.Value == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ServiceCategoryMapEntry.Value(childComplexity), true
+
+	case "ServiceWindowEntry.endTime":
+		if e.ComplexityRoot.ServiceWindowEntry.EndTime == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ServiceWindowEntry.EndTime(childComplexity), true
+	case "ServiceWindowEntry.name":
+		if e.ComplexityRoot.ServiceWindowEntry.Name == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ServiceWindowEntry.Name(childComplexity), true
+	case "ServiceWindowEntry.startTime":
+		if e.ComplexityRoot.ServiceWindowEntry.StartTime == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ServiceWindowEntry.StartTime(childComplexity), true
 
 	}
 	return 0, false
@@ -279,9 +744,14 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	ec := newExecutionContext(opCtx, e, make(chan graphql.DeferredResult))
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
 		ec.unmarshalInputCarrierInput,
+		ec.unmarshalInputClassificationInput,
+		ec.unmarshalInputClassificationPlanInput,
+		ec.unmarshalInputClassificationServiceTypeInput,
 		ec.unmarshalInputFilterInput,
 		ec.unmarshalInputFilterRequest,
 		ec.unmarshalInputPageRequest,
+		ec.unmarshalInputServiceCategoryMapEntryInput,
+		ec.unmarshalInputServiceWindowEntryInput,
 		ec.unmarshalInputSortInput,
 	)
 	first := true
@@ -410,6 +880,192 @@ extend type Mutation {
   deleteCarrier(plmn: String!): Boolean!
 }
 `, BuiltIn: false},
+	{Name: "../../../../gql/schema/classification.graphql", Input: `# Classification domain GraphQL types.
+# Status lifecycle: DRAFT → PENDING → ACTIVE (approve) or back to DRAFT (decline).
+# Only DRAFT plans may be edited or deleted.
+
+enum ClassificationStatus {
+  DRAFT
+  PENDING
+  ACTIVE
+  RETIRED
+}
+
+# The full classification entity — metadata wrapper around an embedded ClassificationPlan.
+# Mirrors Java ClassificationEntity.
+type Classification {
+  classificationId: ID!
+  name:             String!
+  createdOn:        DateTime
+  effectiveTime:    DateTime!
+  createdBy:        String!
+  approvedBy:       String
+  status:           ClassificationStatus!
+  plan:             ClassificationPlan!
+}
+
+# The embedded classification plan (stored as JSONB).
+# Mirrors the Go model.ClassificationPlan struct.
+type ClassificationPlan {
+  ruleSetId:            String
+  ruleSetName:          String
+  useServiceWindows:    Boolean!
+  defaultServiceWindow: String!
+  defaultSourceType:    String!
+  serviceWindows:       [ServiceWindowEntry!]
+  serviceTypes:         [ClassificationServiceType!]
+}
+
+# A named service window entry (flattened from map[string]ServiceWindow).
+type ServiceWindowEntry {
+  name:      String!
+  startTime: String!   # "HH:mm" format
+  endTime:   String!   # "HH:mm" format
+}
+
+# A single service type classification rule.
+type ClassificationServiceType {
+  type:                   String!
+  chargingInformation:    String!
+  serviceTypeRule:        String
+  description:            String
+  sourceType:             String!
+  serviceDirection:       String!
+  serviceCategory:        String!
+  serviceIdentifier:      String
+  defaultServiceCategory: String
+  unitType:               String!
+  serviceWindows:         [String!]
+  serviceCategoryMap:     [ServiceCategoryMapEntry!]
+}
+
+# A key-value pair (flattened from map[string]string).
+type ServiceCategoryMapEntry {
+  key:   String!
+  value: String!
+}
+
+# ---------------------------------------------------------------------------
+# RateKeyInput — lookup data derived from the active classification plan.
+# Used by the frontend to populate dropdowns when building rate plans.
+# Mirrors Java RateKeyInputResponseDto.
+# ---------------------------------------------------------------------------
+
+type LookupData {
+  code: String!
+  name: String!
+}
+
+type ServiceCategoryLookup {
+  code:            String!
+  name:            String!
+  serviceTypeCode: String!
+}
+
+type RateKeyInput {
+  serviceTypes:      [LookupData!]!
+  sourceTypes:       [LookupData!]!
+  serviceDirections: [LookupData!]!
+  serviceCategories: [ServiceCategoryLookup!]!
+  serviceWindows:    [ServiceCategoryLookup!]!
+}
+
+# ---------------------------------------------------------------------------
+# Input types
+# ---------------------------------------------------------------------------
+
+input ClassificationInput {
+  name:          String!
+  effectiveTime: DateTime!
+  plan:          ClassificationPlanInput!
+}
+
+input ClassificationPlanInput {
+  ruleSetId:            String
+  ruleSetName:          String
+  useServiceWindows:    Boolean!
+  defaultServiceWindow: String!
+  defaultSourceType:    String!
+  serviceWindows:       [ServiceWindowEntryInput!]
+  serviceTypes:         [ClassificationServiceTypeInput!]!
+}
+
+input ServiceWindowEntryInput {
+  name:      String!
+  startTime: String!
+  endTime:   String!
+}
+
+input ClassificationServiceTypeInput {
+  type:                   String!
+  chargingInformation:    String!
+  serviceTypeRule:        String
+  description:            String
+  sourceType:             String!
+  serviceDirection:       String!
+  serviceCategory:        String!
+  serviceIdentifier:      String
+  defaultServiceCategory: String
+  unitType:               String!
+  serviceWindows:         [String!]
+  serviceCategoryMap:     [ServiceCategoryMapEntryInput!]
+}
+
+input ServiceCategoryMapEntryInput {
+  key:   String!
+  value: String!
+}
+
+# ---------------------------------------------------------------------------
+# Queries
+# ---------------------------------------------------------------------------
+
+extend type Query {
+  # Returns a filtered, sorted, paginated list of classification plans.
+  classificationList(page: PageRequest, filter: FilterRequest): [Classification!]!
+
+  # Returns the total count of classification plans matching the filter.
+  countClassifications(filter: FilterRequest): Int!
+
+  # Returns lookup data derived from the active classification plan.
+  # Used to populate rate-plan configuration dropdowns in the frontend.
+  rateKeyInput: RateKeyInput!
+
+  # Returns a single classification plan by ID, or null if not found.
+  classification(classificationId: ID!): Classification
+}
+
+# ---------------------------------------------------------------------------
+# Mutations
+# ---------------------------------------------------------------------------
+
+extend type Mutation {
+  # Creates a new classification plan in DRAFT status.
+  # createdBy is derived from the authenticated JWT; it is not a client input.
+  createClassification(classification: ClassificationInput!): Classification!
+
+  # Creates a DRAFT copy of an existing classification plan.
+  cloneClassification(classificationId: ID!): Classification!
+
+  # Updates the name, effectiveTime, and plan of a DRAFT classification.
+  # Returns an error if the classification is not in DRAFT status.
+  updateClassificationPlan(classificationId: ID!, classification: ClassificationInput!): Classification!
+
+  # Transitions a DRAFT classification to PENDING (awaiting approval).
+  submitClassificationForApproval(classificationId: ID!): Classification!
+
+  # Transitions a PENDING classification to ACTIVE.
+  # approvedBy is derived from the authenticated JWT.
+  approveClassificationPlan(classificationId: ID!): Classification!
+
+  # Transitions a PENDING classification back to DRAFT.
+  declineClassificationPlan(classificationId: ID!): Classification!
+
+  # Permanently deletes a DRAFT classification. Returns true on success.
+  # Returns an error if the classification is not in DRAFT status.
+  deleteClassification(classificationId: ID!): Boolean!
+}
+`, BuiltIn: false},
 	{Name: "../../../../gql/schema/schema.graphql", Input: `# GraphQL Schema for Charging Backend
 
 # Root types
@@ -478,6 +1134,28 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 
 // region    ***************************** args.gotpl *****************************
 
+func (ec *executionContext) field_Mutation_approveClassificationPlan_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "classificationId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["classificationId"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_cloneClassification_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "classificationId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["classificationId"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_createCarrier_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -489,6 +1167,28 @@ func (ec *executionContext) field_Mutation_createCarrier_args(ctx context.Contex
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_createClassification_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "classification", ec.unmarshalNClassificationInput2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐClassificationInput)
+	if err != nil {
+		return nil, err
+	}
+	args["classification"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_declineClassificationPlan_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "classificationId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["classificationId"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_deleteCarrier_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -497,6 +1197,28 @@ func (ec *executionContext) field_Mutation_deleteCarrier_args(ctx context.Contex
 		return nil, err
 	}
 	args["plmn"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_deleteClassification_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "classificationId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["classificationId"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_submitClassificationForApproval_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "classificationId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["classificationId"] = arg0
 	return args, nil
 }
 
@@ -513,6 +1235,22 @@ func (ec *executionContext) field_Mutation_updateCarrier_args(ctx context.Contex
 		return nil, err
 	}
 	args["carrier"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_updateClassificationPlan_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "classificationId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["classificationId"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "classification", ec.unmarshalNClassificationInput2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐClassificationInput)
+	if err != nil {
+		return nil, err
+	}
+	args["classification"] = arg1
 	return args, nil
 }
 
@@ -554,7 +1292,45 @@ func (ec *executionContext) field_Query_carrierList_args(ctx context.Context, ra
 	return args, nil
 }
 
+func (ec *executionContext) field_Query_classificationList_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "page", ec.unmarshalOPageRequest2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐPageRequest)
+	if err != nil {
+		return nil, err
+	}
+	args["page"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "filter", ec.unmarshalOFilterRequest2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐFilterRequest)
+	if err != nil {
+		return nil, err
+	}
+	args["filter"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_classification_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "classificationId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["classificationId"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Query_countCarriers_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "filter", ec.unmarshalOFilterRequest2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐFilterRequest)
+	if err != nil {
+		return nil, err
+	}
+	args["filter"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_countClassifications_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
 	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "filter", ec.unmarshalOFilterRequest2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐFilterRequest)
@@ -1052,6 +1828,903 @@ func (ec *executionContext) fieldContext_Carrier_modifiedOn(_ context.Context, f
 	return fc, nil
 }
 
+func (ec *executionContext) _Classification_classificationId(ctx context.Context, field graphql.CollectedField, obj *model.Classification) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Classification_classificationId,
+		func(ctx context.Context) (any, error) {
+			return obj.ClassificationID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Classification_classificationId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Classification",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Classification_name(ctx context.Context, field graphql.CollectedField, obj *model.Classification) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Classification_name,
+		func(ctx context.Context) (any, error) {
+			return obj.Name, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Classification_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Classification",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Classification_createdOn(ctx context.Context, field graphql.CollectedField, obj *model.Classification) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Classification_createdOn,
+		func(ctx context.Context) (any, error) {
+			return obj.CreatedOn, nil
+		},
+		nil,
+		ec.marshalODateTime2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Classification_createdOn(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Classification",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Classification_effectiveTime(ctx context.Context, field graphql.CollectedField, obj *model.Classification) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Classification_effectiveTime,
+		func(ctx context.Context) (any, error) {
+			return obj.EffectiveTime, nil
+		},
+		nil,
+		ec.marshalNDateTime2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Classification_effectiveTime(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Classification",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Classification_createdBy(ctx context.Context, field graphql.CollectedField, obj *model.Classification) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Classification_createdBy,
+		func(ctx context.Context) (any, error) {
+			return obj.CreatedBy, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Classification_createdBy(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Classification",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Classification_approvedBy(ctx context.Context, field graphql.CollectedField, obj *model.Classification) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Classification_approvedBy,
+		func(ctx context.Context) (any, error) {
+			return obj.ApprovedBy, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Classification_approvedBy(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Classification",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Classification_status(ctx context.Context, field graphql.CollectedField, obj *model.Classification) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Classification_status,
+		func(ctx context.Context) (any, error) {
+			return obj.Status, nil
+		},
+		nil,
+		ec.marshalNClassificationStatus2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐClassificationStatus,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Classification_status(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Classification",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ClassificationStatus does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Classification_plan(ctx context.Context, field graphql.CollectedField, obj *model.Classification) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Classification_plan,
+		func(ctx context.Context) (any, error) {
+			return obj.Plan, nil
+		},
+		nil,
+		ec.marshalNClassificationPlan2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐClassificationPlan,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Classification_plan(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Classification",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "ruleSetId":
+				return ec.fieldContext_ClassificationPlan_ruleSetId(ctx, field)
+			case "ruleSetName":
+				return ec.fieldContext_ClassificationPlan_ruleSetName(ctx, field)
+			case "useServiceWindows":
+				return ec.fieldContext_ClassificationPlan_useServiceWindows(ctx, field)
+			case "defaultServiceWindow":
+				return ec.fieldContext_ClassificationPlan_defaultServiceWindow(ctx, field)
+			case "defaultSourceType":
+				return ec.fieldContext_ClassificationPlan_defaultSourceType(ctx, field)
+			case "serviceWindows":
+				return ec.fieldContext_ClassificationPlan_serviceWindows(ctx, field)
+			case "serviceTypes":
+				return ec.fieldContext_ClassificationPlan_serviceTypes(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ClassificationPlan", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ClassificationPlan_ruleSetId(ctx context.Context, field graphql.CollectedField, obj *model.ClassificationPlan) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ClassificationPlan_ruleSetId,
+		func(ctx context.Context) (any, error) {
+			return obj.RuleSetID, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ClassificationPlan_ruleSetId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ClassificationPlan",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ClassificationPlan_ruleSetName(ctx context.Context, field graphql.CollectedField, obj *model.ClassificationPlan) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ClassificationPlan_ruleSetName,
+		func(ctx context.Context) (any, error) {
+			return obj.RuleSetName, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ClassificationPlan_ruleSetName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ClassificationPlan",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ClassificationPlan_useServiceWindows(ctx context.Context, field graphql.CollectedField, obj *model.ClassificationPlan) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ClassificationPlan_useServiceWindows,
+		func(ctx context.Context) (any, error) {
+			return obj.UseServiceWindows, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ClassificationPlan_useServiceWindows(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ClassificationPlan",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ClassificationPlan_defaultServiceWindow(ctx context.Context, field graphql.CollectedField, obj *model.ClassificationPlan) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ClassificationPlan_defaultServiceWindow,
+		func(ctx context.Context) (any, error) {
+			return obj.DefaultServiceWindow, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ClassificationPlan_defaultServiceWindow(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ClassificationPlan",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ClassificationPlan_defaultSourceType(ctx context.Context, field graphql.CollectedField, obj *model.ClassificationPlan) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ClassificationPlan_defaultSourceType,
+		func(ctx context.Context) (any, error) {
+			return obj.DefaultSourceType, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ClassificationPlan_defaultSourceType(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ClassificationPlan",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ClassificationPlan_serviceWindows(ctx context.Context, field graphql.CollectedField, obj *model.ClassificationPlan) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ClassificationPlan_serviceWindows,
+		func(ctx context.Context) (any, error) {
+			return obj.ServiceWindows, nil
+		},
+		nil,
+		ec.marshalOServiceWindowEntry2ᚕᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐServiceWindowEntryᚄ,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ClassificationPlan_serviceWindows(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ClassificationPlan",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "name":
+				return ec.fieldContext_ServiceWindowEntry_name(ctx, field)
+			case "startTime":
+				return ec.fieldContext_ServiceWindowEntry_startTime(ctx, field)
+			case "endTime":
+				return ec.fieldContext_ServiceWindowEntry_endTime(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ServiceWindowEntry", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ClassificationPlan_serviceTypes(ctx context.Context, field graphql.CollectedField, obj *model.ClassificationPlan) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ClassificationPlan_serviceTypes,
+		func(ctx context.Context) (any, error) {
+			return obj.ServiceTypes, nil
+		},
+		nil,
+		ec.marshalOClassificationServiceType2ᚕᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐClassificationServiceTypeᚄ,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ClassificationPlan_serviceTypes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ClassificationPlan",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "type":
+				return ec.fieldContext_ClassificationServiceType_type(ctx, field)
+			case "chargingInformation":
+				return ec.fieldContext_ClassificationServiceType_chargingInformation(ctx, field)
+			case "serviceTypeRule":
+				return ec.fieldContext_ClassificationServiceType_serviceTypeRule(ctx, field)
+			case "description":
+				return ec.fieldContext_ClassificationServiceType_description(ctx, field)
+			case "sourceType":
+				return ec.fieldContext_ClassificationServiceType_sourceType(ctx, field)
+			case "serviceDirection":
+				return ec.fieldContext_ClassificationServiceType_serviceDirection(ctx, field)
+			case "serviceCategory":
+				return ec.fieldContext_ClassificationServiceType_serviceCategory(ctx, field)
+			case "serviceIdentifier":
+				return ec.fieldContext_ClassificationServiceType_serviceIdentifier(ctx, field)
+			case "defaultServiceCategory":
+				return ec.fieldContext_ClassificationServiceType_defaultServiceCategory(ctx, field)
+			case "unitType":
+				return ec.fieldContext_ClassificationServiceType_unitType(ctx, field)
+			case "serviceWindows":
+				return ec.fieldContext_ClassificationServiceType_serviceWindows(ctx, field)
+			case "serviceCategoryMap":
+				return ec.fieldContext_ClassificationServiceType_serviceCategoryMap(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ClassificationServiceType", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ClassificationServiceType_type(ctx context.Context, field graphql.CollectedField, obj *model.ClassificationServiceType) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ClassificationServiceType_type,
+		func(ctx context.Context) (any, error) {
+			return obj.Type, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ClassificationServiceType_type(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ClassificationServiceType",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ClassificationServiceType_chargingInformation(ctx context.Context, field graphql.CollectedField, obj *model.ClassificationServiceType) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ClassificationServiceType_chargingInformation,
+		func(ctx context.Context) (any, error) {
+			return obj.ChargingInformation, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ClassificationServiceType_chargingInformation(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ClassificationServiceType",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ClassificationServiceType_serviceTypeRule(ctx context.Context, field graphql.CollectedField, obj *model.ClassificationServiceType) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ClassificationServiceType_serviceTypeRule,
+		func(ctx context.Context) (any, error) {
+			return obj.ServiceTypeRule, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ClassificationServiceType_serviceTypeRule(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ClassificationServiceType",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ClassificationServiceType_description(ctx context.Context, field graphql.CollectedField, obj *model.ClassificationServiceType) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ClassificationServiceType_description,
+		func(ctx context.Context) (any, error) {
+			return obj.Description, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ClassificationServiceType_description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ClassificationServiceType",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ClassificationServiceType_sourceType(ctx context.Context, field graphql.CollectedField, obj *model.ClassificationServiceType) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ClassificationServiceType_sourceType,
+		func(ctx context.Context) (any, error) {
+			return obj.SourceType, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ClassificationServiceType_sourceType(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ClassificationServiceType",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ClassificationServiceType_serviceDirection(ctx context.Context, field graphql.CollectedField, obj *model.ClassificationServiceType) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ClassificationServiceType_serviceDirection,
+		func(ctx context.Context) (any, error) {
+			return obj.ServiceDirection, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ClassificationServiceType_serviceDirection(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ClassificationServiceType",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ClassificationServiceType_serviceCategory(ctx context.Context, field graphql.CollectedField, obj *model.ClassificationServiceType) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ClassificationServiceType_serviceCategory,
+		func(ctx context.Context) (any, error) {
+			return obj.ServiceCategory, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ClassificationServiceType_serviceCategory(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ClassificationServiceType",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ClassificationServiceType_serviceIdentifier(ctx context.Context, field graphql.CollectedField, obj *model.ClassificationServiceType) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ClassificationServiceType_serviceIdentifier,
+		func(ctx context.Context) (any, error) {
+			return obj.ServiceIdentifier, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ClassificationServiceType_serviceIdentifier(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ClassificationServiceType",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ClassificationServiceType_defaultServiceCategory(ctx context.Context, field graphql.CollectedField, obj *model.ClassificationServiceType) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ClassificationServiceType_defaultServiceCategory,
+		func(ctx context.Context) (any, error) {
+			return obj.DefaultServiceCategory, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ClassificationServiceType_defaultServiceCategory(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ClassificationServiceType",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ClassificationServiceType_unitType(ctx context.Context, field graphql.CollectedField, obj *model.ClassificationServiceType) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ClassificationServiceType_unitType,
+		func(ctx context.Context) (any, error) {
+			return obj.UnitType, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ClassificationServiceType_unitType(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ClassificationServiceType",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ClassificationServiceType_serviceWindows(ctx context.Context, field graphql.CollectedField, obj *model.ClassificationServiceType) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ClassificationServiceType_serviceWindows,
+		func(ctx context.Context) (any, error) {
+			return obj.ServiceWindows, nil
+		},
+		nil,
+		ec.marshalOString2ᚕstringᚄ,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ClassificationServiceType_serviceWindows(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ClassificationServiceType",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ClassificationServiceType_serviceCategoryMap(ctx context.Context, field graphql.CollectedField, obj *model.ClassificationServiceType) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ClassificationServiceType_serviceCategoryMap,
+		func(ctx context.Context) (any, error) {
+			return obj.ServiceCategoryMap, nil
+		},
+		nil,
+		ec.marshalOServiceCategoryMapEntry2ᚕᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐServiceCategoryMapEntryᚄ,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ClassificationServiceType_serviceCategoryMap(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ClassificationServiceType",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "key":
+				return ec.fieldContext_ServiceCategoryMapEntry_key(ctx, field)
+			case "value":
+				return ec.fieldContext_ServiceCategoryMapEntry_value(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ServiceCategoryMapEntry", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _LookupData_code(ctx context.Context, field graphql.CollectedField, obj *model.LookupData) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_LookupData_code,
+		func(ctx context.Context) (any, error) {
+			return obj.Code, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_LookupData_code(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "LookupData",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _LookupData_name(ctx context.Context, field graphql.CollectedField, obj *model.LookupData) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_LookupData_name,
+		func(ctx context.Context) (any, error) {
+			return obj.Name, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_LookupData_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "LookupData",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Mutation__empty(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -1238,6 +2911,401 @@ func (ec *executionContext) fieldContext_Mutation_deleteCarrier(ctx context.Cont
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_deleteCarrier_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_createClassification(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_createClassification,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().CreateClassification(ctx, fc.Args["classification"].(model.ClassificationInput))
+		},
+		nil,
+		ec.marshalNClassification2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐClassification,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_createClassification(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "classificationId":
+				return ec.fieldContext_Classification_classificationId(ctx, field)
+			case "name":
+				return ec.fieldContext_Classification_name(ctx, field)
+			case "createdOn":
+				return ec.fieldContext_Classification_createdOn(ctx, field)
+			case "effectiveTime":
+				return ec.fieldContext_Classification_effectiveTime(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_Classification_createdBy(ctx, field)
+			case "approvedBy":
+				return ec.fieldContext_Classification_approvedBy(ctx, field)
+			case "status":
+				return ec.fieldContext_Classification_status(ctx, field)
+			case "plan":
+				return ec.fieldContext_Classification_plan(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Classification", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_createClassification_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_cloneClassification(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_cloneClassification,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().CloneClassification(ctx, fc.Args["classificationId"].(string))
+		},
+		nil,
+		ec.marshalNClassification2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐClassification,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_cloneClassification(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "classificationId":
+				return ec.fieldContext_Classification_classificationId(ctx, field)
+			case "name":
+				return ec.fieldContext_Classification_name(ctx, field)
+			case "createdOn":
+				return ec.fieldContext_Classification_createdOn(ctx, field)
+			case "effectiveTime":
+				return ec.fieldContext_Classification_effectiveTime(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_Classification_createdBy(ctx, field)
+			case "approvedBy":
+				return ec.fieldContext_Classification_approvedBy(ctx, field)
+			case "status":
+				return ec.fieldContext_Classification_status(ctx, field)
+			case "plan":
+				return ec.fieldContext_Classification_plan(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Classification", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_cloneClassification_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_updateClassificationPlan(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_updateClassificationPlan,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().UpdateClassificationPlan(ctx, fc.Args["classificationId"].(string), fc.Args["classification"].(model.ClassificationInput))
+		},
+		nil,
+		ec.marshalNClassification2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐClassification,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateClassificationPlan(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "classificationId":
+				return ec.fieldContext_Classification_classificationId(ctx, field)
+			case "name":
+				return ec.fieldContext_Classification_name(ctx, field)
+			case "createdOn":
+				return ec.fieldContext_Classification_createdOn(ctx, field)
+			case "effectiveTime":
+				return ec.fieldContext_Classification_effectiveTime(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_Classification_createdBy(ctx, field)
+			case "approvedBy":
+				return ec.fieldContext_Classification_approvedBy(ctx, field)
+			case "status":
+				return ec.fieldContext_Classification_status(ctx, field)
+			case "plan":
+				return ec.fieldContext_Classification_plan(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Classification", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateClassificationPlan_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_submitClassificationForApproval(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_submitClassificationForApproval,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().SubmitClassificationForApproval(ctx, fc.Args["classificationId"].(string))
+		},
+		nil,
+		ec.marshalNClassification2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐClassification,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_submitClassificationForApproval(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "classificationId":
+				return ec.fieldContext_Classification_classificationId(ctx, field)
+			case "name":
+				return ec.fieldContext_Classification_name(ctx, field)
+			case "createdOn":
+				return ec.fieldContext_Classification_createdOn(ctx, field)
+			case "effectiveTime":
+				return ec.fieldContext_Classification_effectiveTime(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_Classification_createdBy(ctx, field)
+			case "approvedBy":
+				return ec.fieldContext_Classification_approvedBy(ctx, field)
+			case "status":
+				return ec.fieldContext_Classification_status(ctx, field)
+			case "plan":
+				return ec.fieldContext_Classification_plan(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Classification", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_submitClassificationForApproval_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_approveClassificationPlan(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_approveClassificationPlan,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().ApproveClassificationPlan(ctx, fc.Args["classificationId"].(string))
+		},
+		nil,
+		ec.marshalNClassification2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐClassification,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_approveClassificationPlan(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "classificationId":
+				return ec.fieldContext_Classification_classificationId(ctx, field)
+			case "name":
+				return ec.fieldContext_Classification_name(ctx, field)
+			case "createdOn":
+				return ec.fieldContext_Classification_createdOn(ctx, field)
+			case "effectiveTime":
+				return ec.fieldContext_Classification_effectiveTime(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_Classification_createdBy(ctx, field)
+			case "approvedBy":
+				return ec.fieldContext_Classification_approvedBy(ctx, field)
+			case "status":
+				return ec.fieldContext_Classification_status(ctx, field)
+			case "plan":
+				return ec.fieldContext_Classification_plan(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Classification", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_approveClassificationPlan_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_declineClassificationPlan(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_declineClassificationPlan,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().DeclineClassificationPlan(ctx, fc.Args["classificationId"].(string))
+		},
+		nil,
+		ec.marshalNClassification2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐClassification,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_declineClassificationPlan(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "classificationId":
+				return ec.fieldContext_Classification_classificationId(ctx, field)
+			case "name":
+				return ec.fieldContext_Classification_name(ctx, field)
+			case "createdOn":
+				return ec.fieldContext_Classification_createdOn(ctx, field)
+			case "effectiveTime":
+				return ec.fieldContext_Classification_effectiveTime(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_Classification_createdBy(ctx, field)
+			case "approvedBy":
+				return ec.fieldContext_Classification_approvedBy(ctx, field)
+			case "status":
+				return ec.fieldContext_Classification_status(ctx, field)
+			case "plan":
+				return ec.fieldContext_Classification_plan(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Classification", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_declineClassificationPlan_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_deleteClassification(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_deleteClassification,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().DeleteClassification(ctx, fc.Args["classificationId"].(string))
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_deleteClassification(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_deleteClassification_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -1436,6 +3504,206 @@ func (ec *executionContext) fieldContext_Query_countCarriers(ctx context.Context
 	return fc, nil
 }
 
+func (ec *executionContext) _Query_classificationList(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_classificationList,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().ClassificationList(ctx, fc.Args["page"].(*model.PageRequest), fc.Args["filter"].(*model.FilterRequest))
+		},
+		nil,
+		ec.marshalNClassification2ᚕᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐClassificationᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_classificationList(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "classificationId":
+				return ec.fieldContext_Classification_classificationId(ctx, field)
+			case "name":
+				return ec.fieldContext_Classification_name(ctx, field)
+			case "createdOn":
+				return ec.fieldContext_Classification_createdOn(ctx, field)
+			case "effectiveTime":
+				return ec.fieldContext_Classification_effectiveTime(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_Classification_createdBy(ctx, field)
+			case "approvedBy":
+				return ec.fieldContext_Classification_approvedBy(ctx, field)
+			case "status":
+				return ec.fieldContext_Classification_status(ctx, field)
+			case "plan":
+				return ec.fieldContext_Classification_plan(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Classification", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_classificationList_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_countClassifications(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_countClassifications,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().CountClassifications(ctx, fc.Args["filter"].(*model.FilterRequest))
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_countClassifications(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_countClassifications_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_rateKeyInput(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_rateKeyInput,
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.Query().RateKeyInput(ctx)
+		},
+		nil,
+		ec.marshalNRateKeyInput2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐRateKeyInput,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_rateKeyInput(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "serviceTypes":
+				return ec.fieldContext_RateKeyInput_serviceTypes(ctx, field)
+			case "sourceTypes":
+				return ec.fieldContext_RateKeyInput_sourceTypes(ctx, field)
+			case "serviceDirections":
+				return ec.fieldContext_RateKeyInput_serviceDirections(ctx, field)
+			case "serviceCategories":
+				return ec.fieldContext_RateKeyInput_serviceCategories(ctx, field)
+			case "serviceWindows":
+				return ec.fieldContext_RateKeyInput_serviceWindows(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type RateKeyInput", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_classification(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_classification,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().Classification(ctx, fc.Args["classificationId"].(string))
+		},
+		nil,
+		ec.marshalOClassification2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐClassification,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_classification(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "classificationId":
+				return ec.fieldContext_Classification_classificationId(ctx, field)
+			case "name":
+				return ec.fieldContext_Classification_name(ctx, field)
+			case "createdOn":
+				return ec.fieldContext_Classification_createdOn(ctx, field)
+			case "effectiveTime":
+				return ec.fieldContext_Classification_effectiveTime(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_Classification_createdBy(ctx, field)
+			case "approvedBy":
+				return ec.fieldContext_Classification_approvedBy(ctx, field)
+			case "status":
+				return ec.fieldContext_Classification_status(ctx, field)
+			case "plan":
+				return ec.fieldContext_Classification_plan(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Classification", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_classification_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -1539,6 +3807,417 @@ func (ec *executionContext) fieldContext_Query___schema(_ context.Context, field
 				return ec.fieldContext___Schema_directives(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type __Schema", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RateKeyInput_serviceTypes(ctx context.Context, field graphql.CollectedField, obj *model.RateKeyInput) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RateKeyInput_serviceTypes,
+		func(ctx context.Context) (any, error) {
+			return obj.ServiceTypes, nil
+		},
+		nil,
+		ec.marshalNLookupData2ᚕᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐLookupDataᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RateKeyInput_serviceTypes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RateKeyInput",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "code":
+				return ec.fieldContext_LookupData_code(ctx, field)
+			case "name":
+				return ec.fieldContext_LookupData_name(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type LookupData", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RateKeyInput_sourceTypes(ctx context.Context, field graphql.CollectedField, obj *model.RateKeyInput) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RateKeyInput_sourceTypes,
+		func(ctx context.Context) (any, error) {
+			return obj.SourceTypes, nil
+		},
+		nil,
+		ec.marshalNLookupData2ᚕᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐLookupDataᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RateKeyInput_sourceTypes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RateKeyInput",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "code":
+				return ec.fieldContext_LookupData_code(ctx, field)
+			case "name":
+				return ec.fieldContext_LookupData_name(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type LookupData", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RateKeyInput_serviceDirections(ctx context.Context, field graphql.CollectedField, obj *model.RateKeyInput) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RateKeyInput_serviceDirections,
+		func(ctx context.Context) (any, error) {
+			return obj.ServiceDirections, nil
+		},
+		nil,
+		ec.marshalNLookupData2ᚕᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐLookupDataᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RateKeyInput_serviceDirections(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RateKeyInput",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "code":
+				return ec.fieldContext_LookupData_code(ctx, field)
+			case "name":
+				return ec.fieldContext_LookupData_name(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type LookupData", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RateKeyInput_serviceCategories(ctx context.Context, field graphql.CollectedField, obj *model.RateKeyInput) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RateKeyInput_serviceCategories,
+		func(ctx context.Context) (any, error) {
+			return obj.ServiceCategories, nil
+		},
+		nil,
+		ec.marshalNServiceCategoryLookup2ᚕᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐServiceCategoryLookupᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RateKeyInput_serviceCategories(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RateKeyInput",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "code":
+				return ec.fieldContext_ServiceCategoryLookup_code(ctx, field)
+			case "name":
+				return ec.fieldContext_ServiceCategoryLookup_name(ctx, field)
+			case "serviceTypeCode":
+				return ec.fieldContext_ServiceCategoryLookup_serviceTypeCode(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ServiceCategoryLookup", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RateKeyInput_serviceWindows(ctx context.Context, field graphql.CollectedField, obj *model.RateKeyInput) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RateKeyInput_serviceWindows,
+		func(ctx context.Context) (any, error) {
+			return obj.ServiceWindows, nil
+		},
+		nil,
+		ec.marshalNServiceCategoryLookup2ᚕᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐServiceCategoryLookupᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RateKeyInput_serviceWindows(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RateKeyInput",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "code":
+				return ec.fieldContext_ServiceCategoryLookup_code(ctx, field)
+			case "name":
+				return ec.fieldContext_ServiceCategoryLookup_name(ctx, field)
+			case "serviceTypeCode":
+				return ec.fieldContext_ServiceCategoryLookup_serviceTypeCode(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ServiceCategoryLookup", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ServiceCategoryLookup_code(ctx context.Context, field graphql.CollectedField, obj *model.ServiceCategoryLookup) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ServiceCategoryLookup_code,
+		func(ctx context.Context) (any, error) {
+			return obj.Code, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ServiceCategoryLookup_code(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ServiceCategoryLookup",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ServiceCategoryLookup_name(ctx context.Context, field graphql.CollectedField, obj *model.ServiceCategoryLookup) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ServiceCategoryLookup_name,
+		func(ctx context.Context) (any, error) {
+			return obj.Name, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ServiceCategoryLookup_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ServiceCategoryLookup",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ServiceCategoryLookup_serviceTypeCode(ctx context.Context, field graphql.CollectedField, obj *model.ServiceCategoryLookup) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ServiceCategoryLookup_serviceTypeCode,
+		func(ctx context.Context) (any, error) {
+			return obj.ServiceTypeCode, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ServiceCategoryLookup_serviceTypeCode(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ServiceCategoryLookup",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ServiceCategoryMapEntry_key(ctx context.Context, field graphql.CollectedField, obj *model.ServiceCategoryMapEntry) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ServiceCategoryMapEntry_key,
+		func(ctx context.Context) (any, error) {
+			return obj.Key, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ServiceCategoryMapEntry_key(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ServiceCategoryMapEntry",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ServiceCategoryMapEntry_value(ctx context.Context, field graphql.CollectedField, obj *model.ServiceCategoryMapEntry) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ServiceCategoryMapEntry_value,
+		func(ctx context.Context) (any, error) {
+			return obj.Value, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ServiceCategoryMapEntry_value(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ServiceCategoryMapEntry",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ServiceWindowEntry_name(ctx context.Context, field graphql.CollectedField, obj *model.ServiceWindowEntry) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ServiceWindowEntry_name,
+		func(ctx context.Context) (any, error) {
+			return obj.Name, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ServiceWindowEntry_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ServiceWindowEntry",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ServiceWindowEntry_startTime(ctx context.Context, field graphql.CollectedField, obj *model.ServiceWindowEntry) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ServiceWindowEntry_startTime,
+		func(ctx context.Context) (any, error) {
+			return obj.StartTime, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ServiceWindowEntry_startTime(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ServiceWindowEntry",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ServiceWindowEntry_endTime(ctx context.Context, field graphql.CollectedField, obj *model.ServiceWindowEntry) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ServiceWindowEntry_endTime,
+		func(ctx context.Context) (any, error) {
+			return obj.EndTime, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ServiceWindowEntry_endTime(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ServiceWindowEntry",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -3069,6 +5748,229 @@ func (ec *executionContext) unmarshalInputCarrierInput(ctx context.Context, obj 
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputClassificationInput(ctx context.Context, obj any) (model.ClassificationInput, error) {
+	var it model.ClassificationInput
+	if obj == nil {
+		return it, nil
+	}
+
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"name", "effectiveTime", "plan"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "name":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Name = data
+		case "effectiveTime":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("effectiveTime"))
+			data, err := ec.unmarshalNDateTime2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EffectiveTime = data
+		case "plan":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("plan"))
+			data, err := ec.unmarshalNClassificationPlanInput2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐClassificationPlanInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Plan = data
+		}
+	}
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputClassificationPlanInput(ctx context.Context, obj any) (model.ClassificationPlanInput, error) {
+	var it model.ClassificationPlanInput
+	if obj == nil {
+		return it, nil
+	}
+
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"ruleSetId", "ruleSetName", "useServiceWindows", "defaultServiceWindow", "defaultSourceType", "serviceWindows", "serviceTypes"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "ruleSetId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ruleSetId"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RuleSetID = data
+		case "ruleSetName":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ruleSetName"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RuleSetName = data
+		case "useServiceWindows":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("useServiceWindows"))
+			data, err := ec.unmarshalNBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UseServiceWindows = data
+		case "defaultServiceWindow":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("defaultServiceWindow"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DefaultServiceWindow = data
+		case "defaultSourceType":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("defaultSourceType"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DefaultSourceType = data
+		case "serviceWindows":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceWindows"))
+			data, err := ec.unmarshalOServiceWindowEntryInput2ᚕᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐServiceWindowEntryInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceWindows = data
+		case "serviceTypes":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceTypes"))
+			data, err := ec.unmarshalNClassificationServiceTypeInput2ᚕᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐClassificationServiceTypeInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceTypes = data
+		}
+	}
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputClassificationServiceTypeInput(ctx context.Context, obj any) (model.ClassificationServiceTypeInput, error) {
+	var it model.ClassificationServiceTypeInput
+	if obj == nil {
+		return it, nil
+	}
+
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"type", "chargingInformation", "serviceTypeRule", "description", "sourceType", "serviceDirection", "serviceCategory", "serviceIdentifier", "defaultServiceCategory", "unitType", "serviceWindows", "serviceCategoryMap"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "type":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("type"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Type = data
+		case "chargingInformation":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("chargingInformation"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ChargingInformation = data
+		case "serviceTypeRule":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceTypeRule"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceTypeRule = data
+		case "description":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Description = data
+		case "sourceType":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("sourceType"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SourceType = data
+		case "serviceDirection":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceDirection"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceDirection = data
+		case "serviceCategory":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceCategory"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceCategory = data
+		case "serviceIdentifier":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceIdentifier"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceIdentifier = data
+		case "defaultServiceCategory":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("defaultServiceCategory"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DefaultServiceCategory = data
+		case "unitType":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("unitType"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UnitType = data
+		case "serviceWindows":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceWindows"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceWindows = data
+		case "serviceCategoryMap":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceCategoryMap"))
+			data, err := ec.unmarshalOServiceCategoryMapEntryInput2ᚕᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐServiceCategoryMapEntryInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceCategoryMap = data
+		}
+	}
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputFilterInput(ctx context.Context, obj any) (model.FilterInput, error) {
 	var it model.FilterInput
 	if obj == nil {
@@ -3189,6 +6091,87 @@ func (ec *executionContext) unmarshalInputPageRequest(ctx context.Context, obj a
 				return it, err
 			}
 			it.Sort = data
+		}
+	}
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputServiceCategoryMapEntryInput(ctx context.Context, obj any) (model.ServiceCategoryMapEntryInput, error) {
+	var it model.ServiceCategoryMapEntryInput
+	if obj == nil {
+		return it, nil
+	}
+
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"key", "value"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "key":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("key"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Key = data
+		case "value":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("value"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Value = data
+		}
+	}
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputServiceWindowEntryInput(ctx context.Context, obj any) (model.ServiceWindowEntryInput, error) {
+	var it model.ServiceWindowEntryInput
+	if obj == nil {
+		return it, nil
+	}
+
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"name", "startTime", "endTime"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "name":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Name = data
+		case "startTime":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("startTime"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StartTime = data
+		case "endTime":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("endTime"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EndTime = data
 		}
 	}
 	return it, nil
@@ -3367,6 +6350,251 @@ func (ec *executionContext) _Carrier(ctx context.Context, sel ast.SelectionSet, 
 	return out
 }
 
+var classificationImplementors = []string{"Classification"}
+
+func (ec *executionContext) _Classification(ctx context.Context, sel ast.SelectionSet, obj *model.Classification) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, classificationImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Classification")
+		case "classificationId":
+			out.Values[i] = ec._Classification_classificationId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "name":
+			out.Values[i] = ec._Classification_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "createdOn":
+			out.Values[i] = ec._Classification_createdOn(ctx, field, obj)
+		case "effectiveTime":
+			out.Values[i] = ec._Classification_effectiveTime(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "createdBy":
+			out.Values[i] = ec._Classification_createdBy(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "approvedBy":
+			out.Values[i] = ec._Classification_approvedBy(ctx, field, obj)
+		case "status":
+			out.Values[i] = ec._Classification_status(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "plan":
+			out.Values[i] = ec._Classification_plan(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var classificationPlanImplementors = []string{"ClassificationPlan"}
+
+func (ec *executionContext) _ClassificationPlan(ctx context.Context, sel ast.SelectionSet, obj *model.ClassificationPlan) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, classificationPlanImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ClassificationPlan")
+		case "ruleSetId":
+			out.Values[i] = ec._ClassificationPlan_ruleSetId(ctx, field, obj)
+		case "ruleSetName":
+			out.Values[i] = ec._ClassificationPlan_ruleSetName(ctx, field, obj)
+		case "useServiceWindows":
+			out.Values[i] = ec._ClassificationPlan_useServiceWindows(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "defaultServiceWindow":
+			out.Values[i] = ec._ClassificationPlan_defaultServiceWindow(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "defaultSourceType":
+			out.Values[i] = ec._ClassificationPlan_defaultSourceType(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "serviceWindows":
+			out.Values[i] = ec._ClassificationPlan_serviceWindows(ctx, field, obj)
+		case "serviceTypes":
+			out.Values[i] = ec._ClassificationPlan_serviceTypes(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var classificationServiceTypeImplementors = []string{"ClassificationServiceType"}
+
+func (ec *executionContext) _ClassificationServiceType(ctx context.Context, sel ast.SelectionSet, obj *model.ClassificationServiceType) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, classificationServiceTypeImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ClassificationServiceType")
+		case "type":
+			out.Values[i] = ec._ClassificationServiceType_type(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "chargingInformation":
+			out.Values[i] = ec._ClassificationServiceType_chargingInformation(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "serviceTypeRule":
+			out.Values[i] = ec._ClassificationServiceType_serviceTypeRule(ctx, field, obj)
+		case "description":
+			out.Values[i] = ec._ClassificationServiceType_description(ctx, field, obj)
+		case "sourceType":
+			out.Values[i] = ec._ClassificationServiceType_sourceType(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "serviceDirection":
+			out.Values[i] = ec._ClassificationServiceType_serviceDirection(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "serviceCategory":
+			out.Values[i] = ec._ClassificationServiceType_serviceCategory(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "serviceIdentifier":
+			out.Values[i] = ec._ClassificationServiceType_serviceIdentifier(ctx, field, obj)
+		case "defaultServiceCategory":
+			out.Values[i] = ec._ClassificationServiceType_defaultServiceCategory(ctx, field, obj)
+		case "unitType":
+			out.Values[i] = ec._ClassificationServiceType_unitType(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "serviceWindows":
+			out.Values[i] = ec._ClassificationServiceType_serviceWindows(ctx, field, obj)
+		case "serviceCategoryMap":
+			out.Values[i] = ec._ClassificationServiceType_serviceCategoryMap(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var lookupDataImplementors = []string{"LookupData"}
+
+func (ec *executionContext) _LookupData(ctx context.Context, sel ast.SelectionSet, obj *model.LookupData) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, lookupDataImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("LookupData")
+		case "code":
+			out.Values[i] = ec._LookupData_code(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "name":
+			out.Values[i] = ec._LookupData_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var mutationImplementors = []string{"Mutation"}
 
 func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet) graphql.Marshaler {
@@ -3407,6 +6635,55 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "deleteCarrier":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_deleteCarrier(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "createClassification":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_createClassification(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "cloneClassification":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_cloneClassification(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "updateClassificationPlan":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateClassificationPlan(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "submitClassificationForApproval":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_submitClassificationForApproval(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "approveClassificationPlan":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_approveClassificationPlan(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "declineClassificationPlan":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_declineClassificationPlan(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "deleteClassification":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_deleteClassification(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -3535,6 +6812,91 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "classificationList":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_classificationList(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "countClassifications":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_countClassifications(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "rateKeyInput":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_rateKeyInput(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "classification":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_classification(ctx, field)
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "__type":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Query___type(ctx, field)
@@ -3543,6 +6905,207 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Query___schema(ctx, field)
 			})
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var rateKeyInputImplementors = []string{"RateKeyInput"}
+
+func (ec *executionContext) _RateKeyInput(ctx context.Context, sel ast.SelectionSet, obj *model.RateKeyInput) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, rateKeyInputImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("RateKeyInput")
+		case "serviceTypes":
+			out.Values[i] = ec._RateKeyInput_serviceTypes(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "sourceTypes":
+			out.Values[i] = ec._RateKeyInput_sourceTypes(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "serviceDirections":
+			out.Values[i] = ec._RateKeyInput_serviceDirections(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "serviceCategories":
+			out.Values[i] = ec._RateKeyInput_serviceCategories(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "serviceWindows":
+			out.Values[i] = ec._RateKeyInput_serviceWindows(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var serviceCategoryLookupImplementors = []string{"ServiceCategoryLookup"}
+
+func (ec *executionContext) _ServiceCategoryLookup(ctx context.Context, sel ast.SelectionSet, obj *model.ServiceCategoryLookup) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, serviceCategoryLookupImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ServiceCategoryLookup")
+		case "code":
+			out.Values[i] = ec._ServiceCategoryLookup_code(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "name":
+			out.Values[i] = ec._ServiceCategoryLookup_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "serviceTypeCode":
+			out.Values[i] = ec._ServiceCategoryLookup_serviceTypeCode(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var serviceCategoryMapEntryImplementors = []string{"ServiceCategoryMapEntry"}
+
+func (ec *executionContext) _ServiceCategoryMapEntry(ctx context.Context, sel ast.SelectionSet, obj *model.ServiceCategoryMapEntry) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, serviceCategoryMapEntryImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ServiceCategoryMapEntry")
+		case "key":
+			out.Values[i] = ec._ServiceCategoryMapEntry_key(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "value":
+			out.Values[i] = ec._ServiceCategoryMapEntry_value(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var serviceWindowEntryImplementors = []string{"ServiceWindowEntry"}
+
+func (ec *executionContext) _ServiceWindowEntry(ctx context.Context, sel ast.SelectionSet, obj *model.ServiceWindowEntry) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, serviceWindowEntryImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ServiceWindowEntry")
+		case "name":
+			out.Values[i] = ec._ServiceWindowEntry_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "startTime":
+			out.Values[i] = ec._ServiceWindowEntry_startTime(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "endTime":
+			out.Values[i] = ec._ServiceWindowEntry_endTime(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -3952,6 +7515,112 @@ func (ec *executionContext) unmarshalNCarrierInput2goᚑocsᚋinternalᚋbackend
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) marshalNClassification2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐClassification(ctx context.Context, sel ast.SelectionSet, v model.Classification) graphql.Marshaler {
+	return ec._Classification(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNClassification2ᚕᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐClassificationᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Classification) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNClassification2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐClassification(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNClassification2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐClassification(ctx context.Context, sel ast.SelectionSet, v *model.Classification) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._Classification(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNClassificationInput2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐClassificationInput(ctx context.Context, v any) (model.ClassificationInput, error) {
+	res, err := ec.unmarshalInputClassificationInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNClassificationPlan2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐClassificationPlan(ctx context.Context, sel ast.SelectionSet, v *model.ClassificationPlan) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ClassificationPlan(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNClassificationPlanInput2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐClassificationPlanInput(ctx context.Context, v any) (*model.ClassificationPlanInput, error) {
+	res, err := ec.unmarshalInputClassificationPlanInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNClassificationServiceType2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐClassificationServiceType(ctx context.Context, sel ast.SelectionSet, v *model.ClassificationServiceType) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ClassificationServiceType(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNClassificationServiceTypeInput2ᚕᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐClassificationServiceTypeInputᚄ(ctx context.Context, v any) ([]*model.ClassificationServiceTypeInput, error) {
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]*model.ClassificationServiceTypeInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNClassificationServiceTypeInput2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐClassificationServiceTypeInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalNClassificationServiceTypeInput2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐClassificationServiceTypeInput(ctx context.Context, v any) (*model.ClassificationServiceTypeInput, error) {
+	res, err := ec.unmarshalInputClassificationServiceTypeInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNClassificationStatus2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐClassificationStatus(ctx context.Context, v any) (model.ClassificationStatus, error) {
+	var res model.ClassificationStatus
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNClassificationStatus2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐClassificationStatus(ctx context.Context, sel ast.SelectionSet, v model.ClassificationStatus) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) unmarshalNDateTime2string(ctx context.Context, v any) (string, error) {
+	res, err := graphql.UnmarshalString(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNDateTime2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
+	_ = sel
+	res := graphql.MarshalString(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return res
+}
+
 func (ec *executionContext) unmarshalNFilterInput2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐFilterInput(ctx context.Context, v any) (*model.FilterInput, error) {
 	res, err := ec.unmarshalInputFilterInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
@@ -3987,6 +7656,102 @@ func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.Selecti
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) marshalNLookupData2ᚕᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐLookupDataᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.LookupData) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNLookupData2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐLookupData(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNLookupData2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐLookupData(ctx context.Context, sel ast.SelectionSet, v *model.LookupData) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._LookupData(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNRateKeyInput2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐRateKeyInput(ctx context.Context, sel ast.SelectionSet, v model.RateKeyInput) graphql.Marshaler {
+	return ec._RateKeyInput(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNRateKeyInput2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐRateKeyInput(ctx context.Context, sel ast.SelectionSet, v *model.RateKeyInput) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._RateKeyInput(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNServiceCategoryLookup2ᚕᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐServiceCategoryLookupᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.ServiceCategoryLookup) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNServiceCategoryLookup2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐServiceCategoryLookup(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNServiceCategoryLookup2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐServiceCategoryLookup(ctx context.Context, sel ast.SelectionSet, v *model.ServiceCategoryLookup) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ServiceCategoryLookup(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNServiceCategoryMapEntry2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐServiceCategoryMapEntry(ctx context.Context, sel ast.SelectionSet, v *model.ServiceCategoryMapEntry) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ServiceCategoryMapEntry(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNServiceCategoryMapEntryInput2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐServiceCategoryMapEntryInput(ctx context.Context, v any) (*model.ServiceCategoryMapEntryInput, error) {
+	res, err := ec.unmarshalInputServiceCategoryMapEntryInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNServiceWindowEntry2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐServiceWindowEntry(ctx context.Context, sel ast.SelectionSet, v *model.ServiceWindowEntry) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ServiceWindowEntry(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNServiceWindowEntryInput2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐServiceWindowEntryInput(ctx context.Context, v any) (*model.ServiceWindowEntryInput, error) {
+	res, err := ec.unmarshalInputServiceWindowEntryInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalNString2string(ctx context.Context, v any) (string, error) {
@@ -4213,6 +7978,32 @@ func (ec *executionContext) marshalOCarrier2ᚖgoᚑocsᚋinternalᚋbackendᚋg
 	return ec._Carrier(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalOClassification2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐClassification(ctx context.Context, sel ast.SelectionSet, v *model.Classification) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._Classification(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOClassificationServiceType2ᚕᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐClassificationServiceTypeᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.ClassificationServiceType) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNClassificationServiceType2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐClassificationServiceType(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
 func (ec *executionContext) unmarshalODateTime2ᚖstring(ctx context.Context, v any) (*string, error) {
 	if v == nil {
 		return nil, nil
@@ -4283,12 +8074,122 @@ func (ec *executionContext) unmarshalOPageRequest2ᚖgoᚑocsᚋinternalᚋbacke
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) marshalOServiceCategoryMapEntry2ᚕᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐServiceCategoryMapEntryᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.ServiceCategoryMapEntry) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNServiceCategoryMapEntry2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐServiceCategoryMapEntry(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) unmarshalOServiceCategoryMapEntryInput2ᚕᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐServiceCategoryMapEntryInputᚄ(ctx context.Context, v any) ([]*model.ServiceCategoryMapEntryInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]*model.ServiceCategoryMapEntryInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNServiceCategoryMapEntryInput2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐServiceCategoryMapEntryInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalOServiceWindowEntry2ᚕᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐServiceWindowEntryᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.ServiceWindowEntry) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNServiceWindowEntry2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐServiceWindowEntry(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) unmarshalOServiceWindowEntryInput2ᚕᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐServiceWindowEntryInputᚄ(ctx context.Context, v any) ([]*model.ServiceWindowEntryInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]*model.ServiceWindowEntryInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNServiceWindowEntryInput2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐServiceWindowEntryInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
 func (ec *executionContext) unmarshalOSortInput2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐSortInput(ctx context.Context, v any) (*model.SortInput, error) {
 	if v == nil {
 		return nil, nil
 	}
 	res, err := ec.unmarshalInputSortInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOString2ᚕstringᚄ(ctx context.Context, v any) ([]string, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]string, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNString2string(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalOString2ᚕstringᚄ(ctx context.Context, sel ast.SelectionSet, v []string) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	for i := range v {
+		ret[i] = ec.marshalNString2string(ctx, sel, v[i])
+	}
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) unmarshalOString2ᚖstring(ctx context.Context, v any) (*string, error) {

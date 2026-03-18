@@ -14,7 +14,7 @@ base:
     url: "postgres://gobss:gobss@localhost:5432/gobss?sslmode=disable&search_path=charging"
 
 server:
-  addr: ":8081"
+  addr: ":8083"
   restPath: "/api/charging"
   graphqlPath: "/api/charging/graphql"
   readTimeout: "15s"

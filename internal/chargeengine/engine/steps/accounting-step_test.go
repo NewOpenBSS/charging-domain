@@ -4,7 +4,7 @@ import (
 	"context"
 	"go-ocs/internal/chargeengine/appcontext"
 	"go-ocs/internal/chargeengine/engine"
-	"go-ocs/internal/chargeengine/model"
+	"go-ocs/internal/model"
 	"go-ocs/internal/charging"
 	"go-ocs/internal/events"
 	"go-ocs/internal/nchf"

@@ -6,7 +6,7 @@ import (
 	"go-ocs/internal/chargeengine/appcontext"
 	"go-ocs/internal/chargeengine/engine"
 	"go-ocs/internal/chargeengine/engine/providers/carriers"
-	"go-ocs/internal/chargeengine/model"
+	"go-ocs/internal/model"
 	"go-ocs/internal/charging"
 	"go-ocs/internal/store/sqlc"
 	"testing"
@@ -46,7 +46,7 @@ func (m *MockInfrastructure) FindRatingPlan(id uuid.UUID) (*model.RatePlan, erro
 	return args.Get(0).(*model.RatePlan), args.Error(1)
 }
 
-func (m *MockInfrastructure) FetchClassificationPlan() (*model.Plan, error) { return nil, nil }
+func (m *MockInfrastructure) FetchClassificationPlan() (*model.ClassificationPlan, error) { return nil, nil }
 func (m *MockInfrastructure) FetchCarrierContainer() (*carriers.CarrierContainer, error) {
 	return nil, nil
 }

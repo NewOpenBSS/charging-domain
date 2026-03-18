@@ -3,7 +3,7 @@ package classificationplan
 import (
 	"context"
 	"errors"
-	"go-ocs/internal/chargeengine/model"
+	"go-ocs/internal/model"
 	"sync"
 	"testing"
 	"time"
@@ -12,7 +12,7 @@ import (
 )
 
 func TestClassificationContainer_reloadClassificationPlan(t *testing.T) {
-	expectedPlan := &model.Plan{
+	expectedPlan := &model.ClassificationPlan{
 		RuleSetId: "test-ruleset",
 		ServiceTypes: []model.ServiceType{
 			{
@@ -25,7 +25,7 @@ func TestClassificationContainer_reloadClassificationPlan(t *testing.T) {
 		},
 	}
 
-	loader := func(ctx context.Context) (*model.Plan, error) {
+	loader := func(ctx context.Context) (*model.ClassificationPlan, error) {
 		return expectedPlan, nil
 	}
 
@@ -53,12 +53,12 @@ func TestClassificationContainer_reloadClassificationPlan(t *testing.T) {
 }
 
 func TestClassificationContainer_reloadClassificationPlan_Error(t *testing.T) {
-	loader := func(ctx context.Context) (*model.Plan, error) {
+	loader := func(ctx context.Context) (*model.ClassificationPlan, error) {
 		return nil, errors.New("load error")
 	}
 
 	container := &ClassificationContainer{
-		ClassificationPlan: &model.Plan{RuleSetId: "initial"},
+		ClassificationPlan: &model.ClassificationPlan{RuleSetId: "initial"},
 		loader:             loader,
 	}
 
@@ -71,7 +71,7 @@ func TestClassificationContainer_reloadClassificationPlan_Error(t *testing.T) {
 
 func TestClassificationContainer_FetchClassificationPlan(t *testing.T) {
 	t.Run("PlanLoaded", func(t *testing.T) {
-		expectedPlan := &model.Plan{RuleSetId: "test-ruleset"}
+		expectedPlan := &model.ClassificationPlan{RuleSetId: "test-ruleset"}
 		container := &ClassificationContainer{
 			ClassificationPlan: expectedPlan,
 		}
@@ -105,10 +105,10 @@ func TestClassificationContainer_Shutdown(t *testing.T) {
 }
 
 func TestClassificationContainer_Concurrency(t *testing.T) {
-	plan := &model.Plan{RuleSetId: "test-ruleset"}
+	plan := &model.ClassificationPlan{RuleSetId: "test-ruleset"}
 	container := &ClassificationContainer{
 		ClassificationPlan: plan,
-		loader: func(ctx context.Context) (*model.Plan, error) {
+		loader: func(ctx context.Context) (*model.ClassificationPlan, error) {
 			time.Sleep(10 * time.Millisecond)
 			return plan, nil
 		},

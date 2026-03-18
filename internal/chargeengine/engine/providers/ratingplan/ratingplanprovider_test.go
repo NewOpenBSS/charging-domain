@@ -3,7 +3,7 @@ package ratingplan
 import (
 	"context"
 	"fmt"
-	"go-ocs/internal/chargeengine/model"
+	"go-ocs/internal/model"
 	"sync"
 	"testing"
 

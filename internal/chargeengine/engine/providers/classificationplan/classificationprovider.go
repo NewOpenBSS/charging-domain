@@ -5,17 +5,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"go-ocs/internal/chargeengine/appcontext"
-	"go-ocs/internal/chargeengine/model"
+	"go-ocs/internal/model"
 	"go-ocs/internal/logging"
 	"log"
 	"sync"
 	"time"
 )
 
-type ClassificationLoader func(ctx context.Context) (*model.Plan, error)
+type ClassificationLoader func(ctx context.Context) (*model.ClassificationPlan, error)
 
 type ClassificationContainer struct {
-	ClassificationPlan *model.Plan
+	ClassificationPlan *model.ClassificationPlan
 	loader             ClassificationLoader
 	shutdown           func()
 	mu                 sync.RWMutex
@@ -76,13 +76,13 @@ func loadClassificationPlan(container *ClassificationContainer, appctx *appconte
 func NewClassificationContainer(appctx *appcontext.AppContext) *ClassificationContainer {
 	logging.Info("Creating new classification container")
 
-	loader := func(ctx context.Context) (*model.Plan, error) {
+	loader := func(ctx context.Context) (*model.ClassificationPlan, error) {
 		rec, err := appctx.Store.Q.FindActiveClassification(ctx)
 		if err != nil {
 			return nil, err
 		}
 
-		classificationPlan := &model.Plan{}
+		classificationPlan := &model.ClassificationPlan{}
 		if err = json.Unmarshal(rec.Plan, classificationPlan); err != nil {
 			return nil, err
 		}
@@ -98,7 +98,7 @@ func NewClassificationContainer(appctx *appcontext.AppContext) *ClassificationCo
 	return &container
 }
 
-func (c *ClassificationContainer) FetchClassificationPlan() (*model.Plan, error) {
+func (c *ClassificationContainer) FetchClassificationPlan() (*model.ClassificationPlan, error) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 

@@ -1,0 +1,185 @@
+# Classification domain GraphQL types.
+# Status lifecycle: DRAFT → PENDING → ACTIVE (approve) or back to DRAFT (decline).
+# Only DRAFT plans may be edited or deleted.
+
+enum ClassificationStatus {
+  DRAFT
+  PENDING
+  ACTIVE
+  RETIRED
+}
+
+# The full classification entity — metadata wrapper around an embedded ClassificationPlan.
+# Mirrors Java ClassificationEntity.
+type Classification {
+  classificationId: ID!
+  name:             String!
+  createdOn:        DateTime
+  effectiveTime:    DateTime!
+  createdBy:        String!
+  approvedBy:       String
+  status:           ClassificationStatus!
+  plan:             ClassificationPlan!
+}
+
+# The embedded classification plan (stored as JSONB).
+# Mirrors the Go model.ClassificationPlan struct.
+type ClassificationPlan {
+  ruleSetId:            String
+  ruleSetName:          String
+  useServiceWindows:    Boolean!
+  defaultServiceWindow: String!
+  defaultSourceType:    String!
+  serviceWindows:       [ServiceWindowEntry!]
+  serviceTypes:         [ClassificationServiceType!]
+}
+
+# A named service window entry (flattened from map[string]ServiceWindow).
+type ServiceWindowEntry {
+  name:      String!
+  startTime: String!   # "HH:mm" format
+  endTime:   String!   # "HH:mm" format
+}
+
+# A single service type classification rule.
+type ClassificationServiceType {
+  type:                   String!
+  chargingInformation:    String!
+  serviceTypeRule:        String
+  description:            String
+  sourceType:             String!
+  serviceDirection:       String!
+  serviceCategory:        String!
+  serviceIdentifier:      String
+  defaultServiceCategory: String
+  unitType:               String!
+  serviceWindows:         [String!]
+  serviceCategoryMap:     [ServiceCategoryMapEntry!]
+}
+
+# A key-value pair (flattened from map[string]string).
+type ServiceCategoryMapEntry {
+  key:   String!
+  value: String!
+}
+
+# ---------------------------------------------------------------------------
+# RateKeyInput — lookup data derived from the active classification plan.
+# Used by the frontend to populate dropdowns when building rate plans.
+# Mirrors Java RateKeyInputResponseDto.
+# ---------------------------------------------------------------------------
+
+type LookupData {
+  code: String!
+  name: String!
+}
+
+type ServiceCategoryLookup {
+  code:            String!
+  name:            String!
+  serviceTypeCode: String!
+}
+
+type RateKeyInput {
+  serviceTypes:      [LookupData!]!
+  sourceTypes:       [LookupData!]!
+  serviceDirections: [LookupData!]!
+  serviceCategories: [ServiceCategoryLookup!]!
+  serviceWindows:    [ServiceCategoryLookup!]!
+}
+
+# ---------------------------------------------------------------------------
+# Input types
+# ---------------------------------------------------------------------------
+
+input ClassificationInput {
+  name:          String!
+  effectiveTime: DateTime!
+  plan:          ClassificationPlanInput!
+}
+
+input ClassificationPlanInput {
+  ruleSetId:            String
+  ruleSetName:          String
+  useServiceWindows:    Boolean!
+  defaultServiceWindow: String!
+  defaultSourceType:    String!
+  serviceWindows:       [ServiceWindowEntryInput!]
+  serviceTypes:         [ClassificationServiceTypeInput!]!
+}
+
+input ServiceWindowEntryInput {
+  name:      String!
+  startTime: String!
+  endTime:   String!
+}
+
+input ClassificationServiceTypeInput {
+  type:                   String!
+  chargingInformation:    String!
+  serviceTypeRule:        String
+  description:            String
+  sourceType:             String!
+  serviceDirection:       String!
+  serviceCategory:        String!
+  serviceIdentifier:      String
+  defaultServiceCategory: String
+  unitType:               String!
+  serviceWindows:         [String!]
+  serviceCategoryMap:     [ServiceCategoryMapEntryInput!]
+}
+
+input ServiceCategoryMapEntryInput {
+  key:   String!
+  value: String!
+}
+
+# ---------------------------------------------------------------------------
+# Queries
+# ---------------------------------------------------------------------------
+
+extend type Query {
+  # Returns a filtered, sorted, paginated list of classification plans.
+  classificationList(page: PageRequest, filter: FilterRequest): [Classification!]!
+
+  # Returns the total count of classification plans matching the filter.
+  countClassifications(filter: FilterRequest): Int!
+
+  # Returns lookup data derived from the active classification plan.
+  # Used to populate rate-plan configuration dropdowns in the frontend.
+  rateKeyInput: RateKeyInput!
+
+  # Returns a single classification plan by ID, or null if not found.
+  classification(classificationId: ID!): Classification
+}
+
+# ---------------------------------------------------------------------------
+# Mutations
+# ---------------------------------------------------------------------------
+
+extend type Mutation {
+  # Creates a new classification plan in DRAFT status.
+  # createdBy is derived from the authenticated JWT; it is not a client input.
+  createClassification(classification: ClassificationInput!): Classification!
+
+  # Creates a DRAFT copy of an existing classification plan.
+  cloneClassification(classificationId: ID!): Classification!
+
+  # Updates the name, effectiveTime, and plan of a DRAFT classification.
+  # Returns an error if the classification is not in DRAFT status.
+  updateClassificationPlan(classificationId: ID!, classification: ClassificationInput!): Classification!
+
+  # Transitions a DRAFT classification to PENDING (awaiting approval).
+  submitClassificationForApproval(classificationId: ID!): Classification!
+
+  # Transitions a PENDING classification to ACTIVE.
+  # approvedBy is derived from the authenticated JWT.
+  approveClassificationPlan(classificationId: ID!): Classification!
+
+  # Transitions a PENDING classification back to DRAFT.
+  declineClassificationPlan(classificationId: ID!): Classification!
+
+  # Permanently deletes a DRAFT classification. Returns true on success.
+  # Returns an error if the classification is not in DRAFT status.
+  deleteClassification(classificationId: ID!): Boolean!
+}
