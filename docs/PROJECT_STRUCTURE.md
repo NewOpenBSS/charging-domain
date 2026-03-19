@@ -21,7 +21,7 @@ production. Feature branches are checked out as independent worktrees under a si
 ```
 
 Each worktree is fully independent — its own working directory, its own
-`.ai/tasks/CURRENT.md`, its own IntelliJ project window. No coordination needed
+`.ai/tasks/CURRENT.md`, its own editor window. No coordination needed
 between parallel features.
 
 **Create a worktree:**
