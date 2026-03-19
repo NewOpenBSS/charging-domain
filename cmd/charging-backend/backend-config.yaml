@@ -19,6 +19,7 @@ server:
   graphqlPath: "/api/charging/graphql"
   readTimeout: "15s"
   writeTimeout: "15s"
+  tenantRefreshInterval: "10m"
 
 auth:
   enabled: false
@@ -26,3 +27,12 @@ auth:
   clientId: "charging-backend-client"
   audience: "charging-api"
   skipTLSVerify: false
+
+kafka:
+  enabled: false
+  brokers:
+    - "localhost:9092"
+  requiredAcks: "all"
+  topics:
+    quota-journal: "public.quota-journal"
+    notification-event: "public.notification"

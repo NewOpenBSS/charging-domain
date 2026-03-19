@@ -99,16 +99,39 @@ type ComplexityRoot struct {
 
 	Mutation struct {
 		ApproveClassificationPlan       func(childComplexity int, classificationID string) int
+		ApproveRatePlan                 func(childComplexity int, planID string) int
+		CancelQuotaReservations         func(childComplexity int, reservationID string, subscriberID string) int
 		CloneClassification             func(childComplexity int, classificationID string) int
+		CloneRatePlan                   func(childComplexity int, planID string) int
 		CreateCarrier                   func(childComplexity int, carrier model.CarrierInput) int
 		CreateClassification            func(childComplexity int, classification model.ClassificationInput) int
+		CreateNumberPlan                func(childComplexity int, numberPlan model.NumberPlanInput) int
+		CreateRatePlan                  func(childComplexity int, ratePlan model.RatePlanInput) int
+		DebitQuota                      func(childComplexity int, subscriberID string, reservationID string, usedUnits int, unitType model.UnitType, reclaimUnusedUnits bool) int
 		DeclineClassificationPlan       func(childComplexity int, classificationID string) int
+		DeclineRatePlan                 func(childComplexity int, planID string) int
 		DeleteCarrier                   func(childComplexity int, plmn string) int
 		DeleteClassification            func(childComplexity int, classificationID string) int
+		DeleteNumberPlan                func(childComplexity int, numberID string) int
+		DeleteRatePlan                  func(childComplexity int, planID string) int
 		Empty                           func(childComplexity int) int
+		ReserveQuota                    func(childComplexity int, reservationID string, subscriberID string, reasonCode model.ReasonCode, rateKey model.QuotaRateKeyInput, unitType model.UnitType, requestedUnits int, unitPrice string, validitySeconds int, allowOOBCharging bool) int
 		SubmitClassificationForApproval func(childComplexity int, classificationID string) int
+		SubmitRatePlanForApproval       func(childComplexity int, planID string) int
 		UpdateCarrier                   func(childComplexity int, plmn string, carrier model.CarrierInput) int
 		UpdateClassificationPlan        func(childComplexity int, classificationID string, classification model.ClassificationInput) int
+		UpdateNumberPlan                func(childComplexity int, numberID string, numberPlan model.NumberPlanInput) int
+		UpdateRatePlan                  func(childComplexity int, planID string, ratePlan model.RatePlanInput) int
+		UpdateRatePlanRules             func(childComplexity int, planID string, rateLines []*model.RateLineInput) int
+	}
+
+	NumberPlan struct {
+		ModifiedOn   func(childComplexity int) int
+		Name         func(childComplexity int) int
+		NumberID     func(childComplexity int) int
+		NumberLength func(childComplexity int) int
+		NumberRange  func(childComplexity int) int
+		Plmn         func(childComplexity int) int
 	}
 
 	Query struct {
@@ -118,8 +141,38 @@ type ComplexityRoot struct {
 		ClassificationList   func(childComplexity int, page *model.PageRequest, filter *model.FilterRequest) int
 		CountCarriers        func(childComplexity int, filter *model.FilterRequest) int
 		CountClassifications func(childComplexity int, filter *model.FilterRequest) int
+		CountNumberPlans     func(childComplexity int, filter *model.FilterRequest) int
+		CountRatePlans       func(childComplexity int, filter *model.FilterRequest) int
 		Empty                func(childComplexity int) int
+		LatestRatePlanList   func(childComplexity int, planType model.RatePlanType) int
+		NumberPlan           func(childComplexity int, numberID string) int
+		NumberPlanList       func(childComplexity int, page *model.PageRequest, filter *model.FilterRequest) int
+		QuotaBalance         func(childComplexity int, balanceEnquiryRequest model.QuotaBalanceRequestInput) int
+		QuotaBalances        func(childComplexity int, balanceEnquiryRequest model.QuotaBalanceRequestInput) int
 		RateKeyInput         func(childComplexity int) int
+		RatePlan             func(childComplexity int, planID string) int
+		RatePlanList         func(childComplexity int, page *model.PageRequest, filter *model.FilterRequest) int
+	}
+
+	QuotaBalanceResponse struct {
+		AvailableBalance func(childComplexity int) int
+		TotalValue       func(childComplexity int) int
+		UnitType         func(childComplexity int) int
+	}
+
+	QuotaDebitResponse struct {
+		UnaccountedUnits func(childComplexity int) int
+		UnitsDebited     func(childComplexity int) int
+		UnitsValue       func(childComplexity int) int
+		ValueUnits       func(childComplexity int) int
+	}
+
+	QuotaOperationResponse struct {
+		Success func(childComplexity int) int
+	}
+
+	QuotaReserveResponse struct {
+		GrantedUnits func(childComplexity int) int
 	}
 
 	RateKeyInput struct {
@@ -128,6 +181,35 @@ type ComplexityRoot struct {
 		ServiceTypes      func(childComplexity int) int
 		ServiceWindows    func(childComplexity int) int
 		SourceTypes       func(childComplexity int) int
+	}
+
+	RateLine struct {
+		Barred            func(childComplexity int) int
+		BaseTariff        func(childComplexity int) int
+		ClassificationKey func(childComplexity int) int
+		Description       func(childComplexity int) int
+		GroupKey          func(childComplexity int) int
+		MinimumUnits      func(childComplexity int) int
+		MonetaryOnly      func(childComplexity int) int
+		Multiplier        func(childComplexity int) int
+		QosProfile        func(childComplexity int) int
+		RoundingIncrement func(childComplexity int) int
+		TariffType        func(childComplexity int) int
+		UnitOfMeasure     func(childComplexity int) int
+		UnitType          func(childComplexity int) int
+	}
+
+	RatePlan struct {
+		ApprovedBy  func(childComplexity int) int
+		CreatedBy   func(childComplexity int) int
+		EffectiveAt func(childComplexity int) int
+		ModifiedAt  func(childComplexity int) int
+		PlanID      func(childComplexity int) int
+		PlanName    func(childComplexity int) int
+		PlanStatus  func(childComplexity int) int
+		PlanType    func(childComplexity int) int
+		RateLines   func(childComplexity int) int
+		WholesaleID func(childComplexity int) int
 	}
 
 	ServiceCategoryLookup struct {
@@ -160,6 +242,20 @@ type MutationResolver interface {
 	ApproveClassificationPlan(ctx context.Context, classificationID string) (*model.Classification, error)
 	DeclineClassificationPlan(ctx context.Context, classificationID string) (*model.Classification, error)
 	DeleteClassification(ctx context.Context, classificationID string) (bool, error)
+	CreateNumberPlan(ctx context.Context, numberPlan model.NumberPlanInput) (*model.NumberPlan, error)
+	UpdateNumberPlan(ctx context.Context, numberID string, numberPlan model.NumberPlanInput) (*model.NumberPlan, error)
+	DeleteNumberPlan(ctx context.Context, numberID string) (bool, error)
+	CancelQuotaReservations(ctx context.Context, reservationID string, subscriberID string) (*model.QuotaOperationResponse, error)
+	ReserveQuota(ctx context.Context, reservationID string, subscriberID string, reasonCode model.ReasonCode, rateKey model.QuotaRateKeyInput, unitType model.UnitType, requestedUnits int, unitPrice string, validitySeconds int, allowOOBCharging bool) (*model.QuotaReserveResponse, error)
+	DebitQuota(ctx context.Context, subscriberID string, reservationID string, usedUnits int, unitType model.UnitType, reclaimUnusedUnits bool) (*model.QuotaDebitResponse, error)
+	CreateRatePlan(ctx context.Context, ratePlan model.RatePlanInput) (*model.RatePlan, error)
+	UpdateRatePlan(ctx context.Context, planID string, ratePlan model.RatePlanInput) (*model.RatePlan, error)
+	UpdateRatePlanRules(ctx context.Context, planID string, rateLines []*model.RateLineInput) (*model.RatePlan, error)
+	CloneRatePlan(ctx context.Context, planID string) (*model.RatePlan, error)
+	SubmitRatePlanForApproval(ctx context.Context, planID string) (*model.RatePlan, error)
+	ApproveRatePlan(ctx context.Context, planID string) (*model.RatePlan, error)
+	DeclineRatePlan(ctx context.Context, planID string) (*model.RatePlan, error)
+	DeleteRatePlan(ctx context.Context, planID string) (bool, error)
 }
 type QueryResolver interface {
 	Empty(ctx context.Context) (*string, error)
@@ -170,6 +266,15 @@ type QueryResolver interface {
 	CountClassifications(ctx context.Context, filter *model.FilterRequest) (int, error)
 	RateKeyInput(ctx context.Context) (*model.RateKeyInput, error)
 	Classification(ctx context.Context, classificationID string) (*model.Classification, error)
+	NumberPlanList(ctx context.Context, page *model.PageRequest, filter *model.FilterRequest) ([]*model.NumberPlan, error)
+	CountNumberPlans(ctx context.Context, filter *model.FilterRequest) (int, error)
+	NumberPlan(ctx context.Context, numberID string) (*model.NumberPlan, error)
+	QuotaBalance(ctx context.Context, balanceEnquiryRequest model.QuotaBalanceRequestInput) (*model.QuotaBalanceResponse, error)
+	QuotaBalances(ctx context.Context, balanceEnquiryRequest model.QuotaBalanceRequestInput) ([]*model.QuotaBalanceResponse, error)
+	RatePlanList(ctx context.Context, page *model.PageRequest, filter *model.FilterRequest) ([]*model.RatePlan, error)
+	CountRatePlans(ctx context.Context, filter *model.FilterRequest) (int, error)
+	RatePlan(ctx context.Context, planID string) (*model.RatePlan, error)
+	LatestRatePlanList(ctx context.Context, planType model.RatePlanType) ([]*model.RatePlan, error)
 }
 
 type executableSchema graphql.ExecutableSchemaState[ResolverRoot, DirectiveRoot, ComplexityRoot]
@@ -467,6 +572,28 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.ApproveClassificationPlan(childComplexity, args["classificationId"].(string)), true
+	case "Mutation.approveRatePlan":
+		if e.ComplexityRoot.Mutation.ApproveRatePlan == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_approveRatePlan_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.ApproveRatePlan(childComplexity, args["planId"].(string)), true
+	case "Mutation.cancelQuotaReservations":
+		if e.ComplexityRoot.Mutation.CancelQuotaReservations == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_cancelQuotaReservations_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.CancelQuotaReservations(childComplexity, args["reservationId"].(string), args["subscriberId"].(string)), true
 	case "Mutation.cloneClassification":
 		if e.ComplexityRoot.Mutation.CloneClassification == nil {
 			break
@@ -478,6 +605,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.CloneClassification(childComplexity, args["classificationId"].(string)), true
+	case "Mutation.cloneRatePlan":
+		if e.ComplexityRoot.Mutation.CloneRatePlan == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_cloneRatePlan_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.CloneRatePlan(childComplexity, args["planId"].(string)), true
 	case "Mutation.createCarrier":
 		if e.ComplexityRoot.Mutation.CreateCarrier == nil {
 			break
@@ -500,6 +638,39 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.CreateClassification(childComplexity, args["classification"].(model.ClassificationInput)), true
+	case "Mutation.createNumberPlan":
+		if e.ComplexityRoot.Mutation.CreateNumberPlan == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_createNumberPlan_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.CreateNumberPlan(childComplexity, args["numberPlan"].(model.NumberPlanInput)), true
+	case "Mutation.createRatePlan":
+		if e.ComplexityRoot.Mutation.CreateRatePlan == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_createRatePlan_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.CreateRatePlan(childComplexity, args["ratePlan"].(model.RatePlanInput)), true
+	case "Mutation.debitQuota":
+		if e.ComplexityRoot.Mutation.DebitQuota == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_debitQuota_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.DebitQuota(childComplexity, args["subscriberId"].(string), args["reservationId"].(string), args["usedUnits"].(int), args["unitType"].(model.UnitType), args["reclaimUnusedUnits"].(bool)), true
 	case "Mutation.declineClassificationPlan":
 		if e.ComplexityRoot.Mutation.DeclineClassificationPlan == nil {
 			break
@@ -511,6 +682,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.DeclineClassificationPlan(childComplexity, args["classificationId"].(string)), true
+	case "Mutation.declineRatePlan":
+		if e.ComplexityRoot.Mutation.DeclineRatePlan == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_declineRatePlan_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.DeclineRatePlan(childComplexity, args["planId"].(string)), true
 	case "Mutation.deleteCarrier":
 		if e.ComplexityRoot.Mutation.DeleteCarrier == nil {
 			break
@@ -533,12 +715,45 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.DeleteClassification(childComplexity, args["classificationId"].(string)), true
+	case "Mutation.deleteNumberPlan":
+		if e.ComplexityRoot.Mutation.DeleteNumberPlan == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_deleteNumberPlan_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.DeleteNumberPlan(childComplexity, args["numberId"].(string)), true
+	case "Mutation.deleteRatePlan":
+		if e.ComplexityRoot.Mutation.DeleteRatePlan == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_deleteRatePlan_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.DeleteRatePlan(childComplexity, args["planId"].(string)), true
 	case "Mutation._empty":
 		if e.ComplexityRoot.Mutation.Empty == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Mutation.Empty(childComplexity), true
+	case "Mutation.reserveQuota":
+		if e.ComplexityRoot.Mutation.ReserveQuota == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_reserveQuota_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.ReserveQuota(childComplexity, args["reservationId"].(string), args["subscriberId"].(string), args["reasonCode"].(model.ReasonCode), args["rateKey"].(model.QuotaRateKeyInput), args["unitType"].(model.UnitType), args["requestedUnits"].(int), args["unitPrice"].(string), args["validitySeconds"].(int), args["allowOOBCharging"].(bool)), true
 	case "Mutation.submitClassificationForApproval":
 		if e.ComplexityRoot.Mutation.SubmitClassificationForApproval == nil {
 			break
@@ -550,6 +765,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.SubmitClassificationForApproval(childComplexity, args["classificationId"].(string)), true
+	case "Mutation.submitRatePlanForApproval":
+		if e.ComplexityRoot.Mutation.SubmitRatePlanForApproval == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_submitRatePlanForApproval_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.SubmitRatePlanForApproval(childComplexity, args["planId"].(string)), true
 	case "Mutation.updateCarrier":
 		if e.ComplexityRoot.Mutation.UpdateCarrier == nil {
 			break
@@ -572,6 +798,76 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.UpdateClassificationPlan(childComplexity, args["classificationId"].(string), args["classification"].(model.ClassificationInput)), true
+	case "Mutation.updateNumberPlan":
+		if e.ComplexityRoot.Mutation.UpdateNumberPlan == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateNumberPlan_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.UpdateNumberPlan(childComplexity, args["numberId"].(string), args["numberPlan"].(model.NumberPlanInput)), true
+	case "Mutation.updateRatePlan":
+		if e.ComplexityRoot.Mutation.UpdateRatePlan == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateRatePlan_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.UpdateRatePlan(childComplexity, args["planId"].(string), args["ratePlan"].(model.RatePlanInput)), true
+	case "Mutation.updateRatePlanRules":
+		if e.ComplexityRoot.Mutation.UpdateRatePlanRules == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateRatePlanRules_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.UpdateRatePlanRules(childComplexity, args["planId"].(string), args["rateLines"].([]*model.RateLineInput)), true
+
+	case "NumberPlan.modifiedOn":
+		if e.ComplexityRoot.NumberPlan.ModifiedOn == nil {
+			break
+		}
+
+		return e.ComplexityRoot.NumberPlan.ModifiedOn(childComplexity), true
+	case "NumberPlan.name":
+		if e.ComplexityRoot.NumberPlan.Name == nil {
+			break
+		}
+
+		return e.ComplexityRoot.NumberPlan.Name(childComplexity), true
+	case "NumberPlan.numberId":
+		if e.ComplexityRoot.NumberPlan.NumberID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.NumberPlan.NumberID(childComplexity), true
+	case "NumberPlan.numberLength":
+		if e.ComplexityRoot.NumberPlan.NumberLength == nil {
+			break
+		}
+
+		return e.ComplexityRoot.NumberPlan.NumberLength(childComplexity), true
+	case "NumberPlan.numberRange":
+		if e.ComplexityRoot.NumberPlan.NumberRange == nil {
+			break
+		}
+
+		return e.ComplexityRoot.NumberPlan.NumberRange(childComplexity), true
+	case "NumberPlan.plmn":
+		if e.ComplexityRoot.NumberPlan.Plmn == nil {
+			break
+		}
+
+		return e.ComplexityRoot.NumberPlan.Plmn(childComplexity), true
 
 	case "Query.carrierByPlmn":
 		if e.ComplexityRoot.Query.CarrierByPlmn == nil {
@@ -639,6 +935,28 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.CountClassifications(childComplexity, args["filter"].(*model.FilterRequest)), true
+	case "Query.countNumberPlans":
+		if e.ComplexityRoot.Query.CountNumberPlans == nil {
+			break
+		}
+
+		args, err := ec.field_Query_countNumberPlans_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.CountNumberPlans(childComplexity, args["filter"].(*model.FilterRequest)), true
+	case "Query.countRatePlans":
+		if e.ComplexityRoot.Query.CountRatePlans == nil {
+			break
+		}
+
+		args, err := ec.field_Query_countRatePlans_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.CountRatePlans(childComplexity, args["filter"].(*model.FilterRequest)), true
 	case "Query._empty":
 		if e.ComplexityRoot.Query.Empty == nil {
 			break
@@ -646,12 +964,147 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Query.Empty(childComplexity), true
 
+	case "Query.latestRatePlanList":
+		if e.ComplexityRoot.Query.LatestRatePlanList == nil {
+			break
+		}
+
+		args, err := ec.field_Query_latestRatePlanList_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.LatestRatePlanList(childComplexity, args["planType"].(model.RatePlanType)), true
+	case "Query.numberPlan":
+		if e.ComplexityRoot.Query.NumberPlan == nil {
+			break
+		}
+
+		args, err := ec.field_Query_numberPlan_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.NumberPlan(childComplexity, args["numberId"].(string)), true
+	case "Query.numberPlanList":
+		if e.ComplexityRoot.Query.NumberPlanList == nil {
+			break
+		}
+
+		args, err := ec.field_Query_numberPlanList_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.NumberPlanList(childComplexity, args["page"].(*model.PageRequest), args["filter"].(*model.FilterRequest)), true
+	case "Query.quotaBalance":
+		if e.ComplexityRoot.Query.QuotaBalance == nil {
+			break
+		}
+
+		args, err := ec.field_Query_quotaBalance_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.QuotaBalance(childComplexity, args["balanceEnquiryRequest"].(model.QuotaBalanceRequestInput)), true
+	case "Query.quotaBalances":
+		if e.ComplexityRoot.Query.QuotaBalances == nil {
+			break
+		}
+
+		args, err := ec.field_Query_quotaBalances_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.QuotaBalances(childComplexity, args["balanceEnquiryRequest"].(model.QuotaBalanceRequestInput)), true
 	case "Query.rateKeyInput":
 		if e.ComplexityRoot.Query.RateKeyInput == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Query.RateKeyInput(childComplexity), true
+	case "Query.ratePlan":
+		if e.ComplexityRoot.Query.RatePlan == nil {
+			break
+		}
+
+		args, err := ec.field_Query_ratePlan_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.RatePlan(childComplexity, args["planId"].(string)), true
+	case "Query.ratePlanList":
+		if e.ComplexityRoot.Query.RatePlanList == nil {
+			break
+		}
+
+		args, err := ec.field_Query_ratePlanList_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.RatePlanList(childComplexity, args["page"].(*model.PageRequest), args["filter"].(*model.FilterRequest)), true
+
+	case "QuotaBalanceResponse.availableBalance":
+		if e.ComplexityRoot.QuotaBalanceResponse.AvailableBalance == nil {
+			break
+		}
+
+		return e.ComplexityRoot.QuotaBalanceResponse.AvailableBalance(childComplexity), true
+	case "QuotaBalanceResponse.totalValue":
+		if e.ComplexityRoot.QuotaBalanceResponse.TotalValue == nil {
+			break
+		}
+
+		return e.ComplexityRoot.QuotaBalanceResponse.TotalValue(childComplexity), true
+	case "QuotaBalanceResponse.unitType":
+		if e.ComplexityRoot.QuotaBalanceResponse.UnitType == nil {
+			break
+		}
+
+		return e.ComplexityRoot.QuotaBalanceResponse.UnitType(childComplexity), true
+
+	case "QuotaDebitResponse.unaccountedUnits":
+		if e.ComplexityRoot.QuotaDebitResponse.UnaccountedUnits == nil {
+			break
+		}
+
+		return e.ComplexityRoot.QuotaDebitResponse.UnaccountedUnits(childComplexity), true
+	case "QuotaDebitResponse.unitsDebited":
+		if e.ComplexityRoot.QuotaDebitResponse.UnitsDebited == nil {
+			break
+		}
+
+		return e.ComplexityRoot.QuotaDebitResponse.UnitsDebited(childComplexity), true
+	case "QuotaDebitResponse.unitsValue":
+		if e.ComplexityRoot.QuotaDebitResponse.UnitsValue == nil {
+			break
+		}
+
+		return e.ComplexityRoot.QuotaDebitResponse.UnitsValue(childComplexity), true
+	case "QuotaDebitResponse.valueUnits":
+		if e.ComplexityRoot.QuotaDebitResponse.ValueUnits == nil {
+			break
+		}
+
+		return e.ComplexityRoot.QuotaDebitResponse.ValueUnits(childComplexity), true
+
+	case "QuotaOperationResponse.success":
+		if e.ComplexityRoot.QuotaOperationResponse.Success == nil {
+			break
+		}
+
+		return e.ComplexityRoot.QuotaOperationResponse.Success(childComplexity), true
+
+	case "QuotaReserveResponse.grantedUnits":
+		if e.ComplexityRoot.QuotaReserveResponse.GrantedUnits == nil {
+			break
+		}
+
+		return e.ComplexityRoot.QuotaReserveResponse.GrantedUnits(childComplexity), true
 
 	case "RateKeyInput.serviceCategories":
 		if e.ComplexityRoot.RateKeyInput.ServiceCategories == nil {
@@ -683,6 +1136,146 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.RateKeyInput.SourceTypes(childComplexity), true
+
+	case "RateLine.barred":
+		if e.ComplexityRoot.RateLine.Barred == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RateLine.Barred(childComplexity), true
+	case "RateLine.baseTariff":
+		if e.ComplexityRoot.RateLine.BaseTariff == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RateLine.BaseTariff(childComplexity), true
+	case "RateLine.classificationKey":
+		if e.ComplexityRoot.RateLine.ClassificationKey == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RateLine.ClassificationKey(childComplexity), true
+	case "RateLine.description":
+		if e.ComplexityRoot.RateLine.Description == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RateLine.Description(childComplexity), true
+	case "RateLine.groupKey":
+		if e.ComplexityRoot.RateLine.GroupKey == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RateLine.GroupKey(childComplexity), true
+	case "RateLine.minimumUnits":
+		if e.ComplexityRoot.RateLine.MinimumUnits == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RateLine.MinimumUnits(childComplexity), true
+	case "RateLine.monetaryOnly":
+		if e.ComplexityRoot.RateLine.MonetaryOnly == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RateLine.MonetaryOnly(childComplexity), true
+	case "RateLine.multiplier":
+		if e.ComplexityRoot.RateLine.Multiplier == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RateLine.Multiplier(childComplexity), true
+	case "RateLine.qosProfile":
+		if e.ComplexityRoot.RateLine.QosProfile == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RateLine.QosProfile(childComplexity), true
+	case "RateLine.roundingIncrement":
+		if e.ComplexityRoot.RateLine.RoundingIncrement == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RateLine.RoundingIncrement(childComplexity), true
+	case "RateLine.tariffType":
+		if e.ComplexityRoot.RateLine.TariffType == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RateLine.TariffType(childComplexity), true
+	case "RateLine.unitOfMeasure":
+		if e.ComplexityRoot.RateLine.UnitOfMeasure == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RateLine.UnitOfMeasure(childComplexity), true
+	case "RateLine.unitType":
+		if e.ComplexityRoot.RateLine.UnitType == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RateLine.UnitType(childComplexity), true
+
+	case "RatePlan.approvedBy":
+		if e.ComplexityRoot.RatePlan.ApprovedBy == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RatePlan.ApprovedBy(childComplexity), true
+	case "RatePlan.createdBy":
+		if e.ComplexityRoot.RatePlan.CreatedBy == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RatePlan.CreatedBy(childComplexity), true
+	case "RatePlan.effectiveAt":
+		if e.ComplexityRoot.RatePlan.EffectiveAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RatePlan.EffectiveAt(childComplexity), true
+	case "RatePlan.modifiedAt":
+		if e.ComplexityRoot.RatePlan.ModifiedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RatePlan.ModifiedAt(childComplexity), true
+	case "RatePlan.planId":
+		if e.ComplexityRoot.RatePlan.PlanID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RatePlan.PlanID(childComplexity), true
+	case "RatePlan.planName":
+		if e.ComplexityRoot.RatePlan.PlanName == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RatePlan.PlanName(childComplexity), true
+	case "RatePlan.planStatus":
+		if e.ComplexityRoot.RatePlan.PlanStatus == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RatePlan.PlanStatus(childComplexity), true
+	case "RatePlan.planType":
+		if e.ComplexityRoot.RatePlan.PlanType == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RatePlan.PlanType(childComplexity), true
+	case "RatePlan.rateLines":
+		if e.ComplexityRoot.RatePlan.RateLines == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RatePlan.RateLines(childComplexity), true
+	case "RatePlan.wholesaleId":
+		if e.ComplexityRoot.RatePlan.WholesaleID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RatePlan.WholesaleID(childComplexity), true
 
 	case "ServiceCategoryLookup.code":
 		if e.ComplexityRoot.ServiceCategoryLookup.Code == nil {
@@ -749,7 +1342,12 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputClassificationServiceTypeInput,
 		ec.unmarshalInputFilterInput,
 		ec.unmarshalInputFilterRequest,
+		ec.unmarshalInputNumberPlanInput,
 		ec.unmarshalInputPageRequest,
+		ec.unmarshalInputQuotaBalanceRequestInput,
+		ec.unmarshalInputQuotaRateKeyInput,
+		ec.unmarshalInputRateLineInput,
+		ec.unmarshalInputRatePlanInput,
 		ec.unmarshalInputServiceCategoryMapEntryInput,
 		ec.unmarshalInputServiceWindowEntryInput,
 		ec.unmarshalInputSortInput,
@@ -1066,6 +1664,327 @@ extend type Mutation {
   deleteClassification(classificationId: ID!): Boolean!
 }
 `, BuiltIn: false},
+	{Name: "../../../../gql/schema/numberplan.graphql", Input: `# NumberPlan domain GraphQL types.
+#
+# A number plan maps a number prefix (numberRange) to a carrier (plmn) so that
+# the charging engine can resolve the destination group for a dialled number by
+# matching against the longest prefix. This is a simple CRUD resource — there is
+# no lifecycle or versioning.
+
+# A single number plan entry.
+# numberId is the stable primary-key identifier exposed in GraphQL.
+# plmn references the carrier that owns this number range.
+type NumberPlan {
+  numberId:     ID!
+  name:         String!
+  plmn:         String!
+  numberRange:  String!
+  numberLength: Int!
+  modifiedOn:   String
+}
+
+# ---------------------------------------------------------------------------
+# Input types
+# ---------------------------------------------------------------------------
+
+input NumberPlanInput {
+  name:         String
+  plmn:         String!
+  numberRange:  String!
+  numberLength: Int!
+}
+
+# ---------------------------------------------------------------------------
+# Queries
+# ---------------------------------------------------------------------------
+
+extend type Query {
+  # Returns a filtered, sorted, paginated list of number plan rows.
+  numberPlanList(page: PageRequest, filter: FilterRequest): [NumberPlan!]!
+
+  # Returns the total count of number plan rows matching the filter.
+  countNumberPlans(filter: FilterRequest): Int!
+
+  # Returns a single number plan by its primary-key ID, or null if not found.
+  numberPlan(numberId: ID!): NumberPlan
+}
+
+# ---------------------------------------------------------------------------
+# Mutations
+# ---------------------------------------------------------------------------
+
+extend type Mutation {
+  # Creates a new number plan row.
+  createNumberPlan(numberPlan: NumberPlanInput!): NumberPlan!
+
+  # Updates all mutable fields of an existing number plan row.
+  updateNumberPlan(numberId: ID!, numberPlan: NumberPlanInput!): NumberPlan!
+
+  # Permanently deletes a number plan row. Returns true on success.
+  deleteNumberPlan(numberId: ID!): Boolean!
+}
+`, BuiltIn: false},
+	{Name: "../../../../gql/schema/quota.graphql", Input: `# Quota domain GraphQL types.
+# Matches the Java QuotaResource interface exactly — field names are authoritative.
+
+# UnitType identifies the kind of resource tracked by a quota counter.
+enum UnitType {
+  SECONDS
+  OCTETS
+  UNITS
+  MONETARY
+}
+
+# ReasonCode describes why a quota reservation was created.
+enum ReasonCode {
+  QUOTA_PROVISIONED
+  SERVICE_USAGE
+  CONVERSION
+  TRANSFER_IN
+  TRANSFER_OUT
+  LOAN_REPAYMENT
+  TRANSACTION_FEE
+  QUOTA_EXPIRY
+}
+
+# BalanceType controls which counters are included in a balance inquiry.
+enum BalanceType {
+  # All counters regardless of flags.
+  AVAILABLE_BALANCE
+  # Only counters where CanTransfer = true.
+  TRANSFERABLE_BALANCE
+  # Only counters where CanConvert = true.
+  CONVERTABLE_BALANCE
+}
+
+# A rate key identifies the pricing rule associated with a reservation.
+# Serialised internally as a dot-separated string: serviceType.sourceType.direction.category[.window]
+input QuotaRateKeyInput {
+  serviceType:      String!
+  sourceType:       String!
+  serviceDirection: String!
+  serviceCategory:  String!
+  serviceWindow:    String
+}
+
+# Input for balance enquiries.
+# unitType is required for quotaBalance; optional for quotaBalances.
+input QuotaBalanceRequestInput {
+  subscriberId: ID!
+  unitType:     UnitType
+  balanceType:  BalanceType!
+}
+
+# Aggregated balance for one UnitType across all matching counters.
+type QuotaBalanceResponse {
+  unitType:         UnitType!
+  # Total balance (sum across all matching counters). Decimal as String.
+  totalValue:       String!
+  # Available balance after deducting active reservations. Decimal as String.
+  availableBalance: String!
+}
+
+# Result of a cancel-reservations operation.
+type QuotaOperationResponse {
+  success: Boolean!
+}
+
+# Result of a reserve-quota operation.
+type QuotaReserveResponse {
+  # Number of units granted. May be less than requestedUnits if quota is partially exhausted.
+  grantedUnits: Int!
+}
+
+# Result of a debit-quota operation.
+type QuotaDebitResponse {
+  unitsDebited:     Int!
+  # Monetary value of the debited units. Decimal as String.
+  unitsValue:       String!
+  valueUnits:       Int!
+  unaccountedUnits: Int!
+}
+
+extend type Query {
+  # Returns the aggregated balance for a specific subscriber and unitType.
+  # Both subscriberId and unitType are required.
+  # Returns null if no matching non-expired counters exist.
+  quotaBalance(balanceEnquiryRequest: QuotaBalanceRequestInput!): QuotaBalanceResponse
+
+  # Returns aggregated balances for all unit types held by the subscriber.
+  # subscriberId is required; unitType is optional (filters to one unit type if supplied).
+  quotaBalances(balanceEnquiryRequest: QuotaBalanceRequestInput!): [QuotaBalanceResponse!]!
+}
+
+extend type Mutation {
+  # Cancels all quota reservations for a given reservation ID on a subscriber's quota.
+  cancelQuotaReservations(reservationId: ID!, subscriberId: ID!): QuotaOperationResponse!
+
+  # Reserves units from a subscriber's quota.
+  # unitPrice and validitySeconds determine the size and lifetime of the reservation.
+  reserveQuota(
+    reservationId:    ID!
+    subscriberId:     ID!
+    reasonCode:       ReasonCode!
+    rateKey:          QuotaRateKeyInput!
+    unitType:         UnitType!
+    requestedUnits:   Int!
+    # Price per unit. Decimal as String.
+    unitPrice:        String!
+    # Reservation validity duration in seconds.
+    validitySeconds:  Int!
+    allowOOBCharging: Boolean!
+  ): QuotaReserveResponse!
+
+  # Debits previously reserved units from a subscriber's quota.
+  debitQuota(
+    subscriberId:       ID!
+    reservationId:      ID!
+    usedUnits:          Int!
+    unitType:           UnitType!
+    reclaimUnusedUnits: Boolean!
+  ): QuotaDebitResponse!
+}
+`, BuiltIn: false},
+	{Name: "../../../../gql/schema/rateplan.graphql", Input: `# RatePlan domain GraphQL types.
+#
+# A logical rate plan is identified by planId (UUID). Multiple rows in the database
+# may share the same planId — each represents a different version with its own
+# effectiveAt timestamp and lifecycle status.
+#
+# Status lifecycle: DRAFT → PENDING → ACTIVE → RETIRED
+# ACTIVE versions are immutable — they can never be modified or deleted.
+# Multiple ACTIVE versions of the same planId may coexist; effectiveAt determines precedence.
+
+enum RatePlanType {
+  SETTLEMENT
+  WHOLESALE
+  RETAIL
+}
+
+enum RatePlanStatus {
+  DRAFT
+  PENDING
+  ACTIVE
+  RETIRED
+}
+
+# A versioned rate plan. planId groups logical versions; effectiveAt determines precedence.
+# The internal database id (bigserial) is not exposed — planId is the GraphQL identifier.
+type RatePlan {
+  planId:      ID!
+  planName:    String!
+  planType:    RatePlanType!
+  wholesaleId: String           # null for SETTLEMENT and WHOLESALE plans
+  planStatus:  RatePlanStatus!
+  createdBy:   String!
+  approvedBy:  String
+  effectiveAt: DateTime!
+  modifiedAt:  DateTime
+  rateLines:   [RateLine!]!
+}
+
+# A single tariff rule within a rate plan.
+# classificationKey is a dot-separated string: serviceType.sourceType.direction.category[.window]
+# Use the rateKeyInput query to obtain valid values for each component.
+# baseTariff and multiplier are decimal strings to preserve monetary precision.
+type RateLine {
+  classificationKey: String!
+  groupKey:          String
+  description:       String
+  tariffType:        String!     # ACTUAL | PERCENTAGE | MARKUP
+  unitType:          String!     # SECONDS | OCTETS | UNITS | MONETARY
+  baseTariff:        String!     # decimal string — preserves precision for monetary values
+  unitOfMeasure:     Int!
+  multiplier:        String!     # decimal string
+  qosProfile:        String
+  minimumUnits:      Int!
+  roundingIncrement: Int!
+  barred:            Boolean!
+  monetaryOnly:      Boolean!
+}
+
+# ---------------------------------------------------------------------------
+# Input types
+# ---------------------------------------------------------------------------
+
+input RatePlanInput {
+  planName:    String!
+  planType:    RatePlanType!
+  effectiveAt: DateTime!
+  rateLines:   [RateLineInput!]!
+}
+
+input RateLineInput {
+  classificationKey: String!
+  groupKey:          String
+  description:       String
+  tariffType:        String!
+  unitType:          String!
+  baseTariff:        String!
+  unitOfMeasure:     Int!
+  multiplier:        String!
+  qosProfile:        String
+  minimumUnits:      Int!
+  roundingIncrement: Int!
+  barred:            Boolean!
+  monetaryOnly:      Boolean!
+}
+
+# ---------------------------------------------------------------------------
+# Queries
+# ---------------------------------------------------------------------------
+
+extend type Query {
+  # Returns a filtered, sorted, paginated list of rate plan rows (all versions).
+  ratePlanList(page: PageRequest, filter: FilterRequest): [RatePlan!]!
+
+  # Returns the total count of rate plan rows matching the filter.
+  countRatePlans(filter: FilterRequest): Int!
+
+  # Returns the latest version of a rate plan by its planId UUID, or null if not found.
+  ratePlan(planId: ID!): RatePlan
+
+  # Returns the latest version of each logical plan for the given planType.
+  # For RETAIL, scopes to the tenant's wholesaleId resolved from the Host header.
+  # This query is intended for use from a RETAIL portal context only.
+  latestRatePlanList(planType: RatePlanType!): [RatePlan!]!
+}
+
+# ---------------------------------------------------------------------------
+# Mutations
+# ---------------------------------------------------------------------------
+
+extend type Mutation {
+  # Creates a new rate plan in DRAFT status with a freshly generated planId.
+  # For RETAIL plans, wholesaleId is resolved from the tenant context (Host header).
+  createRatePlan(ratePlan: RatePlanInput!): RatePlan!
+
+  # Updates the name, type, effectiveAt, and rate lines of the DRAFT version.
+  # Returns an error if no DRAFT version exists for the given planId.
+  # TODO: confirm whether updateRatePlan or updateRatePlanRules is the one to keep.
+  updateRatePlan(planId: ID!, ratePlan: RatePlanInput!): RatePlan!
+
+  # Updates only the rate lines of the DRAFT version, leaving metadata unchanged.
+  # TODO: confirm whether updateRatePlan or updateRatePlanRules is the one to keep.
+  updateRatePlanRules(planId: ID!, rateLines: [RateLineInput!]!): RatePlan!
+
+  # Creates a new DRAFT version of an existing rate plan (same planId, new row).
+  cloneRatePlan(planId: ID!): RatePlan!
+
+  # Transitions the DRAFT version to PENDING (awaiting approval).
+  submitRatePlanForApproval(planId: ID!): RatePlan!
+
+  # Transitions the PENDING version to ACTIVE and records approvedBy from the JWT.
+  approveRatePlan(planId: ID!): RatePlan!
+
+  # Transitions the PENDING version back to DRAFT, clearing approvedBy.
+  declineRatePlan(planId: ID!): RatePlan!
+
+  # Permanently deletes the DRAFT version. Returns true on success.
+  # Returns an error if no DRAFT version exists for the given planId.
+  deleteRatePlan(planId: ID!): Boolean!
+}
+`, BuiltIn: false},
 	{Name: "../../../../gql/schema/schema.graphql", Input: `# GraphQL Schema for Charging Backend
 
 # Root types
@@ -1145,6 +2064,33 @@ func (ec *executionContext) field_Mutation_approveClassificationPlan_args(ctx co
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_approveRatePlan_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "planId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["planId"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_cancelQuotaReservations_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "reservationId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["reservationId"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "subscriberId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["subscriberId"] = arg1
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_cloneClassification_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -1153,6 +2099,17 @@ func (ec *executionContext) field_Mutation_cloneClassification_args(ctx context.
 		return nil, err
 	}
 	args["classificationId"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_cloneRatePlan_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "planId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["planId"] = arg0
 	return args, nil
 }
 
@@ -1178,6 +2135,59 @@ func (ec *executionContext) field_Mutation_createClassification_args(ctx context
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_createNumberPlan_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "numberPlan", ec.unmarshalNNumberPlanInput2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐNumberPlanInput)
+	if err != nil {
+		return nil, err
+	}
+	args["numberPlan"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_createRatePlan_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "ratePlan", ec.unmarshalNRatePlanInput2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐRatePlanInput)
+	if err != nil {
+		return nil, err
+	}
+	args["ratePlan"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_debitQuota_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "subscriberId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["subscriberId"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "reservationId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["reservationId"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "usedUnits", ec.unmarshalNInt2int)
+	if err != nil {
+		return nil, err
+	}
+	args["usedUnits"] = arg2
+	arg3, err := graphql.ProcessArgField(ctx, rawArgs, "unitType", ec.unmarshalNUnitType2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐUnitType)
+	if err != nil {
+		return nil, err
+	}
+	args["unitType"] = arg3
+	arg4, err := graphql.ProcessArgField(ctx, rawArgs, "reclaimUnusedUnits", ec.unmarshalNBoolean2bool)
+	if err != nil {
+		return nil, err
+	}
+	args["reclaimUnusedUnits"] = arg4
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_declineClassificationPlan_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -1186,6 +2196,17 @@ func (ec *executionContext) field_Mutation_declineClassificationPlan_args(ctx co
 		return nil, err
 	}
 	args["classificationId"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_declineRatePlan_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "planId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["planId"] = arg0
 	return args, nil
 }
 
@@ -1211,6 +2232,79 @@ func (ec *executionContext) field_Mutation_deleteClassification_args(ctx context
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_deleteNumberPlan_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "numberId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["numberId"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_deleteRatePlan_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "planId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["planId"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_reserveQuota_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "reservationId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["reservationId"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "subscriberId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["subscriberId"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "reasonCode", ec.unmarshalNReasonCode2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐReasonCode)
+	if err != nil {
+		return nil, err
+	}
+	args["reasonCode"] = arg2
+	arg3, err := graphql.ProcessArgField(ctx, rawArgs, "rateKey", ec.unmarshalNQuotaRateKeyInput2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐQuotaRateKeyInput)
+	if err != nil {
+		return nil, err
+	}
+	args["rateKey"] = arg3
+	arg4, err := graphql.ProcessArgField(ctx, rawArgs, "unitType", ec.unmarshalNUnitType2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐUnitType)
+	if err != nil {
+		return nil, err
+	}
+	args["unitType"] = arg4
+	arg5, err := graphql.ProcessArgField(ctx, rawArgs, "requestedUnits", ec.unmarshalNInt2int)
+	if err != nil {
+		return nil, err
+	}
+	args["requestedUnits"] = arg5
+	arg6, err := graphql.ProcessArgField(ctx, rawArgs, "unitPrice", ec.unmarshalNString2string)
+	if err != nil {
+		return nil, err
+	}
+	args["unitPrice"] = arg6
+	arg7, err := graphql.ProcessArgField(ctx, rawArgs, "validitySeconds", ec.unmarshalNInt2int)
+	if err != nil {
+		return nil, err
+	}
+	args["validitySeconds"] = arg7
+	arg8, err := graphql.ProcessArgField(ctx, rawArgs, "allowOOBCharging", ec.unmarshalNBoolean2bool)
+	if err != nil {
+		return nil, err
+	}
+	args["allowOOBCharging"] = arg8
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_submitClassificationForApproval_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -1219,6 +2313,17 @@ func (ec *executionContext) field_Mutation_submitClassificationForApproval_args(
 		return nil, err
 	}
 	args["classificationId"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_submitRatePlanForApproval_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "planId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["planId"] = arg0
 	return args, nil
 }
 
@@ -1251,6 +2356,54 @@ func (ec *executionContext) field_Mutation_updateClassificationPlan_args(ctx con
 		return nil, err
 	}
 	args["classification"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_updateNumberPlan_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "numberId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["numberId"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "numberPlan", ec.unmarshalNNumberPlanInput2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐNumberPlanInput)
+	if err != nil {
+		return nil, err
+	}
+	args["numberPlan"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_updateRatePlanRules_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "planId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["planId"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "rateLines", ec.unmarshalNRateLineInput2ᚕᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐRateLineInputᚄ)
+	if err != nil {
+		return nil, err
+	}
+	args["rateLines"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_updateRatePlan_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "planId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["planId"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "ratePlan", ec.unmarshalNRatePlanInput2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐRatePlanInput)
+	if err != nil {
+		return nil, err
+	}
+	args["ratePlan"] = arg1
 	return args, nil
 }
 
@@ -1338,6 +2491,115 @@ func (ec *executionContext) field_Query_countClassifications_args(ctx context.Co
 		return nil, err
 	}
 	args["filter"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_countNumberPlans_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "filter", ec.unmarshalOFilterRequest2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐFilterRequest)
+	if err != nil {
+		return nil, err
+	}
+	args["filter"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_countRatePlans_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "filter", ec.unmarshalOFilterRequest2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐFilterRequest)
+	if err != nil {
+		return nil, err
+	}
+	args["filter"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_latestRatePlanList_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "planType", ec.unmarshalNRatePlanType2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐRatePlanType)
+	if err != nil {
+		return nil, err
+	}
+	args["planType"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_numberPlanList_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "page", ec.unmarshalOPageRequest2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐPageRequest)
+	if err != nil {
+		return nil, err
+	}
+	args["page"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "filter", ec.unmarshalOFilterRequest2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐFilterRequest)
+	if err != nil {
+		return nil, err
+	}
+	args["filter"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_numberPlan_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "numberId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["numberId"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_quotaBalance_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "balanceEnquiryRequest", ec.unmarshalNQuotaBalanceRequestInput2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐQuotaBalanceRequestInput)
+	if err != nil {
+		return nil, err
+	}
+	args["balanceEnquiryRequest"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_quotaBalances_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "balanceEnquiryRequest", ec.unmarshalNQuotaBalanceRequestInput2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐQuotaBalanceRequestInput)
+	if err != nil {
+		return nil, err
+	}
+	args["balanceEnquiryRequest"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_ratePlanList_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "page", ec.unmarshalOPageRequest2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐPageRequest)
+	if err != nil {
+		return nil, err
+	}
+	args["page"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "filter", ec.unmarshalOFilterRequest2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐFilterRequest)
+	if err != nil {
+		return nil, err
+	}
+	args["filter"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_ratePlan_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "planId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["planId"] = arg0
 	return args, nil
 }
 
@@ -3312,6 +4574,954 @@ func (ec *executionContext) fieldContext_Mutation_deleteClassification(ctx conte
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_createNumberPlan(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_createNumberPlan,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().CreateNumberPlan(ctx, fc.Args["numberPlan"].(model.NumberPlanInput))
+		},
+		nil,
+		ec.marshalNNumberPlan2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐNumberPlan,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_createNumberPlan(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "numberId":
+				return ec.fieldContext_NumberPlan_numberId(ctx, field)
+			case "name":
+				return ec.fieldContext_NumberPlan_name(ctx, field)
+			case "plmn":
+				return ec.fieldContext_NumberPlan_plmn(ctx, field)
+			case "numberRange":
+				return ec.fieldContext_NumberPlan_numberRange(ctx, field)
+			case "numberLength":
+				return ec.fieldContext_NumberPlan_numberLength(ctx, field)
+			case "modifiedOn":
+				return ec.fieldContext_NumberPlan_modifiedOn(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type NumberPlan", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_createNumberPlan_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_updateNumberPlan(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_updateNumberPlan,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().UpdateNumberPlan(ctx, fc.Args["numberId"].(string), fc.Args["numberPlan"].(model.NumberPlanInput))
+		},
+		nil,
+		ec.marshalNNumberPlan2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐNumberPlan,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateNumberPlan(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "numberId":
+				return ec.fieldContext_NumberPlan_numberId(ctx, field)
+			case "name":
+				return ec.fieldContext_NumberPlan_name(ctx, field)
+			case "plmn":
+				return ec.fieldContext_NumberPlan_plmn(ctx, field)
+			case "numberRange":
+				return ec.fieldContext_NumberPlan_numberRange(ctx, field)
+			case "numberLength":
+				return ec.fieldContext_NumberPlan_numberLength(ctx, field)
+			case "modifiedOn":
+				return ec.fieldContext_NumberPlan_modifiedOn(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type NumberPlan", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateNumberPlan_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_deleteNumberPlan(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_deleteNumberPlan,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().DeleteNumberPlan(ctx, fc.Args["numberId"].(string))
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_deleteNumberPlan(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_deleteNumberPlan_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_cancelQuotaReservations(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_cancelQuotaReservations,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().CancelQuotaReservations(ctx, fc.Args["reservationId"].(string), fc.Args["subscriberId"].(string))
+		},
+		nil,
+		ec.marshalNQuotaOperationResponse2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐQuotaOperationResponse,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_cancelQuotaReservations(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "success":
+				return ec.fieldContext_QuotaOperationResponse_success(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type QuotaOperationResponse", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_cancelQuotaReservations_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_reserveQuota(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_reserveQuota,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().ReserveQuota(ctx, fc.Args["reservationId"].(string), fc.Args["subscriberId"].(string), fc.Args["reasonCode"].(model.ReasonCode), fc.Args["rateKey"].(model.QuotaRateKeyInput), fc.Args["unitType"].(model.UnitType), fc.Args["requestedUnits"].(int), fc.Args["unitPrice"].(string), fc.Args["validitySeconds"].(int), fc.Args["allowOOBCharging"].(bool))
+		},
+		nil,
+		ec.marshalNQuotaReserveResponse2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐQuotaReserveResponse,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_reserveQuota(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "grantedUnits":
+				return ec.fieldContext_QuotaReserveResponse_grantedUnits(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type QuotaReserveResponse", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_reserveQuota_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_debitQuota(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_debitQuota,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().DebitQuota(ctx, fc.Args["subscriberId"].(string), fc.Args["reservationId"].(string), fc.Args["usedUnits"].(int), fc.Args["unitType"].(model.UnitType), fc.Args["reclaimUnusedUnits"].(bool))
+		},
+		nil,
+		ec.marshalNQuotaDebitResponse2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐQuotaDebitResponse,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_debitQuota(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "unitsDebited":
+				return ec.fieldContext_QuotaDebitResponse_unitsDebited(ctx, field)
+			case "unitsValue":
+				return ec.fieldContext_QuotaDebitResponse_unitsValue(ctx, field)
+			case "valueUnits":
+				return ec.fieldContext_QuotaDebitResponse_valueUnits(ctx, field)
+			case "unaccountedUnits":
+				return ec.fieldContext_QuotaDebitResponse_unaccountedUnits(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type QuotaDebitResponse", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_debitQuota_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_createRatePlan(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_createRatePlan,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().CreateRatePlan(ctx, fc.Args["ratePlan"].(model.RatePlanInput))
+		},
+		nil,
+		ec.marshalNRatePlan2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐRatePlan,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_createRatePlan(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "planId":
+				return ec.fieldContext_RatePlan_planId(ctx, field)
+			case "planName":
+				return ec.fieldContext_RatePlan_planName(ctx, field)
+			case "planType":
+				return ec.fieldContext_RatePlan_planType(ctx, field)
+			case "wholesaleId":
+				return ec.fieldContext_RatePlan_wholesaleId(ctx, field)
+			case "planStatus":
+				return ec.fieldContext_RatePlan_planStatus(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_RatePlan_createdBy(ctx, field)
+			case "approvedBy":
+				return ec.fieldContext_RatePlan_approvedBy(ctx, field)
+			case "effectiveAt":
+				return ec.fieldContext_RatePlan_effectiveAt(ctx, field)
+			case "modifiedAt":
+				return ec.fieldContext_RatePlan_modifiedAt(ctx, field)
+			case "rateLines":
+				return ec.fieldContext_RatePlan_rateLines(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type RatePlan", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_createRatePlan_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_updateRatePlan(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_updateRatePlan,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().UpdateRatePlan(ctx, fc.Args["planId"].(string), fc.Args["ratePlan"].(model.RatePlanInput))
+		},
+		nil,
+		ec.marshalNRatePlan2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐRatePlan,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateRatePlan(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "planId":
+				return ec.fieldContext_RatePlan_planId(ctx, field)
+			case "planName":
+				return ec.fieldContext_RatePlan_planName(ctx, field)
+			case "planType":
+				return ec.fieldContext_RatePlan_planType(ctx, field)
+			case "wholesaleId":
+				return ec.fieldContext_RatePlan_wholesaleId(ctx, field)
+			case "planStatus":
+				return ec.fieldContext_RatePlan_planStatus(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_RatePlan_createdBy(ctx, field)
+			case "approvedBy":
+				return ec.fieldContext_RatePlan_approvedBy(ctx, field)
+			case "effectiveAt":
+				return ec.fieldContext_RatePlan_effectiveAt(ctx, field)
+			case "modifiedAt":
+				return ec.fieldContext_RatePlan_modifiedAt(ctx, field)
+			case "rateLines":
+				return ec.fieldContext_RatePlan_rateLines(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type RatePlan", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateRatePlan_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_updateRatePlanRules(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_updateRatePlanRules,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().UpdateRatePlanRules(ctx, fc.Args["planId"].(string), fc.Args["rateLines"].([]*model.RateLineInput))
+		},
+		nil,
+		ec.marshalNRatePlan2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐRatePlan,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateRatePlanRules(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "planId":
+				return ec.fieldContext_RatePlan_planId(ctx, field)
+			case "planName":
+				return ec.fieldContext_RatePlan_planName(ctx, field)
+			case "planType":
+				return ec.fieldContext_RatePlan_planType(ctx, field)
+			case "wholesaleId":
+				return ec.fieldContext_RatePlan_wholesaleId(ctx, field)
+			case "planStatus":
+				return ec.fieldContext_RatePlan_planStatus(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_RatePlan_createdBy(ctx, field)
+			case "approvedBy":
+				return ec.fieldContext_RatePlan_approvedBy(ctx, field)
+			case "effectiveAt":
+				return ec.fieldContext_RatePlan_effectiveAt(ctx, field)
+			case "modifiedAt":
+				return ec.fieldContext_RatePlan_modifiedAt(ctx, field)
+			case "rateLines":
+				return ec.fieldContext_RatePlan_rateLines(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type RatePlan", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateRatePlanRules_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_cloneRatePlan(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_cloneRatePlan,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().CloneRatePlan(ctx, fc.Args["planId"].(string))
+		},
+		nil,
+		ec.marshalNRatePlan2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐRatePlan,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_cloneRatePlan(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "planId":
+				return ec.fieldContext_RatePlan_planId(ctx, field)
+			case "planName":
+				return ec.fieldContext_RatePlan_planName(ctx, field)
+			case "planType":
+				return ec.fieldContext_RatePlan_planType(ctx, field)
+			case "wholesaleId":
+				return ec.fieldContext_RatePlan_wholesaleId(ctx, field)
+			case "planStatus":
+				return ec.fieldContext_RatePlan_planStatus(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_RatePlan_createdBy(ctx, field)
+			case "approvedBy":
+				return ec.fieldContext_RatePlan_approvedBy(ctx, field)
+			case "effectiveAt":
+				return ec.fieldContext_RatePlan_effectiveAt(ctx, field)
+			case "modifiedAt":
+				return ec.fieldContext_RatePlan_modifiedAt(ctx, field)
+			case "rateLines":
+				return ec.fieldContext_RatePlan_rateLines(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type RatePlan", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_cloneRatePlan_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_submitRatePlanForApproval(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_submitRatePlanForApproval,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().SubmitRatePlanForApproval(ctx, fc.Args["planId"].(string))
+		},
+		nil,
+		ec.marshalNRatePlan2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐRatePlan,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_submitRatePlanForApproval(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "planId":
+				return ec.fieldContext_RatePlan_planId(ctx, field)
+			case "planName":
+				return ec.fieldContext_RatePlan_planName(ctx, field)
+			case "planType":
+				return ec.fieldContext_RatePlan_planType(ctx, field)
+			case "wholesaleId":
+				return ec.fieldContext_RatePlan_wholesaleId(ctx, field)
+			case "planStatus":
+				return ec.fieldContext_RatePlan_planStatus(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_RatePlan_createdBy(ctx, field)
+			case "approvedBy":
+				return ec.fieldContext_RatePlan_approvedBy(ctx, field)
+			case "effectiveAt":
+				return ec.fieldContext_RatePlan_effectiveAt(ctx, field)
+			case "modifiedAt":
+				return ec.fieldContext_RatePlan_modifiedAt(ctx, field)
+			case "rateLines":
+				return ec.fieldContext_RatePlan_rateLines(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type RatePlan", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_submitRatePlanForApproval_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_approveRatePlan(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_approveRatePlan,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().ApproveRatePlan(ctx, fc.Args["planId"].(string))
+		},
+		nil,
+		ec.marshalNRatePlan2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐRatePlan,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_approveRatePlan(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "planId":
+				return ec.fieldContext_RatePlan_planId(ctx, field)
+			case "planName":
+				return ec.fieldContext_RatePlan_planName(ctx, field)
+			case "planType":
+				return ec.fieldContext_RatePlan_planType(ctx, field)
+			case "wholesaleId":
+				return ec.fieldContext_RatePlan_wholesaleId(ctx, field)
+			case "planStatus":
+				return ec.fieldContext_RatePlan_planStatus(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_RatePlan_createdBy(ctx, field)
+			case "approvedBy":
+				return ec.fieldContext_RatePlan_approvedBy(ctx, field)
+			case "effectiveAt":
+				return ec.fieldContext_RatePlan_effectiveAt(ctx, field)
+			case "modifiedAt":
+				return ec.fieldContext_RatePlan_modifiedAt(ctx, field)
+			case "rateLines":
+				return ec.fieldContext_RatePlan_rateLines(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type RatePlan", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_approveRatePlan_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_declineRatePlan(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_declineRatePlan,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().DeclineRatePlan(ctx, fc.Args["planId"].(string))
+		},
+		nil,
+		ec.marshalNRatePlan2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐRatePlan,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_declineRatePlan(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "planId":
+				return ec.fieldContext_RatePlan_planId(ctx, field)
+			case "planName":
+				return ec.fieldContext_RatePlan_planName(ctx, field)
+			case "planType":
+				return ec.fieldContext_RatePlan_planType(ctx, field)
+			case "wholesaleId":
+				return ec.fieldContext_RatePlan_wholesaleId(ctx, field)
+			case "planStatus":
+				return ec.fieldContext_RatePlan_planStatus(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_RatePlan_createdBy(ctx, field)
+			case "approvedBy":
+				return ec.fieldContext_RatePlan_approvedBy(ctx, field)
+			case "effectiveAt":
+				return ec.fieldContext_RatePlan_effectiveAt(ctx, field)
+			case "modifiedAt":
+				return ec.fieldContext_RatePlan_modifiedAt(ctx, field)
+			case "rateLines":
+				return ec.fieldContext_RatePlan_rateLines(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type RatePlan", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_declineRatePlan_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_deleteRatePlan(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_deleteRatePlan,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().DeleteRatePlan(ctx, fc.Args["planId"].(string))
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_deleteRatePlan(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_deleteRatePlan_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _NumberPlan_numberId(ctx context.Context, field graphql.CollectedField, obj *model.NumberPlan) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NumberPlan_numberId,
+		func(ctx context.Context) (any, error) {
+			return obj.NumberID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_NumberPlan_numberId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NumberPlan",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _NumberPlan_name(ctx context.Context, field graphql.CollectedField, obj *model.NumberPlan) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NumberPlan_name,
+		func(ctx context.Context) (any, error) {
+			return obj.Name, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_NumberPlan_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NumberPlan",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _NumberPlan_plmn(ctx context.Context, field graphql.CollectedField, obj *model.NumberPlan) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NumberPlan_plmn,
+		func(ctx context.Context) (any, error) {
+			return obj.Plmn, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_NumberPlan_plmn(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NumberPlan",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _NumberPlan_numberRange(ctx context.Context, field graphql.CollectedField, obj *model.NumberPlan) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NumberPlan_numberRange,
+		func(ctx context.Context) (any, error) {
+			return obj.NumberRange, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_NumberPlan_numberRange(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NumberPlan",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _NumberPlan_numberLength(ctx context.Context, field graphql.CollectedField, obj *model.NumberPlan) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NumberPlan_numberLength,
+		func(ctx context.Context) (any, error) {
+			return obj.NumberLength, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_NumberPlan_numberLength(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NumberPlan",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _NumberPlan_modifiedOn(ctx context.Context, field graphql.CollectedField, obj *model.NumberPlan) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NumberPlan_modifiedOn,
+		func(ctx context.Context) (any, error) {
+			return obj.ModifiedOn, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_NumberPlan_modifiedOn(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NumberPlan",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query__empty(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -3704,6 +5914,485 @@ func (ec *executionContext) fieldContext_Query_classification(ctx context.Contex
 	return fc, nil
 }
 
+func (ec *executionContext) _Query_numberPlanList(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_numberPlanList,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().NumberPlanList(ctx, fc.Args["page"].(*model.PageRequest), fc.Args["filter"].(*model.FilterRequest))
+		},
+		nil,
+		ec.marshalNNumberPlan2ᚕᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐNumberPlanᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_numberPlanList(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "numberId":
+				return ec.fieldContext_NumberPlan_numberId(ctx, field)
+			case "name":
+				return ec.fieldContext_NumberPlan_name(ctx, field)
+			case "plmn":
+				return ec.fieldContext_NumberPlan_plmn(ctx, field)
+			case "numberRange":
+				return ec.fieldContext_NumberPlan_numberRange(ctx, field)
+			case "numberLength":
+				return ec.fieldContext_NumberPlan_numberLength(ctx, field)
+			case "modifiedOn":
+				return ec.fieldContext_NumberPlan_modifiedOn(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type NumberPlan", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_numberPlanList_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_countNumberPlans(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_countNumberPlans,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().CountNumberPlans(ctx, fc.Args["filter"].(*model.FilterRequest))
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_countNumberPlans(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_countNumberPlans_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_numberPlan(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_numberPlan,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().NumberPlan(ctx, fc.Args["numberId"].(string))
+		},
+		nil,
+		ec.marshalONumberPlan2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐNumberPlan,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_numberPlan(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "numberId":
+				return ec.fieldContext_NumberPlan_numberId(ctx, field)
+			case "name":
+				return ec.fieldContext_NumberPlan_name(ctx, field)
+			case "plmn":
+				return ec.fieldContext_NumberPlan_plmn(ctx, field)
+			case "numberRange":
+				return ec.fieldContext_NumberPlan_numberRange(ctx, field)
+			case "numberLength":
+				return ec.fieldContext_NumberPlan_numberLength(ctx, field)
+			case "modifiedOn":
+				return ec.fieldContext_NumberPlan_modifiedOn(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type NumberPlan", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_numberPlan_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_quotaBalance(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_quotaBalance,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().QuotaBalance(ctx, fc.Args["balanceEnquiryRequest"].(model.QuotaBalanceRequestInput))
+		},
+		nil,
+		ec.marshalOQuotaBalanceResponse2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐQuotaBalanceResponse,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_quotaBalance(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "unitType":
+				return ec.fieldContext_QuotaBalanceResponse_unitType(ctx, field)
+			case "totalValue":
+				return ec.fieldContext_QuotaBalanceResponse_totalValue(ctx, field)
+			case "availableBalance":
+				return ec.fieldContext_QuotaBalanceResponse_availableBalance(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type QuotaBalanceResponse", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_quotaBalance_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_quotaBalances(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_quotaBalances,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().QuotaBalances(ctx, fc.Args["balanceEnquiryRequest"].(model.QuotaBalanceRequestInput))
+		},
+		nil,
+		ec.marshalNQuotaBalanceResponse2ᚕᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐQuotaBalanceResponseᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_quotaBalances(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "unitType":
+				return ec.fieldContext_QuotaBalanceResponse_unitType(ctx, field)
+			case "totalValue":
+				return ec.fieldContext_QuotaBalanceResponse_totalValue(ctx, field)
+			case "availableBalance":
+				return ec.fieldContext_QuotaBalanceResponse_availableBalance(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type QuotaBalanceResponse", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_quotaBalances_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_ratePlanList(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_ratePlanList,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().RatePlanList(ctx, fc.Args["page"].(*model.PageRequest), fc.Args["filter"].(*model.FilterRequest))
+		},
+		nil,
+		ec.marshalNRatePlan2ᚕᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐRatePlanᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_ratePlanList(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "planId":
+				return ec.fieldContext_RatePlan_planId(ctx, field)
+			case "planName":
+				return ec.fieldContext_RatePlan_planName(ctx, field)
+			case "planType":
+				return ec.fieldContext_RatePlan_planType(ctx, field)
+			case "wholesaleId":
+				return ec.fieldContext_RatePlan_wholesaleId(ctx, field)
+			case "planStatus":
+				return ec.fieldContext_RatePlan_planStatus(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_RatePlan_createdBy(ctx, field)
+			case "approvedBy":
+				return ec.fieldContext_RatePlan_approvedBy(ctx, field)
+			case "effectiveAt":
+				return ec.fieldContext_RatePlan_effectiveAt(ctx, field)
+			case "modifiedAt":
+				return ec.fieldContext_RatePlan_modifiedAt(ctx, field)
+			case "rateLines":
+				return ec.fieldContext_RatePlan_rateLines(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type RatePlan", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_ratePlanList_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_countRatePlans(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_countRatePlans,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().CountRatePlans(ctx, fc.Args["filter"].(*model.FilterRequest))
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_countRatePlans(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_countRatePlans_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_ratePlan(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_ratePlan,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().RatePlan(ctx, fc.Args["planId"].(string))
+		},
+		nil,
+		ec.marshalORatePlan2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐRatePlan,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_ratePlan(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "planId":
+				return ec.fieldContext_RatePlan_planId(ctx, field)
+			case "planName":
+				return ec.fieldContext_RatePlan_planName(ctx, field)
+			case "planType":
+				return ec.fieldContext_RatePlan_planType(ctx, field)
+			case "wholesaleId":
+				return ec.fieldContext_RatePlan_wholesaleId(ctx, field)
+			case "planStatus":
+				return ec.fieldContext_RatePlan_planStatus(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_RatePlan_createdBy(ctx, field)
+			case "approvedBy":
+				return ec.fieldContext_RatePlan_approvedBy(ctx, field)
+			case "effectiveAt":
+				return ec.fieldContext_RatePlan_effectiveAt(ctx, field)
+			case "modifiedAt":
+				return ec.fieldContext_RatePlan_modifiedAt(ctx, field)
+			case "rateLines":
+				return ec.fieldContext_RatePlan_rateLines(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type RatePlan", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_ratePlan_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_latestRatePlanList(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_latestRatePlanList,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().LatestRatePlanList(ctx, fc.Args["planType"].(model.RatePlanType))
+		},
+		nil,
+		ec.marshalNRatePlan2ᚕᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐRatePlanᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_latestRatePlanList(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "planId":
+				return ec.fieldContext_RatePlan_planId(ctx, field)
+			case "planName":
+				return ec.fieldContext_RatePlan_planName(ctx, field)
+			case "planType":
+				return ec.fieldContext_RatePlan_planType(ctx, field)
+			case "wholesaleId":
+				return ec.fieldContext_RatePlan_wholesaleId(ctx, field)
+			case "planStatus":
+				return ec.fieldContext_RatePlan_planStatus(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_RatePlan_createdBy(ctx, field)
+			case "approvedBy":
+				return ec.fieldContext_RatePlan_approvedBy(ctx, field)
+			case "effectiveAt":
+				return ec.fieldContext_RatePlan_effectiveAt(ctx, field)
+			case "modifiedAt":
+				return ec.fieldContext_RatePlan_modifiedAt(ctx, field)
+			case "rateLines":
+				return ec.fieldContext_RatePlan_rateLines(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type RatePlan", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_latestRatePlanList_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -3807,6 +6496,267 @@ func (ec *executionContext) fieldContext_Query___schema(_ context.Context, field
 				return ec.fieldContext___Schema_directives(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type __Schema", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _QuotaBalanceResponse_unitType(ctx context.Context, field graphql.CollectedField, obj *model.QuotaBalanceResponse) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_QuotaBalanceResponse_unitType,
+		func(ctx context.Context) (any, error) {
+			return obj.UnitType, nil
+		},
+		nil,
+		ec.marshalNUnitType2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐUnitType,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_QuotaBalanceResponse_unitType(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QuotaBalanceResponse",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type UnitType does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _QuotaBalanceResponse_totalValue(ctx context.Context, field graphql.CollectedField, obj *model.QuotaBalanceResponse) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_QuotaBalanceResponse_totalValue,
+		func(ctx context.Context) (any, error) {
+			return obj.TotalValue, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_QuotaBalanceResponse_totalValue(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QuotaBalanceResponse",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _QuotaBalanceResponse_availableBalance(ctx context.Context, field graphql.CollectedField, obj *model.QuotaBalanceResponse) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_QuotaBalanceResponse_availableBalance,
+		func(ctx context.Context) (any, error) {
+			return obj.AvailableBalance, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_QuotaBalanceResponse_availableBalance(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QuotaBalanceResponse",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _QuotaDebitResponse_unitsDebited(ctx context.Context, field graphql.CollectedField, obj *model.QuotaDebitResponse) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_QuotaDebitResponse_unitsDebited,
+		func(ctx context.Context) (any, error) {
+			return obj.UnitsDebited, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_QuotaDebitResponse_unitsDebited(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QuotaDebitResponse",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _QuotaDebitResponse_unitsValue(ctx context.Context, field graphql.CollectedField, obj *model.QuotaDebitResponse) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_QuotaDebitResponse_unitsValue,
+		func(ctx context.Context) (any, error) {
+			return obj.UnitsValue, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_QuotaDebitResponse_unitsValue(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QuotaDebitResponse",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _QuotaDebitResponse_valueUnits(ctx context.Context, field graphql.CollectedField, obj *model.QuotaDebitResponse) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_QuotaDebitResponse_valueUnits,
+		func(ctx context.Context) (any, error) {
+			return obj.ValueUnits, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_QuotaDebitResponse_valueUnits(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QuotaDebitResponse",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _QuotaDebitResponse_unaccountedUnits(ctx context.Context, field graphql.CollectedField, obj *model.QuotaDebitResponse) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_QuotaDebitResponse_unaccountedUnits,
+		func(ctx context.Context) (any, error) {
+			return obj.UnaccountedUnits, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_QuotaDebitResponse_unaccountedUnits(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QuotaDebitResponse",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _QuotaOperationResponse_success(ctx context.Context, field graphql.CollectedField, obj *model.QuotaOperationResponse) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_QuotaOperationResponse_success,
+		func(ctx context.Context) (any, error) {
+			return obj.Success, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_QuotaOperationResponse_success(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QuotaOperationResponse",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _QuotaReserveResponse_grantedUnits(ctx context.Context, field graphql.CollectedField, obj *model.QuotaReserveResponse) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_QuotaReserveResponse_grantedUnits,
+		func(ctx context.Context) (any, error) {
+			return obj.GrantedUnits, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_QuotaReserveResponse_grantedUnits(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QuotaReserveResponse",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
 		},
 	}
 	return fc, nil
@@ -3986,6 +6936,701 @@ func (ec *executionContext) fieldContext_RateKeyInput_serviceWindows(_ context.C
 				return ec.fieldContext_ServiceCategoryLookup_serviceTypeCode(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type ServiceCategoryLookup", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RateLine_classificationKey(ctx context.Context, field graphql.CollectedField, obj *model.RateLine) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RateLine_classificationKey,
+		func(ctx context.Context) (any, error) {
+			return obj.ClassificationKey, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RateLine_classificationKey(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RateLine",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RateLine_groupKey(ctx context.Context, field graphql.CollectedField, obj *model.RateLine) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RateLine_groupKey,
+		func(ctx context.Context) (any, error) {
+			return obj.GroupKey, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_RateLine_groupKey(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RateLine",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RateLine_description(ctx context.Context, field graphql.CollectedField, obj *model.RateLine) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RateLine_description,
+		func(ctx context.Context) (any, error) {
+			return obj.Description, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_RateLine_description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RateLine",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RateLine_tariffType(ctx context.Context, field graphql.CollectedField, obj *model.RateLine) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RateLine_tariffType,
+		func(ctx context.Context) (any, error) {
+			return obj.TariffType, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RateLine_tariffType(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RateLine",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RateLine_unitType(ctx context.Context, field graphql.CollectedField, obj *model.RateLine) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RateLine_unitType,
+		func(ctx context.Context) (any, error) {
+			return obj.UnitType, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RateLine_unitType(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RateLine",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RateLine_baseTariff(ctx context.Context, field graphql.CollectedField, obj *model.RateLine) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RateLine_baseTariff,
+		func(ctx context.Context) (any, error) {
+			return obj.BaseTariff, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RateLine_baseTariff(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RateLine",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RateLine_unitOfMeasure(ctx context.Context, field graphql.CollectedField, obj *model.RateLine) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RateLine_unitOfMeasure,
+		func(ctx context.Context) (any, error) {
+			return obj.UnitOfMeasure, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RateLine_unitOfMeasure(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RateLine",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RateLine_multiplier(ctx context.Context, field graphql.CollectedField, obj *model.RateLine) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RateLine_multiplier,
+		func(ctx context.Context) (any, error) {
+			return obj.Multiplier, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RateLine_multiplier(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RateLine",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RateLine_qosProfile(ctx context.Context, field graphql.CollectedField, obj *model.RateLine) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RateLine_qosProfile,
+		func(ctx context.Context) (any, error) {
+			return obj.QosProfile, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_RateLine_qosProfile(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RateLine",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RateLine_minimumUnits(ctx context.Context, field graphql.CollectedField, obj *model.RateLine) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RateLine_minimumUnits,
+		func(ctx context.Context) (any, error) {
+			return obj.MinimumUnits, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RateLine_minimumUnits(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RateLine",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RateLine_roundingIncrement(ctx context.Context, field graphql.CollectedField, obj *model.RateLine) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RateLine_roundingIncrement,
+		func(ctx context.Context) (any, error) {
+			return obj.RoundingIncrement, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RateLine_roundingIncrement(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RateLine",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RateLine_barred(ctx context.Context, field graphql.CollectedField, obj *model.RateLine) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RateLine_barred,
+		func(ctx context.Context) (any, error) {
+			return obj.Barred, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RateLine_barred(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RateLine",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RateLine_monetaryOnly(ctx context.Context, field graphql.CollectedField, obj *model.RateLine) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RateLine_monetaryOnly,
+		func(ctx context.Context) (any, error) {
+			return obj.MonetaryOnly, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RateLine_monetaryOnly(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RateLine",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RatePlan_planId(ctx context.Context, field graphql.CollectedField, obj *model.RatePlan) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RatePlan_planId,
+		func(ctx context.Context) (any, error) {
+			return obj.PlanID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RatePlan_planId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RatePlan",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RatePlan_planName(ctx context.Context, field graphql.CollectedField, obj *model.RatePlan) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RatePlan_planName,
+		func(ctx context.Context) (any, error) {
+			return obj.PlanName, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RatePlan_planName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RatePlan",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RatePlan_planType(ctx context.Context, field graphql.CollectedField, obj *model.RatePlan) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RatePlan_planType,
+		func(ctx context.Context) (any, error) {
+			return obj.PlanType, nil
+		},
+		nil,
+		ec.marshalNRatePlanType2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐRatePlanType,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RatePlan_planType(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RatePlan",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type RatePlanType does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RatePlan_wholesaleId(ctx context.Context, field graphql.CollectedField, obj *model.RatePlan) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RatePlan_wholesaleId,
+		func(ctx context.Context) (any, error) {
+			return obj.WholesaleID, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_RatePlan_wholesaleId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RatePlan",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RatePlan_planStatus(ctx context.Context, field graphql.CollectedField, obj *model.RatePlan) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RatePlan_planStatus,
+		func(ctx context.Context) (any, error) {
+			return obj.PlanStatus, nil
+		},
+		nil,
+		ec.marshalNRatePlanStatus2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐRatePlanStatus,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RatePlan_planStatus(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RatePlan",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type RatePlanStatus does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RatePlan_createdBy(ctx context.Context, field graphql.CollectedField, obj *model.RatePlan) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RatePlan_createdBy,
+		func(ctx context.Context) (any, error) {
+			return obj.CreatedBy, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RatePlan_createdBy(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RatePlan",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RatePlan_approvedBy(ctx context.Context, field graphql.CollectedField, obj *model.RatePlan) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RatePlan_approvedBy,
+		func(ctx context.Context) (any, error) {
+			return obj.ApprovedBy, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_RatePlan_approvedBy(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RatePlan",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RatePlan_effectiveAt(ctx context.Context, field graphql.CollectedField, obj *model.RatePlan) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RatePlan_effectiveAt,
+		func(ctx context.Context) (any, error) {
+			return obj.EffectiveAt, nil
+		},
+		nil,
+		ec.marshalNDateTime2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RatePlan_effectiveAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RatePlan",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RatePlan_modifiedAt(ctx context.Context, field graphql.CollectedField, obj *model.RatePlan) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RatePlan_modifiedAt,
+		func(ctx context.Context) (any, error) {
+			return obj.ModifiedAt, nil
+		},
+		nil,
+		ec.marshalODateTime2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_RatePlan_modifiedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RatePlan",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RatePlan_rateLines(ctx context.Context, field graphql.CollectedField, obj *model.RatePlan) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RatePlan_rateLines,
+		func(ctx context.Context) (any, error) {
+			return obj.RateLines, nil
+		},
+		nil,
+		ec.marshalNRateLine2ᚕᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐRateLineᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RatePlan_rateLines(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RatePlan",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "classificationKey":
+				return ec.fieldContext_RateLine_classificationKey(ctx, field)
+			case "groupKey":
+				return ec.fieldContext_RateLine_groupKey(ctx, field)
+			case "description":
+				return ec.fieldContext_RateLine_description(ctx, field)
+			case "tariffType":
+				return ec.fieldContext_RateLine_tariffType(ctx, field)
+			case "unitType":
+				return ec.fieldContext_RateLine_unitType(ctx, field)
+			case "baseTariff":
+				return ec.fieldContext_RateLine_baseTariff(ctx, field)
+			case "unitOfMeasure":
+				return ec.fieldContext_RateLine_unitOfMeasure(ctx, field)
+			case "multiplier":
+				return ec.fieldContext_RateLine_multiplier(ctx, field)
+			case "qosProfile":
+				return ec.fieldContext_RateLine_qosProfile(ctx, field)
+			case "minimumUnits":
+				return ec.fieldContext_RateLine_minimumUnits(ctx, field)
+			case "roundingIncrement":
+				return ec.fieldContext_RateLine_roundingIncrement(ctx, field)
+			case "barred":
+				return ec.fieldContext_RateLine_barred(ctx, field)
+			case "monetaryOnly":
+				return ec.fieldContext_RateLine_monetaryOnly(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type RateLine", field.Name)
 		},
 	}
 	return fc, nil
@@ -6052,6 +9697,57 @@ func (ec *executionContext) unmarshalInputFilterRequest(ctx context.Context, obj
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputNumberPlanInput(ctx context.Context, obj any) (model.NumberPlanInput, error) {
+	var it model.NumberPlanInput
+	if obj == nil {
+		return it, nil
+	}
+
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"name", "plmn", "numberRange", "numberLength"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "name":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Name = data
+		case "plmn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("plmn"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Plmn = data
+		case "numberRange":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("numberRange"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NumberRange = data
+		case "numberLength":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("numberLength"))
+			data, err := ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NumberLength = data
+		}
+	}
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputPageRequest(ctx context.Context, obj any) (model.PageRequest, error) {
 	var it model.PageRequest
 	if obj == nil {
@@ -6091,6 +9787,273 @@ func (ec *executionContext) unmarshalInputPageRequest(ctx context.Context, obj a
 				return it, err
 			}
 			it.Sort = data
+		}
+	}
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputQuotaBalanceRequestInput(ctx context.Context, obj any) (model.QuotaBalanceRequestInput, error) {
+	var it model.QuotaBalanceRequestInput
+	if obj == nil {
+		return it, nil
+	}
+
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"subscriberId", "unitType", "balanceType"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "subscriberId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("subscriberId"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SubscriberID = data
+		case "unitType":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("unitType"))
+			data, err := ec.unmarshalOUnitType2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐUnitType(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UnitType = data
+		case "balanceType":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("balanceType"))
+			data, err := ec.unmarshalNBalanceType2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐBalanceType(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BalanceType = data
+		}
+	}
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputQuotaRateKeyInput(ctx context.Context, obj any) (model.QuotaRateKeyInput, error) {
+	var it model.QuotaRateKeyInput
+	if obj == nil {
+		return it, nil
+	}
+
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"serviceType", "sourceType", "serviceDirection", "serviceCategory", "serviceWindow"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "serviceType":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceType"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceType = data
+		case "sourceType":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("sourceType"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SourceType = data
+		case "serviceDirection":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceDirection"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceDirection = data
+		case "serviceCategory":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceCategory"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceCategory = data
+		case "serviceWindow":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceWindow"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceWindow = data
+		}
+	}
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputRateLineInput(ctx context.Context, obj any) (model.RateLineInput, error) {
+	var it model.RateLineInput
+	if obj == nil {
+		return it, nil
+	}
+
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"classificationKey", "groupKey", "description", "tariffType", "unitType", "baseTariff", "unitOfMeasure", "multiplier", "qosProfile", "minimumUnits", "roundingIncrement", "barred", "monetaryOnly"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "classificationKey":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("classificationKey"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClassificationKey = data
+		case "groupKey":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("groupKey"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.GroupKey = data
+		case "description":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Description = data
+		case "tariffType":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tariffType"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TariffType = data
+		case "unitType":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("unitType"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UnitType = data
+		case "baseTariff":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("baseTariff"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BaseTariff = data
+		case "unitOfMeasure":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("unitOfMeasure"))
+			data, err := ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UnitOfMeasure = data
+		case "multiplier":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("multiplier"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Multiplier = data
+		case "qosProfile":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("qosProfile"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.QosProfile = data
+		case "minimumUnits":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("minimumUnits"))
+			data, err := ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MinimumUnits = data
+		case "roundingIncrement":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("roundingIncrement"))
+			data, err := ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RoundingIncrement = data
+		case "barred":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("barred"))
+			data, err := ec.unmarshalNBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Barred = data
+		case "monetaryOnly":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("monetaryOnly"))
+			data, err := ec.unmarshalNBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MonetaryOnly = data
+		}
+	}
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputRatePlanInput(ctx context.Context, obj any) (model.RatePlanInput, error) {
+	var it model.RatePlanInput
+	if obj == nil {
+		return it, nil
+	}
+
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"planName", "planType", "effectiveAt", "rateLines"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "planName":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("planName"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PlanName = data
+		case "planType":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("planType"))
+			data, err := ec.unmarshalNRatePlanType2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐRatePlanType(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PlanType = data
+		case "effectiveAt":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("effectiveAt"))
+			data, err := ec.unmarshalNDateTime2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EffectiveAt = data
+		case "rateLines":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("rateLines"))
+			data, err := ec.unmarshalNRateLineInput2ᚕᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐRateLineInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RateLines = data
 		}
 	}
 	return it, nil
@@ -6688,6 +10651,165 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "createNumberPlan":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_createNumberPlan(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "updateNumberPlan":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateNumberPlan(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "deleteNumberPlan":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_deleteNumberPlan(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "cancelQuotaReservations":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_cancelQuotaReservations(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "reserveQuota":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_reserveQuota(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "debitQuota":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_debitQuota(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "createRatePlan":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_createRatePlan(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "updateRatePlan":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateRatePlan(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "updateRatePlanRules":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateRatePlanRules(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "cloneRatePlan":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_cloneRatePlan(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "submitRatePlanForApproval":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_submitRatePlanForApproval(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "approveRatePlan":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_approveRatePlan(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "declineRatePlan":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_declineRatePlan(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "deleteRatePlan":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_deleteRatePlan(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var numberPlanImplementors = []string{"NumberPlan"}
+
+func (ec *executionContext) _NumberPlan(ctx context.Context, sel ast.SelectionSet, obj *model.NumberPlan) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, numberPlanImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("NumberPlan")
+		case "numberId":
+			out.Values[i] = ec._NumberPlan_numberId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "name":
+			out.Values[i] = ec._NumberPlan_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "plmn":
+			out.Values[i] = ec._NumberPlan_plmn(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "numberRange":
+			out.Values[i] = ec._NumberPlan_numberRange(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "numberLength":
+			out.Values[i] = ec._NumberPlan_numberLength(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "modifiedOn":
+			out.Values[i] = ec._NumberPlan_modifiedOn(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -6897,6 +11019,195 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "numberPlanList":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_numberPlanList(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "countNumberPlans":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_countNumberPlans(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "numberPlan":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_numberPlan(ctx, field)
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "quotaBalance":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_quotaBalance(ctx, field)
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "quotaBalances":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_quotaBalances(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "ratePlanList":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_ratePlanList(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "countRatePlans":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_countRatePlans(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "ratePlan":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_ratePlan(ctx, field)
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "latestRatePlanList":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_latestRatePlanList(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "__type":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Query___type(ctx, field)
@@ -6905,6 +11216,187 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Query___schema(ctx, field)
 			})
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var quotaBalanceResponseImplementors = []string{"QuotaBalanceResponse"}
+
+func (ec *executionContext) _QuotaBalanceResponse(ctx context.Context, sel ast.SelectionSet, obj *model.QuotaBalanceResponse) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, quotaBalanceResponseImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("QuotaBalanceResponse")
+		case "unitType":
+			out.Values[i] = ec._QuotaBalanceResponse_unitType(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "totalValue":
+			out.Values[i] = ec._QuotaBalanceResponse_totalValue(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "availableBalance":
+			out.Values[i] = ec._QuotaBalanceResponse_availableBalance(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var quotaDebitResponseImplementors = []string{"QuotaDebitResponse"}
+
+func (ec *executionContext) _QuotaDebitResponse(ctx context.Context, sel ast.SelectionSet, obj *model.QuotaDebitResponse) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, quotaDebitResponseImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("QuotaDebitResponse")
+		case "unitsDebited":
+			out.Values[i] = ec._QuotaDebitResponse_unitsDebited(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "unitsValue":
+			out.Values[i] = ec._QuotaDebitResponse_unitsValue(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "valueUnits":
+			out.Values[i] = ec._QuotaDebitResponse_valueUnits(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "unaccountedUnits":
+			out.Values[i] = ec._QuotaDebitResponse_unaccountedUnits(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var quotaOperationResponseImplementors = []string{"QuotaOperationResponse"}
+
+func (ec *executionContext) _QuotaOperationResponse(ctx context.Context, sel ast.SelectionSet, obj *model.QuotaOperationResponse) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, quotaOperationResponseImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("QuotaOperationResponse")
+		case "success":
+			out.Values[i] = ec._QuotaOperationResponse_success(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var quotaReserveResponseImplementors = []string{"QuotaReserveResponse"}
+
+func (ec *executionContext) _QuotaReserveResponse(ctx context.Context, sel ast.SelectionSet, obj *model.QuotaReserveResponse) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, quotaReserveResponseImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("QuotaReserveResponse")
+		case "grantedUnits":
+			out.Values[i] = ec._QuotaReserveResponse_grantedUnits(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -6961,6 +11453,171 @@ func (ec *executionContext) _RateKeyInput(ctx context.Context, sel ast.Selection
 			}
 		case "serviceWindows":
 			out.Values[i] = ec._RateKeyInput_serviceWindows(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var rateLineImplementors = []string{"RateLine"}
+
+func (ec *executionContext) _RateLine(ctx context.Context, sel ast.SelectionSet, obj *model.RateLine) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, rateLineImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("RateLine")
+		case "classificationKey":
+			out.Values[i] = ec._RateLine_classificationKey(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "groupKey":
+			out.Values[i] = ec._RateLine_groupKey(ctx, field, obj)
+		case "description":
+			out.Values[i] = ec._RateLine_description(ctx, field, obj)
+		case "tariffType":
+			out.Values[i] = ec._RateLine_tariffType(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "unitType":
+			out.Values[i] = ec._RateLine_unitType(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "baseTariff":
+			out.Values[i] = ec._RateLine_baseTariff(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "unitOfMeasure":
+			out.Values[i] = ec._RateLine_unitOfMeasure(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "multiplier":
+			out.Values[i] = ec._RateLine_multiplier(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "qosProfile":
+			out.Values[i] = ec._RateLine_qosProfile(ctx, field, obj)
+		case "minimumUnits":
+			out.Values[i] = ec._RateLine_minimumUnits(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "roundingIncrement":
+			out.Values[i] = ec._RateLine_roundingIncrement(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "barred":
+			out.Values[i] = ec._RateLine_barred(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "monetaryOnly":
+			out.Values[i] = ec._RateLine_monetaryOnly(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var ratePlanImplementors = []string{"RatePlan"}
+
+func (ec *executionContext) _RatePlan(ctx context.Context, sel ast.SelectionSet, obj *model.RatePlan) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, ratePlanImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("RatePlan")
+		case "planId":
+			out.Values[i] = ec._RatePlan_planId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "planName":
+			out.Values[i] = ec._RatePlan_planName(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "planType":
+			out.Values[i] = ec._RatePlan_planType(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "wholesaleId":
+			out.Values[i] = ec._RatePlan_wholesaleId(ctx, field, obj)
+		case "planStatus":
+			out.Values[i] = ec._RatePlan_planStatus(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "createdBy":
+			out.Values[i] = ec._RatePlan_createdBy(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "approvedBy":
+			out.Values[i] = ec._RatePlan_approvedBy(ctx, field, obj)
+		case "effectiveAt":
+			out.Values[i] = ec._RatePlan_effectiveAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "modifiedAt":
+			out.Values[i] = ec._RatePlan_modifiedAt(ctx, field, obj)
+		case "rateLines":
+			out.Values[i] = ec._RatePlan_rateLines(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -7464,6 +12121,16 @@ func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, o
 
 // region    ***************************** type.gotpl *****************************
 
+func (ec *executionContext) unmarshalNBalanceType2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐBalanceType(ctx context.Context, v any) (model.BalanceType, error) {
+	var res model.BalanceType
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNBalanceType2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐBalanceType(ctx context.Context, sel ast.SelectionSet, v model.BalanceType) graphql.Marshaler {
+	return v
+}
+
 func (ec *executionContext) unmarshalNBoolean2bool(ctx context.Context, v any) (bool, error) {
 	res, err := graphql.UnmarshalBoolean(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -7684,6 +12351,119 @@ func (ec *executionContext) marshalNLookupData2ᚖgoᚑocsᚋinternalᚋbackend�
 	return ec._LookupData(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNNumberPlan2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐNumberPlan(ctx context.Context, sel ast.SelectionSet, v model.NumberPlan) graphql.Marshaler {
+	return ec._NumberPlan(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNNumberPlan2ᚕᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐNumberPlanᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.NumberPlan) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNNumberPlan2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐNumberPlan(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNNumberPlan2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐNumberPlan(ctx context.Context, sel ast.SelectionSet, v *model.NumberPlan) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._NumberPlan(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNNumberPlanInput2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐNumberPlanInput(ctx context.Context, v any) (model.NumberPlanInput, error) {
+	res, err := ec.unmarshalInputNumberPlanInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNQuotaBalanceRequestInput2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐQuotaBalanceRequestInput(ctx context.Context, v any) (model.QuotaBalanceRequestInput, error) {
+	res, err := ec.unmarshalInputQuotaBalanceRequestInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNQuotaBalanceResponse2ᚕᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐQuotaBalanceResponseᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.QuotaBalanceResponse) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNQuotaBalanceResponse2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐQuotaBalanceResponse(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNQuotaBalanceResponse2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐQuotaBalanceResponse(ctx context.Context, sel ast.SelectionSet, v *model.QuotaBalanceResponse) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._QuotaBalanceResponse(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNQuotaDebitResponse2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐQuotaDebitResponse(ctx context.Context, sel ast.SelectionSet, v model.QuotaDebitResponse) graphql.Marshaler {
+	return ec._QuotaDebitResponse(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNQuotaDebitResponse2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐQuotaDebitResponse(ctx context.Context, sel ast.SelectionSet, v *model.QuotaDebitResponse) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._QuotaDebitResponse(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNQuotaOperationResponse2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐQuotaOperationResponse(ctx context.Context, sel ast.SelectionSet, v model.QuotaOperationResponse) graphql.Marshaler {
+	return ec._QuotaOperationResponse(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNQuotaOperationResponse2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐQuotaOperationResponse(ctx context.Context, sel ast.SelectionSet, v *model.QuotaOperationResponse) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._QuotaOperationResponse(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNQuotaRateKeyInput2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐQuotaRateKeyInput(ctx context.Context, v any) (model.QuotaRateKeyInput, error) {
+	res, err := ec.unmarshalInputQuotaRateKeyInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNQuotaReserveResponse2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐQuotaReserveResponse(ctx context.Context, sel ast.SelectionSet, v model.QuotaReserveResponse) graphql.Marshaler {
+	return ec._QuotaReserveResponse(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNQuotaReserveResponse2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐQuotaReserveResponse(ctx context.Context, sel ast.SelectionSet, v *model.QuotaReserveResponse) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._QuotaReserveResponse(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNRateKeyInput2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐRateKeyInput(ctx context.Context, sel ast.SelectionSet, v model.RateKeyInput) graphql.Marshaler {
 	return ec._RateKeyInput(ctx, sel, &v)
 }
@@ -7696,6 +12476,117 @@ func (ec *executionContext) marshalNRateKeyInput2ᚖgoᚑocsᚋinternalᚋbacken
 		return graphql.Null
 	}
 	return ec._RateKeyInput(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNRateLine2ᚕᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐRateLineᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.RateLine) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNRateLine2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐRateLine(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNRateLine2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐRateLine(ctx context.Context, sel ast.SelectionSet, v *model.RateLine) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._RateLine(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNRateLineInput2ᚕᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐRateLineInputᚄ(ctx context.Context, v any) ([]*model.RateLineInput, error) {
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]*model.RateLineInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNRateLineInput2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐRateLineInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalNRateLineInput2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐRateLineInput(ctx context.Context, v any) (*model.RateLineInput, error) {
+	res, err := ec.unmarshalInputRateLineInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNRatePlan2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐRatePlan(ctx context.Context, sel ast.SelectionSet, v model.RatePlan) graphql.Marshaler {
+	return ec._RatePlan(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNRatePlan2ᚕᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐRatePlanᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.RatePlan) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNRatePlan2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐRatePlan(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNRatePlan2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐRatePlan(ctx context.Context, sel ast.SelectionSet, v *model.RatePlan) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._RatePlan(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNRatePlanInput2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐRatePlanInput(ctx context.Context, v any) (model.RatePlanInput, error) {
+	res, err := ec.unmarshalInputRatePlanInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNRatePlanStatus2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐRatePlanStatus(ctx context.Context, v any) (model.RatePlanStatus, error) {
+	var res model.RatePlanStatus
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNRatePlanStatus2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐRatePlanStatus(ctx context.Context, sel ast.SelectionSet, v model.RatePlanStatus) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) unmarshalNRatePlanType2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐRatePlanType(ctx context.Context, v any) (model.RatePlanType, error) {
+	var res model.RatePlanType
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNRatePlanType2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐRatePlanType(ctx context.Context, sel ast.SelectionSet, v model.RatePlanType) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) unmarshalNReasonCode2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐReasonCode(ctx context.Context, v any) (model.ReasonCode, error) {
+	var res model.ReasonCode
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNReasonCode2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐReasonCode(ctx context.Context, sel ast.SelectionSet, v model.ReasonCode) graphql.Marshaler {
+	return v
 }
 
 func (ec *executionContext) marshalNServiceCategoryLookup2ᚕᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐServiceCategoryLookupᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.ServiceCategoryLookup) graphql.Marshaler {
@@ -7798,6 +12689,16 @@ func (ec *executionContext) marshalNString2ᚕstringᚄ(ctx context.Context, sel
 	}
 
 	return ret
+}
+
+func (ec *executionContext) unmarshalNUnitType2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐUnitType(ctx context.Context, v any) (model.UnitType, error) {
+	var res model.UnitType
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNUnitType2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐUnitType(ctx context.Context, sel ast.SelectionSet, v model.UnitType) graphql.Marshaler {
+	return v
 }
 
 func (ec *executionContext) marshalN__Directive2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirective(ctx context.Context, sel ast.SelectionSet, v introspection.Directive) graphql.Marshaler {
@@ -8066,12 +12967,33 @@ func (ec *executionContext) marshalOInt2ᚖint(ctx context.Context, sel ast.Sele
 	return res
 }
 
+func (ec *executionContext) marshalONumberPlan2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐNumberPlan(ctx context.Context, sel ast.SelectionSet, v *model.NumberPlan) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._NumberPlan(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalOPageRequest2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐPageRequest(ctx context.Context, v any) (*model.PageRequest, error) {
 	if v == nil {
 		return nil, nil
 	}
 	res, err := ec.unmarshalInputPageRequest(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOQuotaBalanceResponse2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐQuotaBalanceResponse(ctx context.Context, sel ast.SelectionSet, v *model.QuotaBalanceResponse) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._QuotaBalanceResponse(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalORatePlan2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐRatePlan(ctx context.Context, sel ast.SelectionSet, v *model.RatePlan) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._RatePlan(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOServiceCategoryMapEntry2ᚕᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐServiceCategoryMapEntryᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.ServiceCategoryMapEntry) graphql.Marshaler {
@@ -8208,6 +13130,22 @@ func (ec *executionContext) marshalOString2ᚖstring(ctx context.Context, sel as
 	_ = ctx
 	res := graphql.MarshalString(*v)
 	return res
+}
+
+func (ec *executionContext) unmarshalOUnitType2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐUnitType(ctx context.Context, v any) (*model.UnitType, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(model.UnitType)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOUnitType2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐUnitType(ctx context.Context, sel ast.SelectionSet, v *model.UnitType) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
 }
 
 func (ec *executionContext) marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValueᚄ(ctx context.Context, sel ast.SelectionSet, v []introspection.EnumValue) graphql.Marshaler {

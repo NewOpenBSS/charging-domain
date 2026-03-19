@@ -14,6 +14,7 @@ import (
 	"github.com/vektah/gqlparser/v2/ast"
 
 	"go-ocs/internal/auth/keycloak"
+	"go-ocs/internal/auth/tenant"
 	"go-ocs/internal/backend/appcontext"
 	"go-ocs/internal/backend/graphql/generated"
 	"go-ocs/internal/backend/resolvers"
@@ -32,12 +33,16 @@ func NewRouter(appCtx *appcontext.AppContext) http.Handler {
 	r.Use(middleware.Timeout(30 * time.Second))
 	r.Use(logging.Middleware)
 	r.Use(keycloak.Middleware(appCtx.Auth))
+	r.Use(tenant.Middleware(appCtx.TenantResolver))
 
 	graphqlPath := appCtx.Config.Server.GraphqlPath
 
 	resolver := &resolvers.Resolver{
 		CarrierSvc:        appCtx.CarrierSvc,
 		ClassificationSvc: appCtx.ClassificationSvc,
+		NumberPlanSvc:     appCtx.NumberPlanSvc,
+		RatePlanSvc:       appCtx.RatePlanSvc,
+		QuotaSvc:          appCtx.QuotaSvc,
 	}
 
 	srv := handler.New(generated.NewExecutableSchema(generated.Config{Resolvers: resolver}))

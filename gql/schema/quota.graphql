@@ -1,0 +1,120 @@
+# Quota domain GraphQL types.
+# Matches the Java QuotaResource interface exactly — field names are authoritative.
+
+# UnitType identifies the kind of resource tracked by a quota counter.
+enum UnitType {
+  SECONDS
+  OCTETS
+  UNITS
+  MONETARY
+}
+
+# ReasonCode describes why a quota reservation was created.
+enum ReasonCode {
+  QUOTA_PROVISIONED
+  SERVICE_USAGE
+  CONVERSION
+  TRANSFER_IN
+  TRANSFER_OUT
+  LOAN_REPAYMENT
+  TRANSACTION_FEE
+  QUOTA_EXPIRY
+}
+
+# BalanceType controls which counters are included in a balance inquiry.
+enum BalanceType {
+  # All counters regardless of flags.
+  AVAILABLE_BALANCE
+  # Only counters where CanTransfer = true.
+  TRANSFERABLE_BALANCE
+  # Only counters where CanConvert = true.
+  CONVERTABLE_BALANCE
+}
+
+# A rate key identifies the pricing rule associated with a reservation.
+# Serialised internally as a dot-separated string: serviceType.sourceType.direction.category[.window]
+input QuotaRateKeyInput {
+  serviceType:      String!
+  sourceType:       String!
+  serviceDirection: String!
+  serviceCategory:  String!
+  serviceWindow:    String
+}
+
+# Input for balance enquiries.
+# unitType is required for quotaBalance; optional for quotaBalances.
+input QuotaBalanceRequestInput {
+  subscriberId: ID!
+  unitType:     UnitType
+  balanceType:  BalanceType!
+}
+
+# Aggregated balance for one UnitType across all matching counters.
+type QuotaBalanceResponse {
+  unitType:         UnitType!
+  # Total balance (sum across all matching counters). Decimal as String.
+  totalValue:       String!
+  # Available balance after deducting active reservations. Decimal as String.
+  availableBalance: String!
+}
+
+# Result of a cancel-reservations operation.
+type QuotaOperationResponse {
+  success: Boolean!
+}
+
+# Result of a reserve-quota operation.
+type QuotaReserveResponse {
+  # Number of units granted. May be less than requestedUnits if quota is partially exhausted.
+  grantedUnits: Int!
+}
+
+# Result of a debit-quota operation.
+type QuotaDebitResponse {
+  unitsDebited:     Int!
+  # Monetary value of the debited units. Decimal as String.
+  unitsValue:       String!
+  valueUnits:       Int!
+  unaccountedUnits: Int!
+}
+
+extend type Query {
+  # Returns the aggregated balance for a specific subscriber and unitType.
+  # Both subscriberId and unitType are required.
+  # Returns null if no matching non-expired counters exist.
+  quotaBalance(balanceEnquiryRequest: QuotaBalanceRequestInput!): QuotaBalanceResponse
+
+  # Returns aggregated balances for all unit types held by the subscriber.
+  # subscriberId is required; unitType is optional (filters to one unit type if supplied).
+  quotaBalances(balanceEnquiryRequest: QuotaBalanceRequestInput!): [QuotaBalanceResponse!]!
+}
+
+extend type Mutation {
+  # Cancels all quota reservations for a given reservation ID on a subscriber's quota.
+  cancelQuotaReservations(reservationId: ID!, subscriberId: ID!): QuotaOperationResponse!
+
+  # Reserves units from a subscriber's quota.
+  # unitPrice and validitySeconds determine the size and lifetime of the reservation.
+  reserveQuota(
+    reservationId:    ID!
+    subscriberId:     ID!
+    reasonCode:       ReasonCode!
+    rateKey:          QuotaRateKeyInput!
+    unitType:         UnitType!
+    requestedUnits:   Int!
+    # Price per unit. Decimal as String.
+    unitPrice:        String!
+    # Reservation validity duration in seconds.
+    validitySeconds:  Int!
+    allowOOBCharging: Boolean!
+  ): QuotaReserveResponse!
+
+  # Debits previously reserved units from a subscriber's quota.
+  debitQuota(
+    subscriberId:       ID!
+    reservationId:      ID!
+    usedUnits:          Int!
+    unitType:           UnitType!
+    reclaimUnusedUnits: Boolean!
+  ): QuotaDebitResponse!
+}

@@ -53,6 +53,14 @@ func (m *mockAccountingQuotaManager) Release(ctx context.Context, subscriberId u
 	return args.Error(0)
 }
 
+func (m *mockAccountingQuotaManager) GetBalance(ctx context.Context, now time.Time, subscriberID uuid.UUID, query quota.BalanceQuery) ([]*quota.CounterBalance, error) {
+	args := m.Called(ctx, now, subscriberID, query)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*quota.CounterBalance), args.Error(1)
+}
+
 func TestAccounting_Success(t *testing.T) {
 	mockQM := new(mockAccountingQuotaManager)
 	mockKafka := new(mockKafkaProducer)

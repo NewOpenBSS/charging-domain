@@ -25,6 +25,10 @@ type QuotaManagerInterface interface {
 	Debit(ctx context.Context, now time.Time, subscriberID uuid.UUID, requestId string, reservationId uuid.UUID, usedUnits int64, unitType charging.UnitType, reclaimUnusedUnits bool) (*DebitResponse, error)
 	// Release releases an active quota reservation for a subscriber.
 	Release(ctx context.Context, subscriberId uuid.UUID, reservationId uuid.UUID) error
+	// GetBalance returns the balances for all non-expired counters matching query for the
+	// given subscriber. now is the reference time for expiry comparisons. Returns an empty
+	// slice (not an error) if the subscriber has no quota or no counters match the query.
+	GetBalance(ctx context.Context, now time.Time, subscriberID uuid.UUID, query BalanceQuery) ([]*CounterBalance, error)
 }
 
 type QuotaManager struct {
@@ -109,4 +113,38 @@ func (m *QuotaManager) executeWithQuota(
 
 	logging.Error("Failed to save quota. Retry limited exceeded", "retries", m.retryLimit, "subscriberID", subscriberID)
 	return ErrRetryLimitExceeded
+}
+
+// GetBalance returns the balances for all non-expired counters matching query for the
+// given subscriber. now is the reference time for expiry comparisons. Returns an empty
+// slice (not an error) if the subscriber has no quota record or no counters match the query.
+func (m *QuotaManager) GetBalance(ctx context.Context, now time.Time, subscriberID uuid.UUID, query BalanceQuery) ([]*CounterBalance, error) {
+	loaded, err := m.repo.Load(ctx, subscriberID)
+	if err != nil {
+		return nil, err
+	}
+	if loaded == nil {
+		return []*CounterBalance{}, nil
+	}
+
+	result := make([]*CounterBalance, 0, len(loaded.Quota.Counters))
+	for i := range loaded.Quota.Counters {
+		c := &loaded.Quota.Counters[i]
+
+		// Exclude expired or zero-balance counters — mirrors RemoveExpiredEntries logic.
+		if c.Expiry != nil && !c.Expiry.After(now) {
+			continue
+		}
+		if c.Balance != nil && c.Balance.IsZero() {
+			continue
+		}
+
+		if !query.matches(c) {
+			continue
+		}
+
+		result = append(result, counterToBalance(c))
+	}
+
+	return result, nil
 }

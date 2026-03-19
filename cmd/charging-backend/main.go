@@ -10,6 +10,7 @@ import (
 	"go-ocs/internal/backend/appcontext"
 	graphqlhandler "go-ocs/internal/backend/handlers/graphql"
 	"go-ocs/internal/backend/handlers/rest"
+	"go-ocs/internal/events"
 	"go-ocs/internal/logging"
 	"go-ocs/internal/store"
 
@@ -36,12 +37,20 @@ func main() {
 	db := store.NewStore(cfg.Base.Database.URL)
 	defer db.DB.Close()
 
+	kafkaManager := events.ConnectKafka(cfg.Kafkaconfig)
+	defer kafkaManager.StopKafka()
+
 	authClient, err := keycloak.NewClient(cfg.Auth)
 	if err != nil {
 		logging.Fatal("Failed to initialise Keycloak client", "err", err)
 	}
 
-	appCtx := appcontext.NewAppContext(cfg, db, authClient)
+	appCtx := appcontext.NewAppContext(cfg, db, kafkaManager, authClient)
+
+	// Start the background tenant resolver so the hostname → wholesaler map stays fresh.
+	tenantCtx, tenantCancel := context.WithCancel(context.Background())
+	defer tenantCancel()
+	appCtx.TenantResolver.Start(tenantCtx)
 
 	metricsSrv := appl.StartMetricsServer(&cfg.Base)
 	defer func() {

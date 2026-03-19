@@ -1,0 +1,139 @@
+# RatePlan domain GraphQL types.
+#
+# A logical rate plan is identified by planId (UUID). Multiple rows in the database
+# may share the same planId — each represents a different version with its own
+# effectiveAt timestamp and lifecycle status.
+#
+# Status lifecycle: DRAFT → PENDING → ACTIVE → RETIRED
+# ACTIVE versions are immutable — they can never be modified or deleted.
+# Multiple ACTIVE versions of the same planId may coexist; effectiveAt determines precedence.
+
+enum RatePlanType {
+  SETTLEMENT
+  WHOLESALE
+  RETAIL
+}
+
+enum RatePlanStatus {
+  DRAFT
+  PENDING
+  ACTIVE
+  RETIRED
+}
+
+# A versioned rate plan. planId groups logical versions; effectiveAt determines precedence.
+# The internal database id (bigserial) is not exposed — planId is the GraphQL identifier.
+type RatePlan {
+  planId:      ID!
+  planName:    String!
+  planType:    RatePlanType!
+  wholesaleId: String           # null for SETTLEMENT and WHOLESALE plans
+  planStatus:  RatePlanStatus!
+  createdBy:   String!
+  approvedBy:  String
+  effectiveAt: DateTime!
+  modifiedAt:  DateTime
+  rateLines:   [RateLine!]!
+}
+
+# A single tariff rule within a rate plan.
+# classificationKey is a dot-separated string: serviceType.sourceType.direction.category[.window]
+# Use the rateKeyInput query to obtain valid values for each component.
+# baseTariff and multiplier are decimal strings to preserve monetary precision.
+type RateLine {
+  classificationKey: String!
+  groupKey:          String
+  description:       String
+  tariffType:        String!     # ACTUAL | PERCENTAGE | MARKUP
+  unitType:          String!     # SECONDS | OCTETS | UNITS | MONETARY
+  baseTariff:        String!     # decimal string — preserves precision for monetary values
+  unitOfMeasure:     Int!
+  multiplier:        String!     # decimal string
+  qosProfile:        String
+  minimumUnits:      Int!
+  roundingIncrement: Int!
+  barred:            Boolean!
+  monetaryOnly:      Boolean!
+}
+
+# ---------------------------------------------------------------------------
+# Input types
+# ---------------------------------------------------------------------------
+
+input RatePlanInput {
+  planName:    String!
+  planType:    RatePlanType!
+  effectiveAt: DateTime!
+  rateLines:   [RateLineInput!]!
+}
+
+input RateLineInput {
+  classificationKey: String!
+  groupKey:          String
+  description:       String
+  tariffType:        String!
+  unitType:          String!
+  baseTariff:        String!
+  unitOfMeasure:     Int!
+  multiplier:        String!
+  qosProfile:        String
+  minimumUnits:      Int!
+  roundingIncrement: Int!
+  barred:            Boolean!
+  monetaryOnly:      Boolean!
+}
+
+# ---------------------------------------------------------------------------
+# Queries
+# ---------------------------------------------------------------------------
+
+extend type Query {
+  # Returns a filtered, sorted, paginated list of rate plan rows (all versions).
+  ratePlanList(page: PageRequest, filter: FilterRequest): [RatePlan!]!
+
+  # Returns the total count of rate plan rows matching the filter.
+  countRatePlans(filter: FilterRequest): Int!
+
+  # Returns the latest version of a rate plan by its planId UUID, or null if not found.
+  ratePlan(planId: ID!): RatePlan
+
+  # Returns the latest version of each logical plan for the given planType.
+  # For RETAIL, scopes to the tenant's wholesaleId resolved from the Host header.
+  # This query is intended for use from a RETAIL portal context only.
+  latestRatePlanList(planType: RatePlanType!): [RatePlan!]!
+}
+
+# ---------------------------------------------------------------------------
+# Mutations
+# ---------------------------------------------------------------------------
+
+extend type Mutation {
+  # Creates a new rate plan in DRAFT status with a freshly generated planId.
+  # For RETAIL plans, wholesaleId is resolved from the tenant context (Host header).
+  createRatePlan(ratePlan: RatePlanInput!): RatePlan!
+
+  # Updates the name, type, effectiveAt, and rate lines of the DRAFT version.
+  # Returns an error if no DRAFT version exists for the given planId.
+  # TODO: confirm whether updateRatePlan or updateRatePlanRules is the one to keep.
+  updateRatePlan(planId: ID!, ratePlan: RatePlanInput!): RatePlan!
+
+  # Updates only the rate lines of the DRAFT version, leaving metadata unchanged.
+  # TODO: confirm whether updateRatePlan or updateRatePlanRules is the one to keep.
+  updateRatePlanRules(planId: ID!, rateLines: [RateLineInput!]!): RatePlan!
+
+  # Creates a new DRAFT version of an existing rate plan (same planId, new row).
+  cloneRatePlan(planId: ID!): RatePlan!
+
+  # Transitions the DRAFT version to PENDING (awaiting approval).
+  submitRatePlanForApproval(planId: ID!): RatePlan!
+
+  # Transitions the PENDING version to ACTIVE and records approvedBy from the JWT.
+  approveRatePlan(planId: ID!): RatePlan!
+
+  # Transitions the PENDING version back to DRAFT, clearing approvedBy.
+  declineRatePlan(planId: ID!): RatePlan!
+
+  # Permanently deletes the DRAFT version. Returns true on success.
+  # Returns an error if no DRAFT version exists for the given planId.
+  deleteRatePlan(planId: ID!): Boolean!
+}

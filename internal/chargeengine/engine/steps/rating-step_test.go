@@ -55,6 +55,14 @@ func (m *mockQuotaManager) Release(ctx context.Context, subscriberId uuid.UUID, 
 	return args.Error(0)
 }
 
+func (m *mockQuotaManager) GetBalance(ctx context.Context, now time.Time, subscriberID uuid.UUID, query quota.BalanceQuery) ([]*quota.CounterBalance, error) {
+	args := m.Called(ctx, now, subscriberID, query)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*quota.CounterBalance), args.Error(1)
+}
+
 func TestCalcTariff(t *testing.T) {
 	decimalDigits := int32(2)
 
