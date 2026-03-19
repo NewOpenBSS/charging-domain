@@ -4,13 +4,27 @@
       "Bash(go mod:*)",
       "Bash(go build:*)",
       "Bash(go test:*)",
-      "mcp__Desktop_Commander__list_directory",
-      "Bash(sqlc generate:*)",
       "Bash(go run:*)",
       "Bash(go get:*)",
       "Bash(go install:*)",
+      "Bash(sqlc generate:*)",
       "Bash(gqlgen generate:*)",
-      "Bash(curl:*)"
+      "Bash(gqlgen version:*)",
+      "Bash(git branch:*)",
+      "Bash(git status:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git mv:*)",
+      "Bash(git stash:*)",
+      "Bash(git log:*)",
+      "Bash(git diff:*)",
+      "Bash(ls:*)",
+      "Bash(grep:*)",
+      "Bash(find:*)",
+      "Bash(cat:*)",
+      "Bash(curl:*)",
+      "Bash(make:*)"
     ]
   }
 }
