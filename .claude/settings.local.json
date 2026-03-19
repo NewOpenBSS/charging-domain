@@ -24,7 +24,19 @@
       "Bash(find:*)",
       "Bash(cat:*)",
       "Bash(curl:*)",
-      "Bash(make:*)"
+      "Bash(make:*)",
+      "Bash(/opt/homebrew/Cellar/go/1.25.6/libexec/bin/go test:*)",
+      "Bash(/opt/homebrew/Cellar/go/1.25.6/libexec/bin/go mod:*)",
+      "Bash(/opt/homebrew/Cellar/go/1.25.6/libexec/bin/go build:*)",
+      "Bash(/opt/homebrew/Cellar/go/1.25.6/libexec/bin/go test:*)",
+      "Bash(/opt/homebrew/Cellar/go/1.25.6/libexec/bin/go run:*)",
+      "Bash(/opt/homebrew/Cellar/go/1.25.6/libexec/bin/go get:*)",
+      "Bash(/opt/homebrew/Cellar/go/1.25.6/libexec/bin/go install:*)",
+      "Bash(/usr/local/go/bin/go *)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(git -C /Users/eddiecarpenter/Development/goplay/go-ocs diff internal/chargeengine/engine/business/accounting_test.go)",
+      "Bash(git -C /Users/eddiecarpenter/Development/goplay/go-ocs add .ai/memory/STATUS.md .ai/tasks/CURRENT.md .ai/tasks/done/ .claude/launch.json cmd/charging-backend/backend-config.yaml cmd/charging-backend/main.go gql/schema/quota.graphql internal/backend/appcontext/config.go internal/backend/appcontext/context.go internal/backend/graphql/generated/generated.go internal/backend/graphql/model/models_gen.go internal/backend/handlers/graphql/router.go internal/backend/resolvers/quota.resolvers.go internal/backend/resolvers/resolver.go internal/backend/services/quota_service.go internal/backend/services/quota_service_test.go internal/chargeengine/engine/business/accounting_test.go internal/chargeengine/engine/steps/accounting-step_test.go internal/chargeengine/engine/steps/rating-step_test.go internal/chargeengine/mocks_test.go internal/events/kafka.go)",
+      "Bash(git -C:*)"
     ]
   }
 }
