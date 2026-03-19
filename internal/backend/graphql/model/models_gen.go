@@ -152,6 +152,41 @@ type PageRequest struct {
 type Query struct {
 }
 
+type QuotaBalanceRequestInput struct {
+	SubscriberID string      `json:"subscriberId"`
+	UnitType     *UnitType   `json:"unitType,omitempty"`
+	BalanceType  BalanceType `json:"balanceType"`
+}
+
+type QuotaBalanceResponse struct {
+	UnitType         UnitType `json:"unitType"`
+	TotalValue       string   `json:"totalValue"`
+	AvailableBalance string   `json:"availableBalance"`
+}
+
+type QuotaDebitResponse struct {
+	UnitsDebited     int    `json:"unitsDebited"`
+	UnitsValue       string `json:"unitsValue"`
+	ValueUnits       int    `json:"valueUnits"`
+	UnaccountedUnits int    `json:"unaccountedUnits"`
+}
+
+type QuotaOperationResponse struct {
+	Success bool `json:"success"`
+}
+
+type QuotaRateKeyInput struct {
+	ServiceType      string  `json:"serviceType"`
+	SourceType       string  `json:"sourceType"`
+	ServiceDirection string  `json:"serviceDirection"`
+	ServiceCategory  string  `json:"serviceCategory"`
+	ServiceWindow    *string `json:"serviceWindow,omitempty"`
+}
+
+type QuotaReserveResponse struct {
+	GrantedUnits int `json:"grantedUnits"`
+}
+
 type RateKeyInput struct {
 	ServiceTypes      []*LookupData            `json:"serviceTypes"`
 	SourceTypes       []*LookupData            `json:"sourceTypes"`
@@ -243,6 +278,63 @@ type ServiceWindowEntryInput struct {
 type SortInput struct {
 	Key   string `json:"key"`
 	Order string `json:"order"`
+}
+
+type BalanceType string
+
+const (
+	BalanceTypeAvailableBalance    BalanceType = "AVAILABLE_BALANCE"
+	BalanceTypeTransferableBalance BalanceType = "TRANSFERABLE_BALANCE"
+	BalanceTypeConvertableBalance  BalanceType = "CONVERTABLE_BALANCE"
+)
+
+var AllBalanceType = []BalanceType{
+	BalanceTypeAvailableBalance,
+	BalanceTypeTransferableBalance,
+	BalanceTypeConvertableBalance,
+}
+
+func (e BalanceType) IsValid() bool {
+	switch e {
+	case BalanceTypeAvailableBalance, BalanceTypeTransferableBalance, BalanceTypeConvertableBalance:
+		return true
+	}
+	return false
+}
+
+func (e BalanceType) String() string {
+	return string(e)
+}
+
+func (e *BalanceType) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = BalanceType(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid BalanceType", str)
+	}
+	return nil
+}
+
+func (e BalanceType) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *BalanceType) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e BalanceType) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
 }
 
 type ClassificationStatus string
@@ -415,6 +507,132 @@ func (e *RatePlanType) UnmarshalJSON(b []byte) error {
 }
 
 func (e RatePlanType) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type ReasonCode string
+
+const (
+	ReasonCodeQuotaProvisioned ReasonCode = "QUOTA_PROVISIONED"
+	ReasonCodeServiceUsage     ReasonCode = "SERVICE_USAGE"
+	ReasonCodeConversion       ReasonCode = "CONVERSION"
+	ReasonCodeTransferIn       ReasonCode = "TRANSFER_IN"
+	ReasonCodeTransferOut      ReasonCode = "TRANSFER_OUT"
+	ReasonCodeLoanRepayment    ReasonCode = "LOAN_REPAYMENT"
+	ReasonCodeTransactionFee   ReasonCode = "TRANSACTION_FEE"
+	ReasonCodeQuotaExpiry      ReasonCode = "QUOTA_EXPIRY"
+)
+
+var AllReasonCode = []ReasonCode{
+	ReasonCodeQuotaProvisioned,
+	ReasonCodeServiceUsage,
+	ReasonCodeConversion,
+	ReasonCodeTransferIn,
+	ReasonCodeTransferOut,
+	ReasonCodeLoanRepayment,
+	ReasonCodeTransactionFee,
+	ReasonCodeQuotaExpiry,
+}
+
+func (e ReasonCode) IsValid() bool {
+	switch e {
+	case ReasonCodeQuotaProvisioned, ReasonCodeServiceUsage, ReasonCodeConversion, ReasonCodeTransferIn, ReasonCodeTransferOut, ReasonCodeLoanRepayment, ReasonCodeTransactionFee, ReasonCodeQuotaExpiry:
+		return true
+	}
+	return false
+}
+
+func (e ReasonCode) String() string {
+	return string(e)
+}
+
+func (e *ReasonCode) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = ReasonCode(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid ReasonCode", str)
+	}
+	return nil
+}
+
+func (e ReasonCode) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *ReasonCode) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e ReasonCode) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type UnitType string
+
+const (
+	UnitTypeSeconds  UnitType = "SECONDS"
+	UnitTypeOctets   UnitType = "OCTETS"
+	UnitTypeUnits    UnitType = "UNITS"
+	UnitTypeMonetary UnitType = "MONETARY"
+)
+
+var AllUnitType = []UnitType{
+	UnitTypeSeconds,
+	UnitTypeOctets,
+	UnitTypeUnits,
+	UnitTypeMonetary,
+}
+
+func (e UnitType) IsValid() bool {
+	switch e {
+	case UnitTypeSeconds, UnitTypeOctets, UnitTypeUnits, UnitTypeMonetary:
+		return true
+	}
+	return false
+}
+
+func (e UnitType) String() string {
+	return string(e)
+}
+
+func (e *UnitType) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = UnitType(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid UnitType", str)
+	}
+	return nil
+}
+
+func (e UnitType) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *UnitType) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e UnitType) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil

@@ -53,6 +53,7 @@ _Last updated: 2026-03-19 (reverse-engineered from codebase)_
 | **ClassificationResource** | ✅ Complete | CRUD + state machine (DRAFT→PENDING→ACTIVE) |
 | **NumberPlanResource** | ✅ Complete | CRUD via GraphQL |
 | **RatePlanResource** | ✅ Complete | CRUD + state machine (DRAFT→PENDING→ACTIVE) |
+| **QuotaResource** | 🔄 In Progress | Balance queries + reserve/debit/cancel mutations — Task B |
 
 ### Database
 
@@ -66,15 +67,16 @@ _Last updated: 2026-03-19 (reverse-engineered from codebase)_
 
 ## Current Focus
 
-_No active task. Project is at a stable state._
+**Task B — QuotaResource GraphQL** (`feature/charging-backend`)
 
-Immediate next work: restructure the agentic development environment itself —
-new directory structure, consolidated CLAUDE.md, task spec pattern.
+Implementing `gql/schema/quota.graphql` + `internal/backend/services/quota_service.go`
++ resolvers. Also adding Kafka to charging-backend (required for reserve/debit mutations).
 
 ---
 
 ## Recently Completed
 
+- **QuotaManager.GetBalance** — `BalanceQuery`, `CounterBalance`, `GetBalance` added to `internal/quota`. Read-only domain primitive for balance inquiries. Committed 2026-03-19.
 - Reverse-engineered project state and created memory/DECISIONS.md and memory/STATUS.md
 - RatePlanResource — GraphQL CRUD + approval state machine
 - NumberPlanResource — GraphQL CRUD

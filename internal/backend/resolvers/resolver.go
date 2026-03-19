@@ -13,4 +13,5 @@ type Resolver struct {
 	ClassificationSvc *services.ClassificationService
 	NumberPlanSvc     *services.NumberPlanService
 	RatePlanSvc       *services.RatePlanService
+	QuotaSvc          *services.QuotaService
 }

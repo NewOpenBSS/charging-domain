@@ -100,12 +100,14 @@ type ComplexityRoot struct {
 	Mutation struct {
 		ApproveClassificationPlan       func(childComplexity int, classificationID string) int
 		ApproveRatePlan                 func(childComplexity int, planID string) int
+		CancelQuotaReservations         func(childComplexity int, reservationID string, subscriberID string) int
 		CloneClassification             func(childComplexity int, classificationID string) int
 		CloneRatePlan                   func(childComplexity int, planID string) int
 		CreateCarrier                   func(childComplexity int, carrier model.CarrierInput) int
 		CreateClassification            func(childComplexity int, classification model.ClassificationInput) int
 		CreateNumberPlan                func(childComplexity int, numberPlan model.NumberPlanInput) int
 		CreateRatePlan                  func(childComplexity int, ratePlan model.RatePlanInput) int
+		DebitQuota                      func(childComplexity int, subscriberID string, reservationID string, usedUnits int, unitType model.UnitType, reclaimUnusedUnits bool) int
 		DeclineClassificationPlan       func(childComplexity int, classificationID string) int
 		DeclineRatePlan                 func(childComplexity int, planID string) int
 		DeleteCarrier                   func(childComplexity int, plmn string) int
@@ -113,6 +115,7 @@ type ComplexityRoot struct {
 		DeleteNumberPlan                func(childComplexity int, numberID string) int
 		DeleteRatePlan                  func(childComplexity int, planID string) int
 		Empty                           func(childComplexity int) int
+		ReserveQuota                    func(childComplexity int, reservationID string, subscriberID string, reasonCode model.ReasonCode, rateKey model.QuotaRateKeyInput, unitType model.UnitType, requestedUnits int, unitPrice string, validitySeconds int, allowOOBCharging bool) int
 		SubmitClassificationForApproval func(childComplexity int, classificationID string) int
 		SubmitRatePlanForApproval       func(childComplexity int, planID string) int
 		UpdateCarrier                   func(childComplexity int, plmn string, carrier model.CarrierInput) int
@@ -144,9 +147,32 @@ type ComplexityRoot struct {
 		LatestRatePlanList   func(childComplexity int, planType model.RatePlanType) int
 		NumberPlan           func(childComplexity int, numberID string) int
 		NumberPlanList       func(childComplexity int, page *model.PageRequest, filter *model.FilterRequest) int
+		QuotaBalance         func(childComplexity int, balanceEnquiryRequest model.QuotaBalanceRequestInput) int
+		QuotaBalances        func(childComplexity int, balanceEnquiryRequest model.QuotaBalanceRequestInput) int
 		RateKeyInput         func(childComplexity int) int
 		RatePlan             func(childComplexity int, planID string) int
 		RatePlanList         func(childComplexity int, page *model.PageRequest, filter *model.FilterRequest) int
+	}
+
+	QuotaBalanceResponse struct {
+		AvailableBalance func(childComplexity int) int
+		TotalValue       func(childComplexity int) int
+		UnitType         func(childComplexity int) int
+	}
+
+	QuotaDebitResponse struct {
+		UnaccountedUnits func(childComplexity int) int
+		UnitsDebited     func(childComplexity int) int
+		UnitsValue       func(childComplexity int) int
+		ValueUnits       func(childComplexity int) int
+	}
+
+	QuotaOperationResponse struct {
+		Success func(childComplexity int) int
+	}
+
+	QuotaReserveResponse struct {
+		GrantedUnits func(childComplexity int) int
 	}
 
 	RateKeyInput struct {
@@ -219,6 +245,9 @@ type MutationResolver interface {
 	CreateNumberPlan(ctx context.Context, numberPlan model.NumberPlanInput) (*model.NumberPlan, error)
 	UpdateNumberPlan(ctx context.Context, numberID string, numberPlan model.NumberPlanInput) (*model.NumberPlan, error)
 	DeleteNumberPlan(ctx context.Context, numberID string) (bool, error)
+	CancelQuotaReservations(ctx context.Context, reservationID string, subscriberID string) (*model.QuotaOperationResponse, error)
+	ReserveQuota(ctx context.Context, reservationID string, subscriberID string, reasonCode model.ReasonCode, rateKey model.QuotaRateKeyInput, unitType model.UnitType, requestedUnits int, unitPrice string, validitySeconds int, allowOOBCharging bool) (*model.QuotaReserveResponse, error)
+	DebitQuota(ctx context.Context, subscriberID string, reservationID string, usedUnits int, unitType model.UnitType, reclaimUnusedUnits bool) (*model.QuotaDebitResponse, error)
 	CreateRatePlan(ctx context.Context, ratePlan model.RatePlanInput) (*model.RatePlan, error)
 	UpdateRatePlan(ctx context.Context, planID string, ratePlan model.RatePlanInput) (*model.RatePlan, error)
 	UpdateRatePlanRules(ctx context.Context, planID string, rateLines []*model.RateLineInput) (*model.RatePlan, error)
@@ -240,6 +269,8 @@ type QueryResolver interface {
 	NumberPlanList(ctx context.Context, page *model.PageRequest, filter *model.FilterRequest) ([]*model.NumberPlan, error)
 	CountNumberPlans(ctx context.Context, filter *model.FilterRequest) (int, error)
 	NumberPlan(ctx context.Context, numberID string) (*model.NumberPlan, error)
+	QuotaBalance(ctx context.Context, balanceEnquiryRequest model.QuotaBalanceRequestInput) (*model.QuotaBalanceResponse, error)
+	QuotaBalances(ctx context.Context, balanceEnquiryRequest model.QuotaBalanceRequestInput) ([]*model.QuotaBalanceResponse, error)
 	RatePlanList(ctx context.Context, page *model.PageRequest, filter *model.FilterRequest) ([]*model.RatePlan, error)
 	CountRatePlans(ctx context.Context, filter *model.FilterRequest) (int, error)
 	RatePlan(ctx context.Context, planID string) (*model.RatePlan, error)
@@ -552,6 +583,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.ApproveRatePlan(childComplexity, args["planId"].(string)), true
+	case "Mutation.cancelQuotaReservations":
+		if e.ComplexityRoot.Mutation.CancelQuotaReservations == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_cancelQuotaReservations_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.CancelQuotaReservations(childComplexity, args["reservationId"].(string), args["subscriberId"].(string)), true
 	case "Mutation.cloneClassification":
 		if e.ComplexityRoot.Mutation.CloneClassification == nil {
 			break
@@ -618,6 +660,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.CreateRatePlan(childComplexity, args["ratePlan"].(model.RatePlanInput)), true
+	case "Mutation.debitQuota":
+		if e.ComplexityRoot.Mutation.DebitQuota == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_debitQuota_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.DebitQuota(childComplexity, args["subscriberId"].(string), args["reservationId"].(string), args["usedUnits"].(int), args["unitType"].(model.UnitType), args["reclaimUnusedUnits"].(bool)), true
 	case "Mutation.declineClassificationPlan":
 		if e.ComplexityRoot.Mutation.DeclineClassificationPlan == nil {
 			break
@@ -690,6 +743,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.Empty(childComplexity), true
+	case "Mutation.reserveQuota":
+		if e.ComplexityRoot.Mutation.ReserveQuota == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_reserveQuota_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.ReserveQuota(childComplexity, args["reservationId"].(string), args["subscriberId"].(string), args["reasonCode"].(model.ReasonCode), args["rateKey"].(model.QuotaRateKeyInput), args["unitType"].(model.UnitType), args["requestedUnits"].(int), args["unitPrice"].(string), args["validitySeconds"].(int), args["allowOOBCharging"].(bool)), true
 	case "Mutation.submitClassificationForApproval":
 		if e.ComplexityRoot.Mutation.SubmitClassificationForApproval == nil {
 			break
@@ -933,6 +997,28 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.NumberPlanList(childComplexity, args["page"].(*model.PageRequest), args["filter"].(*model.FilterRequest)), true
+	case "Query.quotaBalance":
+		if e.ComplexityRoot.Query.QuotaBalance == nil {
+			break
+		}
+
+		args, err := ec.field_Query_quotaBalance_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.QuotaBalance(childComplexity, args["balanceEnquiryRequest"].(model.QuotaBalanceRequestInput)), true
+	case "Query.quotaBalances":
+		if e.ComplexityRoot.Query.QuotaBalances == nil {
+			break
+		}
+
+		args, err := ec.field_Query_quotaBalances_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.QuotaBalances(childComplexity, args["balanceEnquiryRequest"].(model.QuotaBalanceRequestInput)), true
 	case "Query.rateKeyInput":
 		if e.ComplexityRoot.Query.RateKeyInput == nil {
 			break
@@ -961,6 +1047,64 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.RatePlanList(childComplexity, args["page"].(*model.PageRequest), args["filter"].(*model.FilterRequest)), true
+
+	case "QuotaBalanceResponse.availableBalance":
+		if e.ComplexityRoot.QuotaBalanceResponse.AvailableBalance == nil {
+			break
+		}
+
+		return e.ComplexityRoot.QuotaBalanceResponse.AvailableBalance(childComplexity), true
+	case "QuotaBalanceResponse.totalValue":
+		if e.ComplexityRoot.QuotaBalanceResponse.TotalValue == nil {
+			break
+		}
+
+		return e.ComplexityRoot.QuotaBalanceResponse.TotalValue(childComplexity), true
+	case "QuotaBalanceResponse.unitType":
+		if e.ComplexityRoot.QuotaBalanceResponse.UnitType == nil {
+			break
+		}
+
+		return e.ComplexityRoot.QuotaBalanceResponse.UnitType(childComplexity), true
+
+	case "QuotaDebitResponse.unaccountedUnits":
+		if e.ComplexityRoot.QuotaDebitResponse.UnaccountedUnits == nil {
+			break
+		}
+
+		return e.ComplexityRoot.QuotaDebitResponse.UnaccountedUnits(childComplexity), true
+	case "QuotaDebitResponse.unitsDebited":
+		if e.ComplexityRoot.QuotaDebitResponse.UnitsDebited == nil {
+			break
+		}
+
+		return e.ComplexityRoot.QuotaDebitResponse.UnitsDebited(childComplexity), true
+	case "QuotaDebitResponse.unitsValue":
+		if e.ComplexityRoot.QuotaDebitResponse.UnitsValue == nil {
+			break
+		}
+
+		return e.ComplexityRoot.QuotaDebitResponse.UnitsValue(childComplexity), true
+	case "QuotaDebitResponse.valueUnits":
+		if e.ComplexityRoot.QuotaDebitResponse.ValueUnits == nil {
+			break
+		}
+
+		return e.ComplexityRoot.QuotaDebitResponse.ValueUnits(childComplexity), true
+
+	case "QuotaOperationResponse.success":
+		if e.ComplexityRoot.QuotaOperationResponse.Success == nil {
+			break
+		}
+
+		return e.ComplexityRoot.QuotaOperationResponse.Success(childComplexity), true
+
+	case "QuotaReserveResponse.grantedUnits":
+		if e.ComplexityRoot.QuotaReserveResponse.GrantedUnits == nil {
+			break
+		}
+
+		return e.ComplexityRoot.QuotaReserveResponse.GrantedUnits(childComplexity), true
 
 	case "RateKeyInput.serviceCategories":
 		if e.ComplexityRoot.RateKeyInput.ServiceCategories == nil {
@@ -1200,6 +1344,8 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputFilterRequest,
 		ec.unmarshalInputNumberPlanInput,
 		ec.unmarshalInputPageRequest,
+		ec.unmarshalInputQuotaBalanceRequestInput,
+		ec.unmarshalInputQuotaRateKeyInput,
 		ec.unmarshalInputRateLineInput,
 		ec.unmarshalInputRatePlanInput,
 		ec.unmarshalInputServiceCategoryMapEntryInput,
@@ -1578,6 +1724,127 @@ extend type Mutation {
   deleteNumberPlan(numberId: ID!): Boolean!
 }
 `, BuiltIn: false},
+	{Name: "../../../../gql/schema/quota.graphql", Input: `# Quota domain GraphQL types.
+# Matches the Java QuotaResource interface exactly — field names are authoritative.
+
+# UnitType identifies the kind of resource tracked by a quota counter.
+enum UnitType {
+  SECONDS
+  OCTETS
+  UNITS
+  MONETARY
+}
+
+# ReasonCode describes why a quota reservation was created.
+enum ReasonCode {
+  QUOTA_PROVISIONED
+  SERVICE_USAGE
+  CONVERSION
+  TRANSFER_IN
+  TRANSFER_OUT
+  LOAN_REPAYMENT
+  TRANSACTION_FEE
+  QUOTA_EXPIRY
+}
+
+# BalanceType controls which counters are included in a balance inquiry.
+enum BalanceType {
+  # All counters regardless of flags.
+  AVAILABLE_BALANCE
+  # Only counters where CanTransfer = true.
+  TRANSFERABLE_BALANCE
+  # Only counters where CanConvert = true.
+  CONVERTABLE_BALANCE
+}
+
+# A rate key identifies the pricing rule associated with a reservation.
+# Serialised internally as a dot-separated string: serviceType.sourceType.direction.category[.window]
+input QuotaRateKeyInput {
+  serviceType:      String!
+  sourceType:       String!
+  serviceDirection: String!
+  serviceCategory:  String!
+  serviceWindow:    String
+}
+
+# Input for balance enquiries.
+# unitType is required for quotaBalance; optional for quotaBalances.
+input QuotaBalanceRequestInput {
+  subscriberId: ID!
+  unitType:     UnitType
+  balanceType:  BalanceType!
+}
+
+# Aggregated balance for one UnitType across all matching counters.
+type QuotaBalanceResponse {
+  unitType:         UnitType!
+  # Total balance (sum across all matching counters). Decimal as String.
+  totalValue:       String!
+  # Available balance after deducting active reservations. Decimal as String.
+  availableBalance: String!
+}
+
+# Result of a cancel-reservations operation.
+type QuotaOperationResponse {
+  success: Boolean!
+}
+
+# Result of a reserve-quota operation.
+type QuotaReserveResponse {
+  # Number of units granted. May be less than requestedUnits if quota is partially exhausted.
+  grantedUnits: Int!
+}
+
+# Result of a debit-quota operation.
+type QuotaDebitResponse {
+  unitsDebited:     Int!
+  # Monetary value of the debited units. Decimal as String.
+  unitsValue:       String!
+  valueUnits:       Int!
+  unaccountedUnits: Int!
+}
+
+extend type Query {
+  # Returns the aggregated balance for a specific subscriber and unitType.
+  # Both subscriberId and unitType are required.
+  # Returns null if no matching non-expired counters exist.
+  quotaBalance(balanceEnquiryRequest: QuotaBalanceRequestInput!): QuotaBalanceResponse
+
+  # Returns aggregated balances for all unit types held by the subscriber.
+  # subscriberId is required; unitType is optional (filters to one unit type if supplied).
+  quotaBalances(balanceEnquiryRequest: QuotaBalanceRequestInput!): [QuotaBalanceResponse!]!
+}
+
+extend type Mutation {
+  # Cancels all quota reservations for a given reservation ID on a subscriber's quota.
+  cancelQuotaReservations(reservationId: ID!, subscriberId: ID!): QuotaOperationResponse!
+
+  # Reserves units from a subscriber's quota.
+  # unitPrice and validitySeconds determine the size and lifetime of the reservation.
+  reserveQuota(
+    reservationId:    ID!
+    subscriberId:     ID!
+    reasonCode:       ReasonCode!
+    rateKey:          QuotaRateKeyInput!
+    unitType:         UnitType!
+    requestedUnits:   Int!
+    # Price per unit. Decimal as String.
+    unitPrice:        String!
+    # Reservation validity duration in seconds.
+    validitySeconds:  Int!
+    allowOOBCharging: Boolean!
+  ): QuotaReserveResponse!
+
+  # Debits previously reserved units from a subscriber's quota.
+  debitQuota(
+    subscriberId:       ID!
+    reservationId:      ID!
+    usedUnits:          Int!
+    unitType:           UnitType!
+    reclaimUnusedUnits: Boolean!
+  ): QuotaDebitResponse!
+}
+`, BuiltIn: false},
 	{Name: "../../../../gql/schema/rateplan.graphql", Input: `# RatePlan domain GraphQL types.
 #
 # A logical rate plan is identified by planId (UUID). Multiple rows in the database
@@ -1808,6 +2075,22 @@ func (ec *executionContext) field_Mutation_approveRatePlan_args(ctx context.Cont
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_cancelQuotaReservations_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "reservationId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["reservationId"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "subscriberId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["subscriberId"] = arg1
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_cloneClassification_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -1874,6 +2157,37 @@ func (ec *executionContext) field_Mutation_createRatePlan_args(ctx context.Conte
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_debitQuota_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "subscriberId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["subscriberId"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "reservationId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["reservationId"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "usedUnits", ec.unmarshalNInt2int)
+	if err != nil {
+		return nil, err
+	}
+	args["usedUnits"] = arg2
+	arg3, err := graphql.ProcessArgField(ctx, rawArgs, "unitType", ec.unmarshalNUnitType2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐUnitType)
+	if err != nil {
+		return nil, err
+	}
+	args["unitType"] = arg3
+	arg4, err := graphql.ProcessArgField(ctx, rawArgs, "reclaimUnusedUnits", ec.unmarshalNBoolean2bool)
+	if err != nil {
+		return nil, err
+	}
+	args["reclaimUnusedUnits"] = arg4
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_declineClassificationPlan_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -1937,6 +2251,57 @@ func (ec *executionContext) field_Mutation_deleteRatePlan_args(ctx context.Conte
 		return nil, err
 	}
 	args["planId"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_reserveQuota_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "reservationId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["reservationId"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "subscriberId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["subscriberId"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "reasonCode", ec.unmarshalNReasonCode2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐReasonCode)
+	if err != nil {
+		return nil, err
+	}
+	args["reasonCode"] = arg2
+	arg3, err := graphql.ProcessArgField(ctx, rawArgs, "rateKey", ec.unmarshalNQuotaRateKeyInput2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐQuotaRateKeyInput)
+	if err != nil {
+		return nil, err
+	}
+	args["rateKey"] = arg3
+	arg4, err := graphql.ProcessArgField(ctx, rawArgs, "unitType", ec.unmarshalNUnitType2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐUnitType)
+	if err != nil {
+		return nil, err
+	}
+	args["unitType"] = arg4
+	arg5, err := graphql.ProcessArgField(ctx, rawArgs, "requestedUnits", ec.unmarshalNInt2int)
+	if err != nil {
+		return nil, err
+	}
+	args["requestedUnits"] = arg5
+	arg6, err := graphql.ProcessArgField(ctx, rawArgs, "unitPrice", ec.unmarshalNString2string)
+	if err != nil {
+		return nil, err
+	}
+	args["unitPrice"] = arg6
+	arg7, err := graphql.ProcessArgField(ctx, rawArgs, "validitySeconds", ec.unmarshalNInt2int)
+	if err != nil {
+		return nil, err
+	}
+	args["validitySeconds"] = arg7
+	arg8, err := graphql.ProcessArgField(ctx, rawArgs, "allowOOBCharging", ec.unmarshalNBoolean2bool)
+	if err != nil {
+		return nil, err
+	}
+	args["allowOOBCharging"] = arg8
 	return args, nil
 }
 
@@ -2186,6 +2551,28 @@ func (ec *executionContext) field_Query_numberPlan_args(ctx context.Context, raw
 		return nil, err
 	}
 	args["numberId"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_quotaBalance_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "balanceEnquiryRequest", ec.unmarshalNQuotaBalanceRequestInput2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐQuotaBalanceRequestInput)
+	if err != nil {
+		return nil, err
+	}
+	args["balanceEnquiryRequest"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_quotaBalances_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "balanceEnquiryRequest", ec.unmarshalNQuotaBalanceRequestInput2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐQuotaBalanceRequestInput)
+	if err != nil {
+		return nil, err
+	}
+	args["balanceEnquiryRequest"] = arg0
 	return args, nil
 }
 
@@ -4338,6 +4725,147 @@ func (ec *executionContext) fieldContext_Mutation_deleteNumberPlan(ctx context.C
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_cancelQuotaReservations(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_cancelQuotaReservations,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().CancelQuotaReservations(ctx, fc.Args["reservationId"].(string), fc.Args["subscriberId"].(string))
+		},
+		nil,
+		ec.marshalNQuotaOperationResponse2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐQuotaOperationResponse,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_cancelQuotaReservations(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "success":
+				return ec.fieldContext_QuotaOperationResponse_success(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type QuotaOperationResponse", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_cancelQuotaReservations_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_reserveQuota(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_reserveQuota,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().ReserveQuota(ctx, fc.Args["reservationId"].(string), fc.Args["subscriberId"].(string), fc.Args["reasonCode"].(model.ReasonCode), fc.Args["rateKey"].(model.QuotaRateKeyInput), fc.Args["unitType"].(model.UnitType), fc.Args["requestedUnits"].(int), fc.Args["unitPrice"].(string), fc.Args["validitySeconds"].(int), fc.Args["allowOOBCharging"].(bool))
+		},
+		nil,
+		ec.marshalNQuotaReserveResponse2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐQuotaReserveResponse,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_reserveQuota(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "grantedUnits":
+				return ec.fieldContext_QuotaReserveResponse_grantedUnits(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type QuotaReserveResponse", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_reserveQuota_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_debitQuota(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_debitQuota,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().DebitQuota(ctx, fc.Args["subscriberId"].(string), fc.Args["reservationId"].(string), fc.Args["usedUnits"].(int), fc.Args["unitType"].(model.UnitType), fc.Args["reclaimUnusedUnits"].(bool))
+		},
+		nil,
+		ec.marshalNQuotaDebitResponse2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐQuotaDebitResponse,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_debitQuota(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "unitsDebited":
+				return ec.fieldContext_QuotaDebitResponse_unitsDebited(ctx, field)
+			case "unitsValue":
+				return ec.fieldContext_QuotaDebitResponse_unitsValue(ctx, field)
+			case "valueUnits":
+				return ec.fieldContext_QuotaDebitResponse_valueUnits(ctx, field)
+			case "unaccountedUnits":
+				return ec.fieldContext_QuotaDebitResponse_unaccountedUnits(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type QuotaDebitResponse", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_debitQuota_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Mutation_createRatePlan(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -5537,6 +6065,104 @@ func (ec *executionContext) fieldContext_Query_numberPlan(ctx context.Context, f
 	return fc, nil
 }
 
+func (ec *executionContext) _Query_quotaBalance(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_quotaBalance,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().QuotaBalance(ctx, fc.Args["balanceEnquiryRequest"].(model.QuotaBalanceRequestInput))
+		},
+		nil,
+		ec.marshalOQuotaBalanceResponse2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐQuotaBalanceResponse,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_quotaBalance(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "unitType":
+				return ec.fieldContext_QuotaBalanceResponse_unitType(ctx, field)
+			case "totalValue":
+				return ec.fieldContext_QuotaBalanceResponse_totalValue(ctx, field)
+			case "availableBalance":
+				return ec.fieldContext_QuotaBalanceResponse_availableBalance(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type QuotaBalanceResponse", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_quotaBalance_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_quotaBalances(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_quotaBalances,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().QuotaBalances(ctx, fc.Args["balanceEnquiryRequest"].(model.QuotaBalanceRequestInput))
+		},
+		nil,
+		ec.marshalNQuotaBalanceResponse2ᚕᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐQuotaBalanceResponseᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_quotaBalances(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "unitType":
+				return ec.fieldContext_QuotaBalanceResponse_unitType(ctx, field)
+			case "totalValue":
+				return ec.fieldContext_QuotaBalanceResponse_totalValue(ctx, field)
+			case "availableBalance":
+				return ec.fieldContext_QuotaBalanceResponse_availableBalance(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type QuotaBalanceResponse", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_quotaBalances_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_ratePlanList(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -5870,6 +6496,267 @@ func (ec *executionContext) fieldContext_Query___schema(_ context.Context, field
 				return ec.fieldContext___Schema_directives(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type __Schema", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _QuotaBalanceResponse_unitType(ctx context.Context, field graphql.CollectedField, obj *model.QuotaBalanceResponse) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_QuotaBalanceResponse_unitType,
+		func(ctx context.Context) (any, error) {
+			return obj.UnitType, nil
+		},
+		nil,
+		ec.marshalNUnitType2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐUnitType,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_QuotaBalanceResponse_unitType(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QuotaBalanceResponse",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type UnitType does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _QuotaBalanceResponse_totalValue(ctx context.Context, field graphql.CollectedField, obj *model.QuotaBalanceResponse) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_QuotaBalanceResponse_totalValue,
+		func(ctx context.Context) (any, error) {
+			return obj.TotalValue, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_QuotaBalanceResponse_totalValue(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QuotaBalanceResponse",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _QuotaBalanceResponse_availableBalance(ctx context.Context, field graphql.CollectedField, obj *model.QuotaBalanceResponse) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_QuotaBalanceResponse_availableBalance,
+		func(ctx context.Context) (any, error) {
+			return obj.AvailableBalance, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_QuotaBalanceResponse_availableBalance(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QuotaBalanceResponse",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _QuotaDebitResponse_unitsDebited(ctx context.Context, field graphql.CollectedField, obj *model.QuotaDebitResponse) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_QuotaDebitResponse_unitsDebited,
+		func(ctx context.Context) (any, error) {
+			return obj.UnitsDebited, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_QuotaDebitResponse_unitsDebited(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QuotaDebitResponse",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _QuotaDebitResponse_unitsValue(ctx context.Context, field graphql.CollectedField, obj *model.QuotaDebitResponse) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_QuotaDebitResponse_unitsValue,
+		func(ctx context.Context) (any, error) {
+			return obj.UnitsValue, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_QuotaDebitResponse_unitsValue(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QuotaDebitResponse",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _QuotaDebitResponse_valueUnits(ctx context.Context, field graphql.CollectedField, obj *model.QuotaDebitResponse) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_QuotaDebitResponse_valueUnits,
+		func(ctx context.Context) (any, error) {
+			return obj.ValueUnits, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_QuotaDebitResponse_valueUnits(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QuotaDebitResponse",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _QuotaDebitResponse_unaccountedUnits(ctx context.Context, field graphql.CollectedField, obj *model.QuotaDebitResponse) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_QuotaDebitResponse_unaccountedUnits,
+		func(ctx context.Context) (any, error) {
+			return obj.UnaccountedUnits, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_QuotaDebitResponse_unaccountedUnits(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QuotaDebitResponse",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _QuotaOperationResponse_success(ctx context.Context, field graphql.CollectedField, obj *model.QuotaOperationResponse) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_QuotaOperationResponse_success,
+		func(ctx context.Context) (any, error) {
+			return obj.Success, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_QuotaOperationResponse_success(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QuotaOperationResponse",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _QuotaReserveResponse_grantedUnits(ctx context.Context, field graphql.CollectedField, obj *model.QuotaReserveResponse) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_QuotaReserveResponse_grantedUnits,
+		func(ctx context.Context) (any, error) {
+			return obj.GrantedUnits, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_QuotaReserveResponse_grantedUnits(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QuotaReserveResponse",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
 		},
 	}
 	return fc, nil
@@ -8905,6 +9792,108 @@ func (ec *executionContext) unmarshalInputPageRequest(ctx context.Context, obj a
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputQuotaBalanceRequestInput(ctx context.Context, obj any) (model.QuotaBalanceRequestInput, error) {
+	var it model.QuotaBalanceRequestInput
+	if obj == nil {
+		return it, nil
+	}
+
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"subscriberId", "unitType", "balanceType"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "subscriberId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("subscriberId"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SubscriberID = data
+		case "unitType":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("unitType"))
+			data, err := ec.unmarshalOUnitType2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐUnitType(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UnitType = data
+		case "balanceType":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("balanceType"))
+			data, err := ec.unmarshalNBalanceType2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐBalanceType(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BalanceType = data
+		}
+	}
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputQuotaRateKeyInput(ctx context.Context, obj any) (model.QuotaRateKeyInput, error) {
+	var it model.QuotaRateKeyInput
+	if obj == nil {
+		return it, nil
+	}
+
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"serviceType", "sourceType", "serviceDirection", "serviceCategory", "serviceWindow"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "serviceType":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceType"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceType = data
+		case "sourceType":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("sourceType"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SourceType = data
+		case "serviceDirection":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceDirection"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceDirection = data
+		case "serviceCategory":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceCategory"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceCategory = data
+		case "serviceWindow":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceWindow"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceWindow = data
+		}
+	}
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputRateLineInput(ctx context.Context, obj any) (model.RateLineInput, error) {
 	var it model.RateLineInput
 	if obj == nil {
@@ -9683,6 +10672,27 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "cancelQuotaReservations":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_cancelQuotaReservations(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "reserveQuota":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_reserveQuota(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "debitQuota":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_debitQuota(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "createRatePlan":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_createRatePlan(ctx, field)
@@ -10072,6 +11082,47 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "quotaBalance":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_quotaBalance(ctx, field)
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "quotaBalances":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_quotaBalances(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "ratePlanList":
 			field := field
 
@@ -10165,6 +11216,187 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Query___schema(ctx, field)
 			})
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var quotaBalanceResponseImplementors = []string{"QuotaBalanceResponse"}
+
+func (ec *executionContext) _QuotaBalanceResponse(ctx context.Context, sel ast.SelectionSet, obj *model.QuotaBalanceResponse) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, quotaBalanceResponseImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("QuotaBalanceResponse")
+		case "unitType":
+			out.Values[i] = ec._QuotaBalanceResponse_unitType(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "totalValue":
+			out.Values[i] = ec._QuotaBalanceResponse_totalValue(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "availableBalance":
+			out.Values[i] = ec._QuotaBalanceResponse_availableBalance(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var quotaDebitResponseImplementors = []string{"QuotaDebitResponse"}
+
+func (ec *executionContext) _QuotaDebitResponse(ctx context.Context, sel ast.SelectionSet, obj *model.QuotaDebitResponse) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, quotaDebitResponseImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("QuotaDebitResponse")
+		case "unitsDebited":
+			out.Values[i] = ec._QuotaDebitResponse_unitsDebited(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "unitsValue":
+			out.Values[i] = ec._QuotaDebitResponse_unitsValue(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "valueUnits":
+			out.Values[i] = ec._QuotaDebitResponse_valueUnits(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "unaccountedUnits":
+			out.Values[i] = ec._QuotaDebitResponse_unaccountedUnits(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var quotaOperationResponseImplementors = []string{"QuotaOperationResponse"}
+
+func (ec *executionContext) _QuotaOperationResponse(ctx context.Context, sel ast.SelectionSet, obj *model.QuotaOperationResponse) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, quotaOperationResponseImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("QuotaOperationResponse")
+		case "success":
+			out.Values[i] = ec._QuotaOperationResponse_success(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var quotaReserveResponseImplementors = []string{"QuotaReserveResponse"}
+
+func (ec *executionContext) _QuotaReserveResponse(ctx context.Context, sel ast.SelectionSet, obj *model.QuotaReserveResponse) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, quotaReserveResponseImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("QuotaReserveResponse")
+		case "grantedUnits":
+			out.Values[i] = ec._QuotaReserveResponse_grantedUnits(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -10889,6 +12121,16 @@ func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, o
 
 // region    ***************************** type.gotpl *****************************
 
+func (ec *executionContext) unmarshalNBalanceType2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐBalanceType(ctx context.Context, v any) (model.BalanceType, error) {
+	var res model.BalanceType
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNBalanceType2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐBalanceType(ctx context.Context, sel ast.SelectionSet, v model.BalanceType) graphql.Marshaler {
+	return v
+}
+
 func (ec *executionContext) unmarshalNBoolean2bool(ctx context.Context, v any) (bool, error) {
 	res, err := graphql.UnmarshalBoolean(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -11144,6 +12386,84 @@ func (ec *executionContext) unmarshalNNumberPlanInput2goᚑocsᚋinternalᚋback
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) unmarshalNQuotaBalanceRequestInput2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐQuotaBalanceRequestInput(ctx context.Context, v any) (model.QuotaBalanceRequestInput, error) {
+	res, err := ec.unmarshalInputQuotaBalanceRequestInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNQuotaBalanceResponse2ᚕᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐQuotaBalanceResponseᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.QuotaBalanceResponse) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNQuotaBalanceResponse2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐQuotaBalanceResponse(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNQuotaBalanceResponse2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐQuotaBalanceResponse(ctx context.Context, sel ast.SelectionSet, v *model.QuotaBalanceResponse) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._QuotaBalanceResponse(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNQuotaDebitResponse2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐQuotaDebitResponse(ctx context.Context, sel ast.SelectionSet, v model.QuotaDebitResponse) graphql.Marshaler {
+	return ec._QuotaDebitResponse(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNQuotaDebitResponse2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐQuotaDebitResponse(ctx context.Context, sel ast.SelectionSet, v *model.QuotaDebitResponse) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._QuotaDebitResponse(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNQuotaOperationResponse2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐQuotaOperationResponse(ctx context.Context, sel ast.SelectionSet, v model.QuotaOperationResponse) graphql.Marshaler {
+	return ec._QuotaOperationResponse(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNQuotaOperationResponse2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐQuotaOperationResponse(ctx context.Context, sel ast.SelectionSet, v *model.QuotaOperationResponse) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._QuotaOperationResponse(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNQuotaRateKeyInput2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐQuotaRateKeyInput(ctx context.Context, v any) (model.QuotaRateKeyInput, error) {
+	res, err := ec.unmarshalInputQuotaRateKeyInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNQuotaReserveResponse2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐQuotaReserveResponse(ctx context.Context, sel ast.SelectionSet, v model.QuotaReserveResponse) graphql.Marshaler {
+	return ec._QuotaReserveResponse(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNQuotaReserveResponse2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐQuotaReserveResponse(ctx context.Context, sel ast.SelectionSet, v *model.QuotaReserveResponse) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._QuotaReserveResponse(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNRateKeyInput2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐRateKeyInput(ctx context.Context, sel ast.SelectionSet, v model.RateKeyInput) graphql.Marshaler {
 	return ec._RateKeyInput(ctx, sel, &v)
 }
@@ -11259,6 +12579,16 @@ func (ec *executionContext) marshalNRatePlanType2goᚑocsᚋinternalᚋbackend�
 	return v
 }
 
+func (ec *executionContext) unmarshalNReasonCode2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐReasonCode(ctx context.Context, v any) (model.ReasonCode, error) {
+	var res model.ReasonCode
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNReasonCode2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐReasonCode(ctx context.Context, sel ast.SelectionSet, v model.ReasonCode) graphql.Marshaler {
+	return v
+}
+
 func (ec *executionContext) marshalNServiceCategoryLookup2ᚕᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐServiceCategoryLookupᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.ServiceCategoryLookup) graphql.Marshaler {
 	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
 		fc := graphql.GetFieldContext(ctx)
@@ -11359,6 +12689,16 @@ func (ec *executionContext) marshalNString2ᚕstringᚄ(ctx context.Context, sel
 	}
 
 	return ret
+}
+
+func (ec *executionContext) unmarshalNUnitType2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐUnitType(ctx context.Context, v any) (model.UnitType, error) {
+	var res model.UnitType
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNUnitType2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐUnitType(ctx context.Context, sel ast.SelectionSet, v model.UnitType) graphql.Marshaler {
+	return v
 }
 
 func (ec *executionContext) marshalN__Directive2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirective(ctx context.Context, sel ast.SelectionSet, v introspection.Directive) graphql.Marshaler {
@@ -11642,6 +12982,13 @@ func (ec *executionContext) unmarshalOPageRequest2ᚖgoᚑocsᚋinternalᚋbacke
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) marshalOQuotaBalanceResponse2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐQuotaBalanceResponse(ctx context.Context, sel ast.SelectionSet, v *model.QuotaBalanceResponse) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._QuotaBalanceResponse(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalORatePlan2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐRatePlan(ctx context.Context, sel ast.SelectionSet, v *model.RatePlan) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
@@ -11783,6 +13130,22 @@ func (ec *executionContext) marshalOString2ᚖstring(ctx context.Context, sel as
 	_ = ctx
 	res := graphql.MarshalString(*v)
 	return res
+}
+
+func (ec *executionContext) unmarshalOUnitType2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐUnitType(ctx context.Context, v any) (*model.UnitType, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(model.UnitType)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOUnitType2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐUnitType(ctx context.Context, sel ast.SelectionSet, v *model.UnitType) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
 }
 
 func (ec *executionContext) marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValueᚄ(ctx context.Context, sel ast.SelectionSet, v []introspection.EnumValue) graphql.Marshaler {

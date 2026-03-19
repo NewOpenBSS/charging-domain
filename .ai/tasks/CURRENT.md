@@ -1,118 +1,94 @@
-# Task: Quota Balance Inquiry — QuotaManager Extension
+# Task: QuotaResource GraphQL
 
 **Date:** 2026-03-19
-**Status:** Implementation complete — pending build verification and commit
+**Status:** Active
 
 ---
 
 ## Objective
 
-Extend `QuotaManager` with a general-purpose balance inquiry capability. The new
-`GetBalance` method allows any part of the domain — charging pipeline, DRA server,
-backend GraphQL service, future services — to query a subscriber's counter balances
-using a composable filter. This is a prerequisite for the `QuotaResource` GraphQL
-resource (Task B), but is intentionally designed as a domain primitive, not a
-GraphQL-specific helper.
+Port the Java `QuotaResource` GraphQL API to the Go charging-backend, keeping the
+interface identical so that existing callers are not broken. The resource exposes
+two balance queries and three quota mutation operations through the gqlgen-generated
+GraphQL endpoint at `/api/charging/graphql`.
 
 ---
 
 ## Scope
 
 **In scope:**
-- New `BalanceQuery` filter struct in `internal/quota` ✅ done (`balance.go`)
-- New `CounterBalance` result struct in `internal/quota` ✅ done (`balance.go`)
-- `GetBalance(ctx, now, subscriberID, BalanceQuery) ([]*CounterBalance, error)` method on
-  `QuotaManager` ✅ done (`manager.go`)
-- Add `GetBalance` to the `QuotaManagerInterface` ✅ done (`manager.go`)
-- Unit tests covering all filter combinations and edge cases ✅ done (`balance_test.go`)
+- `gql/schema/quota.graphql` — new schema file with types, enums, queries, mutations
+- `internal/backend/services/quota_service.go` — service wrapping `QuotaManagerInterface`
+- `internal/backend/services/quota_service_test.go` — unit tests
+- `internal/backend/resolvers/quota.resolvers.go` — resolver implementations (post-gqlgen)
+- Wire `QuotaSvc` into `AppContext`, `Resolver`, `router.go`
+- Add Kafka config to `BackendConfig` and backend wiring (mutations publish journal events)
+- Fix `KafkaManager.PublishEvent` nil safety (calls `m.KafkaClient.Produce` directly, panics when disabled)
 
 **Out of scope:**
-- Loan balance inquiry (`GetLoanBalance`) — deferred, separate task
-- GraphQL schema and resolver — deferred Task B (`QuotaResource`)
-- Any change to the charging pipeline or DRA server
-- Any database migration or sqlc query change (balance is derived from the in-memory
-  JSONB quota structure, no new SQL needed)
+- Subscriber admin CRUD (separate future task)
+- Loan balance operations
+- Changes to the charging pipeline or DRA
 
 ---
 
 ## Context
 
-- The quota is stored as a JSONB blob per subscriber in the `quota` table. It is
-  loaded via `QuotaRepository.Load()` and deserialised into `*LoadedQuota`.
-- `Counter` fields relevant to this task:
-  - `UnitType charging.UnitType` — one of `SECONDS`, `OCTETS`, `UNITS`, `MONETARY`
-  - `Balance *decimal.Decimal` — total current balance
-  - `Reservations map[uuid.UUID]Reservation` — active reservations against this counter
-  - `CanTransfer bool` — counter may be transferred to another subscriber
-  - `CanConvert bool` — counter may be converted between unit types
-  - `Expiry *time.Time` — counter expiry; expired counters must be excluded from results
-- Available balance = `Balance` minus sum of all active `Reservation.Value` (for
-  MONETARY) or sum of `Reservation.Units` (for service unit types). The existing
-  helper methods `Counter.AvailableValue()` and `Counter.AvailableServiceUnits()` already
-  compute this — use them.
-- `GetBalance` is a **read-only** operation. It must NOT call `executeWithQuota` (which
-  is write-oriented and includes a save/retry loop). Load, filter expired entries in
-  memory, apply the query, return — no write back.
-- Follow the pattern in `internal/quota/manager.go` and `internal/quota/quota.go`.
-- All financial values use `github.com/shopspring/decimal` — no float types.
-- `now` must be injected as a parameter for expiry comparisons (never call `time.Now()`
-  inside business logic).
+### Java contract to match (field names authoritative)
 
----
+**Queries:**
+```
+quotaBalance(balanceEnquiryRequest: QuotaBalanceRequestInput!): QuotaBalanceResponse
+  - subscriberId and unitType are required
+  - Returns aggregated balance (sum) across all matching counters for that unitType
 
-## Design
-
-### BalanceQuery
-
-```go
-// BalanceQuery defines the filter criteria for a balance inquiry.
-// Nil pointer fields mean "no filter on this dimension".
-type BalanceQuery struct {
-    // UnitType restricts results to counters of this unit type.
-    // nil returns counters of all unit types.
-    UnitType *charging.UnitType
-
-    // Transferable restricts results to counters where CanTransfer matches.
-    // nil returns counters regardless of their CanTransfer flag.
-    Transferable *bool
-
-    // Convertible restricts results to counters where CanConvert matches.
-    // nil returns counters regardless of their CanConvert flag.
-    Convertible *bool
-}
+quotaBalances(balanceEnquiryRequest: QuotaBalanceRequestInput!): [QuotaBalanceResponse!]!
+  - subscriberId is required; unitType is optional
+  - Returns one aggregated QuotaBalanceResponse per distinct UnitType
 ```
 
-### CounterBalance
-
-```go
-// CounterBalance is the balance result for a single matching counter.
-type CounterBalance struct {
-    CounterID        uuid.UUID
-    ProductID        uuid.UUID
-    ProductName      string
-    UnitType         charging.UnitType
-    TotalBalance     decimal.Decimal
-    AvailableBalance decimal.Decimal
-    Expiry           *time.Time
-    CanTransfer      bool
-    CanConvert       bool
-}
+**Mutations:**
+```
+cancelQuotaReservations(reservationId: ID!, subscriberId: ID!): QuotaOperationResponse!
+reserveQuota(reservationId, subscriberId, reasonCode, rateKey, unitType,
+             requestedUnits, unitPrice, validitySeconds, allowOOBCharging): QuotaReserveResponse!
+debitQuota(subscriberId, reservationId, usedUnits, unitType,
+           reclaimUnusedUnits): QuotaDebitResponse!
 ```
 
-### GetBalance signature
+**BalanceType → BalanceQuery mapping:**
+| Java BalanceType | Go BalanceQuery |
+|---|---|
+| `AVAILABLE_BALANCE` | `BalanceQuery{}` (no filter) |
+| `TRANSFERABLE_BALANCE` | `BalanceQuery{Transferable: ptr(true)}` |
+| `CONVERTABLE_BALANCE` | `BalanceQuery{Convertible: ptr(true)}` |
 
-```go
-// GetBalance returns the balances for all non-expired counters matching query
-// for the given subscriber. now is the reference time for expiry comparisons.
-// Returns an empty slice (not an error) if the subscriber has no quota or no
-// counters match the query.
-GetBalance(ctx context.Context, now time.Time, subscriberID uuid.UUID, query BalanceQuery) ([]*CounterBalance, error)
-```
+### Key domain types
+- `quota.QuotaManagerInterface.GetBalance` — implemented in Task A
+- `quota.QuotaManagerInterface.ReserveQuota` — existing
+- `quota.QuotaManagerInterface.Debit` — existing
+- `quota.QuotaManagerInterface.Release` — existing
+- `charging.RateKey` — serialised as dot-separated string e.g. `"VOICE.HOME.MO.LOCAL"`
+- `charging.UnitType` — `SECONDS | OCTETS | UNITS | MONETARY`
 
-### QuotaManagerInterface addition
+### Aggregation logic
 
-Add `GetBalance` to the existing `QuotaManagerInterface` alongside `ReserveQuota`,
-`Debit`, and `Release`.
+`quotaBalance` and `quotaBalances` aggregate per UnitType:
+- `TotalBalance` = sum of `CounterBalance.TotalBalance` for all matching counters of that UnitType
+- `AvailableBalance` = sum of `CounterBalance.AvailableBalance` for all matching counters
+
+### Pattern references
+- Schema: `gql/schema/charging.graphql` — follow this style
+- Service: `internal/backend/services/carrier_service.go` — follow this pattern
+- Resolver: `internal/backend/resolvers/charging.resolvers.go`
+- AppContext wiring: `internal/backend/appcontext/context.go`
+
+### Kafka requirement
+The mutations (reserve, debit) call `QuotaManager` which publishes journal events.
+`QuotaManager` requires a `*events.KafkaManager`. Add Kafka config to `BackendConfig`
+and wire it through `AppContext`. With `enabled: false` in dev config, no connection
+is made but the struct is non-nil. Fix `PublishEvent` to use the nil-safe `m.Produce()`
+instead of calling `m.KafkaClient.Produce()` directly.
 
 ---
 
@@ -120,31 +96,31 @@ Add `GetBalance` to the existing `QuotaManagerInterface` alongside `ReserveQuota
 
 | Decision | Rationale |
 |---|---|
-| Single `GetBalance` with `BalanceQuery` struct, not three separate functions | The filtering logic is identical across all balance types; callers compose the query they need. Avoids combinatorial explosion as new filter dimensions are added. |
-| `GetBalance` on `QuotaManagerInterface` (not a separate interface) | Balance inquiry is a domain primitive needed anywhere quota is used, not just in the backend layer. Keeping it on the main interface avoids interface proliferation. |
-| Read-only — no `executeWithQuota`, no save | Balance is derived from the loaded JSONB; no mutation occurs. The optimistic-locking retry loop is only needed for writes. |
-| Expired counters excluded silently | An expired counter has no available balance; including it would mislead callers. Mirrors the behaviour of `RemoveExpiredEntries`. |
-| `now` injected as parameter | Consistent with the project-wide rule: never call `time.Now()` in business logic. |
-| `AvailableBalance` computed from existing helpers | `Counter.AvailableValue()` and `Counter.AvailableServiceUnits()` already implement the reservation-deduction logic correctly. Reuse them rather than duplicating. |
-| Loan balance excluded | A loan is separate domain state on a counter. Outstanding loan balance is a different query with different semantics — deferred to a future task. |
-| `nil` quota returns empty slice, not error | A subscriber with no quota record is a valid state (quota created on first reservation). Callers should distinguish "no data" from "error". |
+| Aggregate counters by UnitType in service layer | Java returns one DTO per UnitType; Go GetBalance returns per-counter slices. Service aggregates to match contract. |
+| Decimal values serialised as String in GraphQL | Consistent with existing RatePlan schema (BaseTariff, Multiplier are strings). Avoids float precision loss. |
+| `validitySeconds: Int!` for reservation duration | `time.Duration` has no native GraphQL scalar; seconds as Int is simple and unambiguous. |
+| Java `provisioningRequest` param dropped from debitQuota | Go `Debit()` uses `reservationId.String()` as requestId directly. No equivalent param needed. |
+| Java `multiplier` hardcoded to 1 in reserveQuota | Java source hardcodes `BigDecimal.ONE`. Kept in service layer, not exposed in schema. |
+| Kafka added to charging-backend | Reserve/debit mutations call QuotaManager which publishes journal events. Backend must have Kafka to support these operations. `enabled: false` default for dev. |
+| Fix PublishEvent nil safety | `PublishEvent` calls `m.KafkaClient.Produce()` directly — panics when `KafkaClient` is nil. Use `m.Produce()` which is already nil-safe. |
 
 ---
 
 ## Acceptance Criteria
 
-- [ ] `BalanceQuery` and `CounterBalance` types defined in `internal/quota`
-- [ ] `GetBalance` implemented on `*QuotaManager`
-- [ ] `GetBalance` added to `QuotaManagerInterface`
-- [ ] Expired counters excluded from results (expiry before `now`)
-- [ ] `BalanceQuery` with all nil fields returns all non-expired counters
-- [ ] `BalanceQuery.UnitType` filter applied correctly
-- [ ] `BalanceQuery.Transferable` filter applied correctly
-- [ ] `BalanceQuery.Convertible` filter applied correctly
-- [ ] Combined filters (e.g. `UnitType=MONETARY` + `Transferable=true`) work correctly
-- [ ] Subscriber with no quota record returns empty slice, not error
-- [ ] `AvailableBalance` uses existing `AvailableValue()` / `AvailableServiceUnits()` helpers
-- [ ] Table-driven unit tests for all filter combinations — success, no-match, nil quota, expired counters
+- [ ] `gql/schema/quota.graphql` defines all types, enums, queries, mutations
+- [ ] `gqlgen generate` runs cleanly and updates generated files
+- [ ] `QuotaService` wraps `QuotaManagerInterface` and converts types correctly
+- [ ] `quotaBalance` requires subscriberId + unitType; returns nil if no match
+- [ ] `quotaBalances` requires subscriberId; unitType optional; returns one entry per UnitType
+- [ ] Balance results aggregate TotalBalance and AvailableBalance per UnitType
+- [ ] `cancelQuotaReservations` delegates to `QuotaManager.Release`
+- [ ] `reserveQuota` delegates to `QuotaManager.ReserveQuota`
+- [ ] `debitQuota` delegates to `QuotaManager.Debit`
+- [ ] `KafkaManager.PublishEvent` is nil-safe
+- [ ] Kafka wired into charging-backend (optional, `enabled: false` default)
+- [ ] `QuotaSvc` wired into `AppContext`, `Resolver`, `router.go`
+- [ ] Unit tests for `QuotaService` covering success, not-found, and error paths
 - [ ] `go build ./...` passes
 - [ ] `go test ./...` passes
 
@@ -152,39 +128,14 @@ Add `GetBalance` to the existing `QuotaManagerInterface` alongside `ReserveQuota
 
 ## Risk Assessment
 
-This change is **read-only** and does not touch the charging pipeline, quota write
-path, or any database schema. There is no risk to charging, quota mutation, or rating
-behaviour.
+**Mutations (reserve, debit, cancel) modify quota state.** This is the same mutation
+path used by the charging engine. Risk: a malformed GraphQL request could corrupt
+quota state or create phantom reservations.
 
-The only risk is incorrect filter logic returning wrong balances to callers, which
-would be a display/reporting error, not a financial mutation. Covered by the
-table-driven test requirement above.
+Mitigations:
+- Input validation in the service layer mirrors the Java null/range checks
+- `QuotaManager` already handles idempotency at the domain level
+- `now` is injected via `time.Now()` at the resolver boundary (not inside business logic)
+- Kafka publish failures are logged but non-fatal — quota state is committed independently
 
----
-
-## Notes
-
-**Task B — QuotaResource GraphQL (deferred):**
-
-The Java contract to be matched in Task B is:
-
-```
-Query:    quotaBalance(balanceEnquiryRequest: QuotaBalanceRequestDto): QuotaBalanceResponseDto
-Query:    quotaBalances(balanceEnquiryRequest: QuotaBalanceRequestDto): [QuotaBalanceResponseDto]
-Mutation: cancelQuotaReservations(reservationId, subscriberId): QuotaOperationResponse
-Mutation: reserveQuota(reservationId, subscriberId, reasonCode, rateKey, unitType,
-                       requestedUnits, unitPrice, validityTime, allowOOBCharging): ReserveResponse
-Mutation: debitQuota(subscriberId, reservationId, usedUnits, unitType,
-                     reclaimUnusedUnits, provisioningRequest): DebitResponse
-```
-
-`QuotaBalanceRequestDto` fields: `subscriberId UUID`, `unitType UnitType` (optional),
-`balanceType BalanceType` (TRANSFERABLE_BALANCE | CONVERTABLE_BALANCE | AVAILABLE_BALANCE)
-
-`QuotaBalanceResponseDto` fields: `unitType UnitType`, `availableBalance decimal`,
-`totalValue decimal`
-
-`balanceType` maps to `BalanceQuery` as follows:
-- `AVAILABLE_BALANCE` → `BalanceQuery{}` (all nil — no filter)
-- `TRANSFERABLE_BALANCE` → `BalanceQuery{Transferable: ptr(true)}`
-- `CONVERTABLE_BALANCE` → `BalanceQuery{Convertible: ptr(true)}`
+**Read operations (balance queries) are completely safe** — no mutations.

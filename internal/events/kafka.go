@@ -116,7 +116,7 @@ func (m *KafkaManager) PublishEvent(topicName string, key string, event any) {
 		Value: payload,
 	}
 
-	m.KafkaClient.Produce(context.Background(), record, func(r *kgo.Record, err error) {
+	m.Produce(context.Background(), record, func(r *kgo.Record, err error) {
 		if err != nil {
 			logging.Error("Failed to publish event", "err", err, "topic", r.Topic)
 			return
