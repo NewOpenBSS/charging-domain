@@ -27,19 +27,20 @@ There are three distinct session types. The human will state which one applies.
 
 ### Design Session
 
-Runs in the **main repository directory** on `master`. Its only job is to create
+Runs in the **main repository directory** on `main`. Its only job is to create
 the worktree and produce a task summary.
 
 1. Read context files in order (see Session Initialisation above)
-2. Confirm current branch is `master`: `git branch --show-current`
-   - If NOT on `master`: stop and tell the human
+2. Confirm current branch is `main`: `git branch --show-current`
+   - If NOT on `main`: stop and tell the human
 3. Ask the human for the feature name if not already provided
 4. Create the worktree:
    ```bash
    git worktree add ~/Development/goplay/branches/<repo>-<feature> feature/<feature>
    ```
 5. Produce a brief task summary (1 paragraph) describing what will be built
-6. Tell the human the worktree path and to open it in their IDE and agent tool
+6. Tell the human the worktree path and to open it in their preferred
+   editor and agent tool for the implementation session
 7. Stop — do not write any code or files in the main repo
 
 
@@ -49,8 +50,8 @@ Runs inside the **feature worktree**. Clarifies the requirement, confirms unders
 then proceeds fully autonomously through implementation to PR.
 
 1. Read context files in order (see Session Initialisation above)
-2. Confirm current branch is NOT `master`: `git branch --show-current`
-   - If on `master`: stop immediately and tell the human
+2. Confirm current branch is NOT `main`: `git branch --show-current`
+   - If on `main`: stop immediately and tell the human
 3. Analyse the requirement against the existing codebase and context files
 4. If anything is ambiguous, ask focused clarifying questions — one exchange only
 5. Summarise in plain language what will be built, including:
@@ -78,18 +79,18 @@ then proceeds fully autonomously through implementation to PR.
 ## Git Rules
 
 This project uses **Git worktrees** for feature development. The main repository
-directory always tracks `master` and mirrors production. Feature branches live under
+directory always tracks `main` and mirrors production. Feature branches live under
 a sibling `branches/` directory:
 
 ```
 ~/Development/goplay/
-    <repo>/                      ← master, always clean
+    <repo>/                      ← main, always clean
     branches/
         <repo>-<feature>/        ← feature worktree, own CURRENT.md
 ```
 
 **Rules:**
-- Never commit or make changes on `master` — unconditional
+- Never commit or make changes on `main` — unconditional
 - Never merge pull requests — leave that for human review
 - **Always use `git mv` to rename or move tracked files** — never use an OS-level
   `mv` command. OS-level moves cause Git to see a deletion and a new untracked file,

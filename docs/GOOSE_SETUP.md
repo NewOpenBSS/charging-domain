@@ -95,13 +95,74 @@ Type a simple test message, then `/exit` to end the session.
 
 ---
 
+## Step 5 — Create the Workflow Recipes
+
+Goose recipes automate the development workflow. Two recipes are needed — one for
+design (interactive, Desktop app), one for implementation (autonomous, CLI).
+
+Recipes live in `~/.config/goose/recipes/` and are available to all projects.
+
+### The Four Recipes
+
+| Recipe | Stage | Tool | Purpose |
+|---|---|---|---|
+| `feature-refinement.yaml` | Stage 2 — Human Design | Goose Desktop | Distils a raw idea into a well-formed Feature in FEATURES.md |
+| `feature-design.yaml` | Stage 3 — AI Design | Goose Desktop or CLI | Decomposes a Feature into features, creates worktrees + CURRENT.md |
+| `dev-session.yaml` | Stage 4 — Implementation | CLI (autonomous) | Implements a feature from CURRENT.md to PR |
+| `design-session.yaml` | Utility | Goose Desktop | Legacy — simple worktree creation without Feature process |
+
+Run this in the **main repository directory** using **Goose Desktop**.
+It creates the feature worktree and summarises what will be built.
+
+Parameters it asks for:
+- `feature_name` — short name for the branch e.g. `wholesaler-admin`
+- `feature_description` — plain language description of the feature
+- `repo_name` — repository directory name e.g. `go-ocs`
+
+### dev-session.yaml
+
+Run this **inside the feature worktree** from the **CLI**.
+It reads all context files, confirms the requirement once, then implements
+autonomously through to a PR with no further interruptions.
+
+Parameters it asks for:
+- `feature_description` — plain language description of what to build
+- `repo_path` — absolute path to the worktree e.g.
+  `/Users/eddiecarpenter/Development/goplay/branches/go-ocs-wholesaler-admin`
+
+```bash
+# Run the dev session from inside the feature worktree
+goose run --recipe ~/.config/goose/recipes/dev-session.yaml
+```
+
+### Full Workflow
+
+```
+1. Open Goose Desktop
+   → Run design-session recipe
+   → Fill in feature name and description
+   → Worktree is created
+
+2. Open the worktree in your editor of choice
+
+3. Open terminal in the worktree directory
+   → goose run --recipe ~/.config/goose/recipes/dev-session.yaml
+   → Fill in parameters
+   → Confirm the summary
+   → Walk away — runs autonomously to PR
+```
+
+---
+
 ## Notes
 
-- Goose 1.28.0+ required for stable ACP support with Claude Code
-- Claude Code 2.1.77+ required
-- The `--debug` flag shows full tool responses and provider info
-- MCP extensions configured in Goose are passed through to Claude via ACP
-- Rate limits are governed by your Claude subscription, not the Anthropic API
+- Both recipes are stored in `~/.config/goose/recipes/` — not in the project repo
+- Copy them to the same location on any new machine
+- The `max_turns: 200` setting in dev-session.yaml gives enough headroom for
+  complex multi-task features without hitting the default turn limit
+- Design session is interactive by nature — Goose Desktop is better suited
+- Dev session is autonomous — CLI is better suited
+
 
 ---
 
