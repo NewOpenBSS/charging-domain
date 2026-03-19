@@ -5,7 +5,36 @@ of each folder. It is intended for developers new to the project.
 
 ---
 
-## Overview
+## Worktree Convention
+
+This project uses Git worktrees for parallel feature development. The main repository
+at `~/Development/goplay/go-ocs/` always tracks the `master` branch and mirrors
+production. Feature branches are checked out as independent worktrees under a sibling
+`branches/` directory:
+
+```
+~/Development/goplay/
+    go-ocs/                          ← master branch, always clean
+    branches/
+        go-ocs-wholesaler-admin/     ← feature/wholesaler-admin worktree
+        go-ocs-fix-rateplan/         ← fix/rateplan-query worktree
+```
+
+Each worktree is fully independent — its own working directory, its own
+`.ai/tasks/CURRENT.md`, its own IntelliJ project window. No coordination needed
+between parallel features.
+
+**Create a worktree:**
+```bash
+git worktree add ~/Development/goplay/branches/go-ocs-<feature> feature/<feature>
+```
+
+**Remove after merge:**
+```bash
+git worktree remove ~/Development/goplay/branches/go-ocs-<feature>
+```
+
+---
 
 ```
 go-ocs/

@@ -35,10 +35,32 @@ Do not open a pull request without completing steps 1–3 first.
 
 ## Git and Branching
 
+This project uses **Git worktrees** for parallel feature development. Each feature
+branch is checked out as its own worktree under `~/Development/goplay/branches/`.
+
+```
+~/Development/goplay/
+    go-ocs/                          ← main branch, always clean, mirrors production
+    branches/
+        go-ocs-wholesaler-admin/     ← feature worktree, own CURRENT.md
+        go-ocs-fix-rateplan/         ← another feature worktree, isolated
+```
+
+**Starting a new feature:**
+```bash
+git worktree add ~/Development/goplay/branches/go-ocs-<feature-name> feature/<feature-name>
+```
+
+**Finishing a feature (after PR is merged):**
+```bash
+git worktree remove ~/Development/goplay/branches/go-ocs-<feature-name>
+```
+
+**Rules:**
 - **Never commit or make changes on `master`** — this is unconditional
+- Each worktree has its own `.ai/tasks/CURRENT.md` — no coordination needed
 - Check current branch before any change: `git branch --show-current`
-- If on `master`: stop and ask the human which branch to use
-- If on a feature branch: confirm with the human before proceeding
+- If on `master`: stop immediately and ask the human which branch to use
 - Branch names must reflect purpose: `feature/add-quota-tax`, `fix/double-charge`
 - Never merge pull requests — leave that for human review
 
