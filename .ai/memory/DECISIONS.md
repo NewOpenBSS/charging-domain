@@ -199,3 +199,10 @@ define their own `allowedCols` map.
 **Decision:** Added a `DBQuerier` interface to store.go (with `Query` and `QueryRow` methods) and an unexported `querier` field on `Store` that defaults to the `*pgxpool.Pool`. Dynamic store methods (`ListChargingTraces`, `CountChargingTraces`) use `s.querier` rather than `s.DB` directly.
 **Rationale:** `*pgxpool.Pool` is a concrete type with no lifecycle-independent interface in pgx/v5. Without an interface, unit tests for dynamic store methods require a real PostgreSQL connection, violating the "unit tests must not require external services" rule. The `querier` field allows tests in `package store` to substitute a testify mock, keeping the production code path unchanged. The exported `DB *pgxpool.Pool` field is preserved so existing callers (e.g. `db.DB.Close()` in main.go) are unaffected.
 **Consequences:** New dynamic store methods should use `s.querier` rather than `s.DB`. Existing `carrier_store.go` (and similar) can be migrated to `s.querier` in a future cleanup task.
+
+## ADR-012 — GitHub Organisation: NewOpenBSS
+**Status:** Accepted
+**Area:** Infrastructure / Repository Structure
+**Decision:** Create GitHub organisation `NewOpenBSS` to house all delivery repos and a shared requirements repo.
+**Rationale:** Separates requirements/roadmap from code. A dedicated requirements repo under the org serves multiple delivery projects. Continues the OpenBSS brand (the Java organisation) while signalling the new Go platform.
+**Consequences:** Requirements and Features will migrate from REQUIREMENTS.md and FEATURES.md to GitHub Issues in a new `NewOpenBSS/requirements` repo. Recipes will be updated to use `gh issue` commands with `--repo NewOpenBSS/requirements`. go-ocs will eventually move to `NewOpenBSS/go-ocs`.
