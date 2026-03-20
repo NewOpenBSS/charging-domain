@@ -26,7 +26,7 @@ Read by AI agents at the start of every design and development session.
 
 ## F-001 — ChargingTraceResource
 
-**Status:** In Design
+**Status:** In Review
 **Priority:** High
 **Created:** 2026-03-20
 **Branches:**

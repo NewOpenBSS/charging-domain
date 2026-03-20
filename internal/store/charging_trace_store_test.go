@@ -16,35 +16,24 @@ import (
 )
 
 // ---------------------------------------------------------------------------
-// Mock DBTX — satisfies PoolDB (sqlc.DBTX + Close)
+// Mock DBQuerier — satisfies the DBQuerier interface (Query + QueryRow)
 // ---------------------------------------------------------------------------
 
-type storeMockDB struct {
+type mockDBQuerier struct {
 	mock.Mock
 }
 
-func (m *storeMockDB) Exec(ctx context.Context, sql string, args ...interface{}) (pgconn.CommandTag, error) {
-	callArgs := []interface{}{ctx, sql}
-	callArgs = append(callArgs, args...)
-	ret := m.Called(callArgs...)
-	return ret.Get(0).(pgconn.CommandTag), ret.Error(1)
-}
-
-func (m *storeMockDB) Query(ctx context.Context, sql string, args ...interface{}) (pgx.Rows, error) {
-	callArgs := []interface{}{ctx, sql}
+func (m *mockDBQuerier) Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error) {
+	callArgs := []any{ctx, sql}
 	callArgs = append(callArgs, args...)
 	ret := m.Called(callArgs...)
 	return ret.Get(0).(pgx.Rows), ret.Error(1)
 }
 
-func (m *storeMockDB) QueryRow(ctx context.Context, sql string, args ...interface{}) pgx.Row {
-	callArgs := []interface{}{ctx, sql}
+func (m *mockDBQuerier) QueryRow(ctx context.Context, sql string, args ...any) pgx.Row {
+	callArgs := []any{ctx, sql}
 	callArgs = append(callArgs, args...)
 	return m.Called(callArgs...).Get(0).(pgx.Row)
-}
-
-func (m *storeMockDB) Close() {
-	m.Called()
 }
 
 // ---------------------------------------------------------------------------
@@ -55,7 +44,7 @@ type storeMockRow struct {
 	mock.Mock
 }
 
-func (m *storeMockRow) Scan(dest ...interface{}) error {
+func (m *storeMockRow) Scan(dest ...any) error {
 	return m.Called(dest...).Error(0)
 }
 
@@ -64,13 +53,12 @@ func (m *storeMockRow) Scan(dest ...interface{}) error {
 // ---------------------------------------------------------------------------
 
 type storeMockRows struct {
-	mock.Mock
-	rows    [][]interface{}
+	rows    [][]any
 	current int
 	closed  bool
 }
 
-func newMockRows(rows [][]interface{}) *storeMockRows {
+func newMockRows(rows [][]any) *storeMockRows {
 	return &storeMockRows{rows: rows}
 }
 
@@ -91,13 +79,10 @@ func (m *storeMockRows) FieldDescriptions() []pgconn.FieldDescription {
 }
 
 func (m *storeMockRows) Next() bool {
-	if m.current < len(m.rows) {
-		return true
-	}
-	return false
+	return m.current < len(m.rows)
 }
 
-func (m *storeMockRows) Scan(dest ...interface{}) error {
+func (m *storeMockRows) Scan(dest ...any) error {
 	if m.current >= len(m.rows) {
 		return errors.New("no more rows")
 	}
@@ -137,7 +122,7 @@ func (m *storeMockRows) Scan(dest ...interface{}) error {
 	return nil
 }
 
-func (m *storeMockRows) Values() ([]interface{}, error) {
+func (m *storeMockRows) Values() ([]any, error) {
 	return nil, nil
 }
 
@@ -153,14 +138,14 @@ func (m *storeMockRows) Conn() *pgx.Conn {
 // Helpers
 // ---------------------------------------------------------------------------
 
-func sampleTraceRow() []interface{} {
+func sampleTraceRow() []any {
 	uid := pgtype.UUID{}
 	copy(uid.Bytes[:], []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
 	uid.Valid = true
 
 	ts := pgtype.Timestamptz{Time: time.Date(2026, 3, 20, 10, 0, 0, 0, time.UTC), Valid: true}
 
-	return []interface{}{
+	return []any{
 		uid,
 		ts,
 		[]byte(`{"service":"data"}`),
@@ -172,8 +157,10 @@ func sampleTraceRow() []interface{} {
 	}
 }
 
-func newTraceStore(mockDB *storeMockDB) *Store {
-	return &Store{DB: mockDB}
+// newTraceStore builds a Store with an injected querier mock for unit tests.
+// DB and Q are left nil because dynamic store methods use s.querier exclusively.
+func newTraceStore(q *mockDBQuerier) *Store {
+	return &Store{querier: q}
 }
 
 // ---------------------------------------------------------------------------
@@ -181,14 +168,14 @@ func newTraceStore(mockDB *storeMockDB) *Store {
 // ---------------------------------------------------------------------------
 
 func TestListChargingTraces_Success(t *testing.T) {
-	mockDB := &storeMockDB{}
-	rows := newMockRows([][]interface{}{sampleTraceRow()})
+	q := &mockDBQuerier{}
+	rows := newMockRows([][]any{sampleTraceRow()})
 
-	mockDB.On("Query",
+	q.On("Query",
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything,
 	).Return(pgx.Rows(rows), nil)
 
-	s := newTraceStore(mockDB)
+	s := newTraceStore(q)
 	result, err := s.ListChargingTraces(context.Background(), ListChargingTracesParams{
 		Limit:  10,
 		Offset: 0,
@@ -199,18 +186,18 @@ func TestListChargingTraces_Success(t *testing.T) {
 	assert.Equal(t, "CHG-001", result[0].ChargingID)
 	assert.Equal(t, "27820001001", result[0].Msisdn)
 	assert.Equal(t, int64(42), result[0].ExecutionTime)
-	mockDB.AssertExpectations(t)
+	q.AssertExpectations(t)
 }
 
 func TestListChargingTraces_EmptyResult(t *testing.T) {
-	mockDB := &storeMockDB{}
+	q := &mockDBQuerier{}
 	rows := newMockRows(nil)
 
-	mockDB.On("Query",
+	q.On("Query",
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything,
 	).Return(pgx.Rows(rows), nil)
 
-	s := newTraceStore(mockDB)
+	s := newTraceStore(q)
 	result, err := s.ListChargingTraces(context.Background(), ListChargingTracesParams{
 		Limit:  10,
 		Offset: 0,
@@ -218,18 +205,18 @@ func TestListChargingTraces_EmptyResult(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Empty(t, result)
-	mockDB.AssertExpectations(t)
+	q.AssertExpectations(t)
 }
 
 func TestListChargingTraces_QueryError(t *testing.T) {
-	mockDB := &storeMockDB{}
+	q := &mockDBQuerier{}
 	dbErr := errors.New("connection refused")
 
-	mockDB.On("Query",
+	q.On("Query",
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything,
 	).Return(pgx.Rows(newMockRows(nil)), dbErr)
 
-	s := newTraceStore(mockDB)
+	s := newTraceStore(q)
 	result, err := s.ListChargingTraces(context.Background(), ListChargingTracesParams{
 		Limit: 10,
 	})
@@ -237,16 +224,16 @@ func TestListChargingTraces_QueryError(t *testing.T) {
 	require.Error(t, err)
 	assert.Nil(t, result)
 	assert.Equal(t, dbErr, err)
-	mockDB.AssertExpectations(t)
+	q.AssertExpectations(t)
 }
 
 func TestListChargingTraces_FilterApplied(t *testing.T) {
-	mockDB := &storeMockDB{}
+	q := &mockDBQuerier{}
 	rows := newMockRows(nil)
 
 	// Capture the SQL to verify filter is included
 	var capturedSQL string
-	mockDB.On("Query",
+	q.On("Query",
 		mock.Anything, mock.MatchedBy(func(sql string) bool {
 			capturedSQL = sql
 			return true
@@ -256,7 +243,7 @@ func TestListChargingTraces_FilterApplied(t *testing.T) {
 		mock.Anything, // OFFSET ($3)
 	).Return(pgx.Rows(rows), nil)
 
-	s := newTraceStore(mockDB)
+	s := newTraceStore(q)
 	_, err := s.ListChargingTraces(context.Background(), ListChargingTracesParams{
 		WhereSQL: "WHERE charging_id ILIKE $1",
 		Args:     []any{"CHG%"},
@@ -268,7 +255,7 @@ func TestListChargingTraces_FilterApplied(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, strings.Contains(capturedSQL, "WHERE charging_id ILIKE $1"), "query must include WHERE clause")
 	assert.True(t, strings.Contains(capturedSQL, "ORDER BY created_at DESC"), "query must include ORDER BY clause")
-	mockDB.AssertExpectations(t)
+	q.AssertExpectations(t)
 }
 
 // ---------------------------------------------------------------------------
@@ -276,55 +263,55 @@ func TestListChargingTraces_FilterApplied(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestCountChargingTraces_Success(t *testing.T) {
-	mockDB := &storeMockDB{}
+	q := &mockDBQuerier{}
 	mockRow := &storeMockRow{}
 
-	mockDB.On("QueryRow", mock.Anything, mock.Anything).Return(pgx.Row(mockRow))
+	q.On("QueryRow", mock.Anything, mock.Anything).Return(pgx.Row(mockRow))
 	mockRow.On("Scan", mock.Anything).Run(func(args mock.Arguments) {
 		*(args[0].(*int64)) = 5
 	}).Return(nil)
 
-	s := newTraceStore(mockDB)
+	s := newTraceStore(q)
 	count, err := s.CountChargingTraces(context.Background(), "", nil)
 
 	require.NoError(t, err)
 	assert.Equal(t, int64(5), count)
-	mockDB.AssertExpectations(t)
+	q.AssertExpectations(t)
 	mockRow.AssertExpectations(t)
 }
 
-func TestCountChargingTraces_EmptyResult(t *testing.T) {
-	mockDB := &storeMockDB{}
+func TestCountChargingTraces_WithFilter(t *testing.T) {
+	q := &mockDBQuerier{}
 	mockRow := &storeMockRow{}
 
-	mockDB.On("QueryRow", mock.Anything, mock.Anything).Return(pgx.Row(mockRow))
+	q.On("QueryRow", mock.Anything, mock.Anything, mock.Anything).Return(pgx.Row(mockRow))
 	mockRow.On("Scan", mock.Anything).Run(func(args mock.Arguments) {
-		*(args[0].(*int64)) = 0
+		*(args[0].(*int64)) = 3
 	}).Return(nil)
 
-	s := newTraceStore(mockDB)
-	count, err := s.CountChargingTraces(context.Background(), "", nil)
+	s := newTraceStore(q)
+	count, err := s.CountChargingTraces(context.Background(), "WHERE charging_id = $1", []any{"CHG-001"})
 
 	require.NoError(t, err)
-	assert.Equal(t, int64(0), count)
-	mockDB.AssertExpectations(t)
+	assert.Equal(t, int64(3), count)
+	q.AssertExpectations(t)
 	mockRow.AssertExpectations(t)
 }
 
 func TestCountChargingTraces_QueryError(t *testing.T) {
-	mockDB := &storeMockDB{}
+	q := &mockDBQuerier{}
 	mockRow := &storeMockRow{}
 	dbErr := errors.New("timeout")
 
-	mockDB.On("QueryRow", mock.Anything, mock.Anything).Return(pgx.Row(mockRow))
+	q.On("QueryRow", mock.Anything, mock.Anything).Return(pgx.Row(mockRow))
 	mockRow.On("Scan", mock.Anything).Return(dbErr)
 
-	s := newTraceStore(mockDB)
+	s := newTraceStore(q)
 	count, err := s.CountChargingTraces(context.Background(), "", nil)
 
 	require.Error(t, err)
 	assert.Equal(t, int64(0), count)
 	assert.Equal(t, dbErr, err)
-	mockDB.AssertExpectations(t)
+	q.AssertExpectations(t)
 	mockRow.AssertExpectations(t)
 }

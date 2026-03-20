@@ -1,7 +1,7 @@
 # Project Status
 
 _Updated by Claude Code at the end of every task. Source of truth for current implementation state._
-_Last updated: 2026-03-19 (reverse-engineered from codebase)_
+_Last updated: 2026-03-20_
 
 ---
 
@@ -16,6 +16,7 @@ _Last updated: 2026-03-19 (reverse-engineered from codebase)_
 | `internal/appl` | ✅ Complete | Shared app lifecycle (metrics server, signal handling) |
 | `internal/model` | ✅ Complete | Shared domain types (moved from chargeengine/model) |
 | `internal/store` | ✅ Complete | pgxpool + sqlc wrapper, dynamic query methods |
+| ChargingTrace store layer | ✅ Complete | ListChargingTraces, CountChargingTraces, FindChargingTraceByTraceId |
 | `internal/events` | ✅ Complete | Kafka producer via franz-go |
 | `internal/auth` | ✅ Complete | Keycloak client, JWT middleware, claims extraction |
 
@@ -67,23 +68,13 @@ _Last updated: 2026-03-19 (reverse-engineered from codebase)_
 
 ## Current Focus
 
-### In Progress / In Review
-
-| Feature | Task | Status | Branch |
-|---|---|---|---|
-| F-001 ChargingTraceResource | Task 1: Store Layer | In Review | `feature/F-001-charging-trace-store` |
-
-**F-001 Task 1 — Charging Trace Store Layer (complete, PR open)**
-- Added `FindChargingTraceByTraceId` sqlc query (lookup by UUID primary key)
-- Regenerated `internal/store/sqlc/charging_trace.sql.go`
-- Introduced `PoolDB` interface in `internal/store/store.go` (embeds `sqlc.DBTX` + `Close()`) — `Store.DB` field changed from `*pgxpool.Pool` to `PoolDB`
-- Added `ListChargingTraces` and `CountChargingTraces` dynamic store methods in `internal/store/charging_trace_store.go`
-- 7 unit tests in `internal/store/charging_trace_store_test.go` — all pass
+No active task. Awaiting next Feature.
 
 ---
 
 ## Recently Completed
 
+- **ChargingTrace store layer** — ListChargingTraces, CountChargingTraces, FindChargingTraceByTraceId. Unit tests. Completed 2026-03-20.
 - **QuotaResource** — Balance queries + reserve/debit/cancel mutations. GraphQL schema + service + resolvers complete. Kafka wired to charging-backend. Completed 2026-03-20.
 - **QuotaManager.GetBalance** — `BalanceQuery`, `CounterBalance`, `GetBalance` added to `internal/quota`. Read-only domain primitive for balance inquiries. Committed 2026-03-19.
 - Reverse-engineered project state and created memory/DECISIONS.md and memory/STATUS.md

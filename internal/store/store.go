@@ -6,20 +6,22 @@ import (
 	"go-ocs/internal/store/sqlc"
 	"net/url"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// PoolDB is the subset of pgxpool.Pool methods used by the dynamic store queries.
+// DBQuerier is the subset of *pgxpool.Pool methods used by dynamic store methods.
 // Defining it as an interface allows unit tests to substitute a mock without
-// requiring a real PostgreSQL connection. pgxpool.Pool satisfies this interface.
-type PoolDB interface {
-	sqlc.DBTX
-	Close()
+// requiring a real PostgreSQL connection.
+type DBQuerier interface {
+	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
+	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
 }
 
 type Store struct {
-	DB PoolDB
-	Q  *sqlc.Queries
+	DB      *pgxpool.Pool // pool lifecycle: Ping, Close, Stat
+	Q       *sqlc.Queries
+	querier DBQuerier // defaults to DB; substituted in unit tests
 }
 
 func NewStore(dbUrl string) *Store {
@@ -36,7 +38,7 @@ func NewStore(dbUrl string) *Store {
 	logging.Info("Connected to database", "url", sanitizeDBURL(dbUrl))
 
 	q := sqlc.New(db)
-	return &Store{DB: db, Q: q}
+	return &Store{DB: db, Q: q, querier: db}
 }
 
 func sanitizeDBURL(dbURL string) string {

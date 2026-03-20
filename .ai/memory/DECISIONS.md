@@ -181,3 +181,12 @@ Shared builder eliminates repetition and centralises the security boundary.
 **Consequences:** User-supplied field names validated against allowlist before SQL use.
 Values always passed as positional `$N` args — never interpolated. New resources must
 define their own `allowedCols` map.
+
+---
+
+## ADR-010 — DBQuerier interface for testable dynamic store methods
+**Status:** Accepted
+**Area:** internal/store
+**Decision:** Added a `DBQuerier` interface to store.go (with `Query` and `QueryRow` methods) and an unexported `querier` field on `Store` that defaults to the `*pgxpool.Pool`. Dynamic store methods (`ListChargingTraces`, `CountChargingTraces`) use `s.querier` rather than `s.DB` directly.
+**Rationale:** `*pgxpool.Pool` is a concrete type with no lifecycle-independent interface in pgx/v5. Without an interface, unit tests for dynamic store methods require a real PostgreSQL connection, violating the "unit tests must not require external services" rule. The `querier` field allows tests in `package store` to substitute a testify mock, keeping the production code path unchanged. The exported `DB *pgxpool.Pool` field is preserved so existing callers (e.g. `db.DB.Close()` in main.go) are unaffected.
+**Consequences:** New dynamic store methods should use `s.querier` rather than `s.DB`. Existing `carrier_store.go` (and similar) can be migrated to `s.querier` in a future cleanup task.
