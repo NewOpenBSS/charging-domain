@@ -108,10 +108,10 @@ Add a DestinationGroupResource to the charging-backend GraphQL API, following th
 
 ## R-004 — SourceGroupResource GraphQL Endpoint
 
-**Status:** Draft
-**Priority:** —
+**Status:** Scoped
+**Priority:** High
 **Created:** 2026-03-20
-**Features:** — (populated after scoping)
+**Features:** F-003
 
 ### The Idea
 Add a SourceGroupResource to the charging-backend GraphQL API, following the same pattern as the existing resources.

@@ -114,6 +114,52 @@ None
 ### Future Considerations
 - Cursor-based pagination (current OFFSET-based approach degrades on large datasets — acceptable for now)
 
+## F-003 — SourceGroupResource
+
+**Status:** Backlog
+**Priority:** High
+**Created:** 2026-03-20
+**Branches:** (filled in by AI during Stage 3)
+
+### Implementation Approval Required
+- [ ] Yes — pause after AI Design for human review before implementation begins
+- [x] No — proceed to implementation automatically after AI Design
+
+### Feature Switch
+None
+
+### Goal
+Expose full CRUD for carrier source groups via GraphQL in the Go charging-backend, matching the Java API surface exactly.
+
+### Problem Statement
+Admins need to manage source groups — named groupings of originating sources by region used in the charging domain. The Go charging-backend currently has no way to create, read, update, or delete these records.
+
+### MVP
+An admin can perform full CRUD on source groups via six GraphQL operations — list (paginated + filtered), count, fetch by name, create, update, and delete.
+
+### Acceptance Criteria
+- [ ] An admin can retrieve a paginated list of source groups, filtered by `groupName` or `region` (wildcard match)
+- [ ] An admin can count source groups matching a given filter
+- [ ] An admin can retrieve a single source group by `groupName`
+- [ ] An admin can create a new source group
+- [ ] An admin can update an existing source group
+- [ ] An admin can delete a source group by `groupName`
+- [ ] GraphQL operation names (`sourceGroupList`, `countSourceGroup`, `sourceGroupByGroupName`, `createSourceGroup`, `updateSourceGroup`, `deleteSourceGroup`) match the Java service exactly
+
+### Constraints
+- GraphQL operation names, field names, and behaviour must be identical to the Java service — external clients must work without modification
+- No state machine or approval workflow — plain CRUD only
+
+### Out of Scope
+- Approval workflows or state machines for source groups
+- Bulk import or export of source groups
+
+### Parking Lot
+None
+
+### Future Considerations
+- Cursor-based pagination (current OFFSET-based approach degrades on large datasets — acceptable for now)
+
 ---
 
 ## Done
