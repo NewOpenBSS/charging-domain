@@ -68,6 +68,52 @@ None
 ### Future Considerations
 - Cursor-based pagination (current OFFSET-based approach degrades on large trace tables — acceptable for now)
 
+## F-002 — DestinationGroupResource
+
+**Status:** Backlog
+**Priority:** High
+**Created:** 2026-03-20
+**Branches:** (filled in by AI during Stage 3)
+
+### Implementation Approval Required
+- [ ] Yes — pause after AI Design for human review before implementation begins
+- [x] No — proceed to implementation automatically after AI Design
+
+### Feature Switch
+None
+
+### Goal
+Expose full CRUD for carrier destination groups via GraphQL in the Go charging-backend, matching the Java API surface exactly.
+
+### Problem Statement
+Admins need to manage destination groups — named groupings of destinations by region used in the charging domain. The Go charging-backend currently has no way to create, read, update, or delete these records.
+
+### MVP
+An admin can perform full CRUD on destination groups via six GraphQL operations — list (paginated + filtered), count, fetch by name, create, update, and delete.
+
+### Acceptance Criteria
+- [ ] An admin can retrieve a paginated list of destination groups, filtered by `groupName` or `region` (wildcard match)
+- [ ] An admin can count destination groups matching a given filter
+- [ ] An admin can retrieve a single destination group by `groupName`
+- [ ] An admin can create a new destination group
+- [ ] An admin can update an existing destination group
+- [ ] An admin can delete a destination group by `groupName`
+- [ ] GraphQL operation names (`destinationGroupList`, `countDestinationGroup`, `destinationGroupByGroupName`, `createDestinationGroup`, `updateDestinationGroup`, `deleteDestinationGroup`) match the Java service exactly
+
+### Constraints
+- GraphQL operation names, field names, and behaviour must be identical to the Java service — external clients must work without modification
+- No state machine or approval workflow — plain CRUD only
+
+### Out of Scope
+- Approval workflows or state machines for destination groups
+- Bulk import or export of destination groups
+
+### Parking Lot
+None
+
+### Future Considerations
+- Cursor-based pagination (current OFFSET-based approach degrades on large datasets — acceptable for now)
+
 ---
 
 ## Done

@@ -87,10 +87,10 @@ Add a ChargingTraceResource to the charging-backend GraphQL API, following the s
 
 ## R-003 — DestinationGroupResource GraphQL Endpoint
 
-**Status:** Draft
-**Priority:** —
+**Status:** Scoped
+**Priority:** High
 **Created:** 2026-03-20
-**Features:** — (populated after scoping)
+**Features:** F-002
 
 ### The Idea
 Add a DestinationGroupResource to the charging-backend GraphQL API, following the same pattern as the existing resources.
