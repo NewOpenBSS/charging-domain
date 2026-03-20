@@ -28,6 +28,15 @@ instructions: |
   The repo is available in the current directory (actions/checkout ran, or local).
   Run: git fetch origin && git checkout main && git pull origin main
 
+  ## Step 1b — Guard: Check if Already Designed
+  Check if the task queue already exists on the feature branch:
+    git show origin/{{ branch_name }}:.ai/tasks/READY > /dev/null 2>&1
+
+  If READY exists — the queue is already written. Stop and report:
+  "Task queue already exists on {{ branch_name }} — Feature Design already complete."
+
+  Only proceed if READY does not exist.
+
   ## Step 2 — Read Context
   Read these files in order:
   1. docs/PROJECT_BRIEF.md

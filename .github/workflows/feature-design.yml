@@ -4,12 +4,12 @@ on:
   push:
     branches:
       - 'feature/F-*'
-    paths-ignore:
-      - '.ai/tasks/**'
-      - '.ai/memory/**'
-      - 'internal/**'
-      - 'cmd/**'
-      - '**.go'
+
+  workflow_dispatch:
+    inputs:
+      branch_name:
+        description: 'Branch to run feature design on'
+        required: true
 
 jobs:
   feature-design:
