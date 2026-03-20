@@ -17,6 +17,8 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ github.ref_name }}
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Configure environment
         run: |
@@ -37,13 +39,14 @@ jobs:
           GOOSE_MODE: auto
           GOOSE_DISABLE_SESSION_NAMING: "true"
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HOME: /home/eddiecarpenter
 
       - name: Push commits
         if: success()
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
           git push origin ${{ github.ref_name }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Open PR
         if: success()
