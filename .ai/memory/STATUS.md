@@ -19,6 +19,7 @@ _Last updated: 2026-03-20 (F-005)_
 | ChargingTrace store layer | ✅ Complete | ListChargingTraces, CountChargingTraces, FindChargingTraceByTraceId |
 | `internal/events` | ✅ Complete | Kafka producer via franz-go |
 | Subscriber store queries | ✅ Complete | InsertSubscriber, UpdateSubscriber, DeleteSubscriber (sqlc) |
+| `internal/events/subscriber_event.go` | ✅ Complete | SubscriberEvent struct + 5 event type constants |
 | `internal/auth` | ✅ Complete | Keycloak client, JWT middleware, claims extraction |
 
 ### charging-engine (`cmd/charging-engine`, port :8080)
