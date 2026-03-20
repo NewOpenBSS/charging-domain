@@ -68,12 +68,13 @@ _Last updated: 2026-03-20_
 
 ## Current Focus
 
-No active task. Awaiting next Feature.
+F-001 — ChargingTraceResource (in progress). Task 001 complete.
 
 ---
 
 ## Recently Completed
 
+- **F-001 Task 001** — `gql/schema/charging_trace.graphql` created; gqlgen regenerated `models_gen.go`, `generated.go`, and `charging_trace.resolvers.go` (stubs). Build clean. Completed 2026-03-20.
 - **ChargingTrace store layer** — ListChargingTraces, CountChargingTraces, FindChargingTraceByTraceId. Unit tests. Completed 2026-03-20.
 - **QuotaResource** — Balance queries + reserve/debit/cancel mutations. GraphQL schema + service + resolvers complete. Kafka wired to charging-backend. Completed 2026-03-20.
 - **QuotaManager.GetBalance** — `BalanceQuery`, `CounterBalance`, `GetBalance` added to `internal/quota`. Read-only domain primitive for balance inquiries. Committed 2026-03-19.

@@ -41,6 +41,17 @@ type CarrierInput struct {
 	Iso              string  `json:"iso"`
 }
 
+type ChargingTrace struct {
+	TraceID       string  `json:"traceId"`
+	CreatedAt     *string `json:"createdAt,omitempty"`
+	Request       string  `json:"request"`
+	Response      string  `json:"response"`
+	ExecutionTime int     `json:"executionTime"`
+	ChargingID    string  `json:"chargingId"`
+	SequenceNr    int     `json:"sequenceNr"`
+	Msisdn        string  `json:"msisdn"`
+}
+
 type Classification struct {
 	ClassificationID string               `json:"classificationId"`
 	Name             string               `json:"name"`

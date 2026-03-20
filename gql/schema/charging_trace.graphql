@@ -1,0 +1,24 @@
+# ChargingTrace resource — read-only audit trail of all charging requests.
+# Maps directly to the charging_trace database table.
+
+type ChargingTrace {
+  traceId:       String!   # Primary key — UUID serialised to string
+  createdAt:     DateTime  # Timestamp of when the trace entry was created
+  request:       String!   # NCHF request payload serialised as JSON string
+  response:      String!   # NCHF response payload serialised as JSON string
+  executionTime: Int!      # Processing duration in milliseconds
+  chargingId:    String!   # Charging session ID assigned by the NF
+  sequenceNr:    Int!      # Sequence number within the charging session
+  msisdn:        String!   # MSISDN of the subscriber being charged
+}
+
+extend type Query {
+  # Returns a filtered, sorted, paginated list of charging traces.
+  chargingTraceList(page: PageRequest, filter: FilterRequest): [ChargingTrace!]!
+
+  # Returns the total count of charging traces matching the supplied filter.
+  countChargingTrace(filter: FilterRequest): Int!
+
+  # Returns a single charging trace by its UUID, or null if not found.
+  chargingTraceById(traceId: String!): ChargingTrace
+}
