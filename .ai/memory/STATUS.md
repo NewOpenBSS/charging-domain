@@ -1,7 +1,7 @@
 # Project Status
 
 _Updated by Claude Code at the end of every task. Source of truth for current implementation state._
-_Last updated: 2026-03-20_
+_Last updated: 2026-03-20 (F-005)_
 
 ---
 
@@ -18,6 +18,10 @@ _Last updated: 2026-03-20_
 | `internal/store` | ✅ Complete | pgxpool + sqlc wrapper, dynamic query methods |
 | ChargingTrace store layer | ✅ Complete | ListChargingTraces, CountChargingTraces, FindChargingTraceByTraceId |
 | `internal/events` | ✅ Complete | Kafka producer via franz-go |
+| Subscriber store queries | ✅ Complete | InsertSubscriber, UpdateSubscriber, DeleteSubscriber (sqlc) |
+| `internal/events/subscriber_event.go` | ✅ Complete | SubscriberEvent struct + 5 event type constants |
+| `internal/backend/consumer` | ✅ Complete | SubscriberEventConsumer with dispatch logic, unit tests |
+| F-005 wiring | ✅ Complete | Consumer wired into AppContext + main.go; subscriber-event topic in config |
 | `internal/auth` | ✅ Complete | Keycloak client, JWT middleware, claims extraction |
 
 ### charging-engine (`cmd/charging-engine`, port :8080)
@@ -68,7 +72,7 @@ _Last updated: 2026-03-20_
 
 ## Current Focus
 
-F-001 — ChargingTraceResource — **complete**, in review.
+F-005 — SubscriberEventConsumer — **complete**, in review.
 
 ---
 

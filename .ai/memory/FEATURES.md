@@ -160,7 +160,7 @@ None
 
 ## F-005 — SubscriberEventConsumer
 
-**Status:** Backlog
+**Status:** In Review
 **Priority:** High
 **Created:** 2026-03-20
 **Branch:** feature/F-005-subscriber-event-consumer

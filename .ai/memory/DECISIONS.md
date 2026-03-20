@@ -200,6 +200,27 @@ define their own `allowedCols` map.
 **Rationale:** `*pgxpool.Pool` is a concrete type with no lifecycle-independent interface in pgx/v5. Without an interface, unit tests for dynamic store methods require a real PostgreSQL connection, violating the "unit tests must not require external services" rule. The `querier` field allows tests in `package store` to substitute a testify mock, keeping the production code path unchanged. The exported `DB *pgxpool.Pool` field is preserved so existing callers (e.g. `db.DB.Close()` in main.go) are unaffected.
 **Consequences:** New dynamic store methods should use `s.querier` rather than `s.DB`. Existing `carrier_store.go` (and similar) can be migrated to `s.querier` in a future cleanup task.
 
+## ADR-013 — SubscriberEventConsumer: consumer package in internal/backend/
+
+**Status:** Accepted
+**Area:** internal/backend/consumer
+
+**Decision:** The Kafka consumer for SubscriberEvent messages lives in a new
+`internal/backend/consumer/` package. A `SubscriberStorer` interface (defined
+at the point of consumption) is satisfied by `StoreSubscriberAdapter` which wraps
+`*store.Store`. The consumer takes a `SubscriberStorer` rather than `*store.Store`
+directly so it can be tested without a real database.
+
+**Rationale:** Placing the consumer in `internal/backend/` keeps it alongside the
+rest of the backend concerns (services, resolvers, appcontext) and avoids a circular
+dependency between `internal/events` (which would need to import `internal/store`)
+and `internal/backend`. The narrow `SubscriberStorer` interface keeps the consumer
+unit-testable without PostgreSQL or Kafka. The adapter pattern isolates the sqlc
+type conversions (uuid.UUID → pgtype.UUID) in one file.
+
+**Consequences:** Future Kafka consumers for the backend should follow the same
+pattern: consumer package in `internal/backend/consumer/`, narrow interface,
+store adapter, wired via AppContext.
 ## ADR-012 — GitHub Organisation: NewOpenBSS
 **Status:** Accepted
 **Area:** Infrastructure / Repository Structure
