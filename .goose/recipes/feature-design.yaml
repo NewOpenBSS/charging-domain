@@ -82,34 +82,23 @@ instructions: |
      Tasks must be sequenced so each builds on working code from the previous.
      The smallest atomic unit that can be built, tested, and committed independently.
 
-  d) Remove the DESIGN sentinel and write the READY sentinel:
+  d) Remove the DESIGN sentinel, write READY, stage queue files, commit and push:
      git rm .ai/tasks/DESIGN
      echo "Feature: F-NNN\nTasks: <count>\nCreated: $(date -u +%Y-%m-%d)" > .ai/tasks/READY
      git add .ai/tasks/queue/ .ai/tasks/READY
+     git add .ai/memory/FEATURES.md
      git commit -m "design: F-NNN task queue ready ([count] tasks)"
      git push
 
-  f) Return to main:
+  e) Return to main:
      git checkout main
 
-  ## Step 7 — Update FEATURES.md
-  Update Feature status to "In Design".
-  Commit and push:
-  git add .ai/memory/FEATURES.md
-  git commit -m "design: F-NNN In Design"
-  git push
-
-  ## Step 8 — Report Completion
+  ## Step 7 — Report Completion
   List the queue files created with a one-line description of each task.
   State the total number of tasks and their sequence.
   Confirm: "Task queue written. Dev Session will trigger automatically."
 
 prompt: |
-  Starting Feature Design session.
-  {% if branch_name %}
-  Triggered for branch: {{ branch_name }}
-  Reading context and writing task queue automatically.
-  {% else %}
-  Please read the context and FEATURES.md, then present available
-  features for selection.
-  {% endif %}
+  Starting Feature Design session for branch: {{ branch_name }}.
+  Read the context files, identify the Feature from FEATURES.md,
+  analyse the codebase, write the task queue, and push to the branch.
