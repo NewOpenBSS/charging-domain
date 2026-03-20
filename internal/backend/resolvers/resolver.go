@@ -14,4 +14,5 @@ type Resolver struct {
 	NumberPlanSvc     *services.NumberPlanService
 	RatePlanSvc       *services.RatePlanService
 	QuotaSvc          *services.QuotaService
+	ChargingTraceSvc  *services.ChargingTraceService
 }

@@ -7,21 +7,20 @@ package resolvers
 
 import (
 	"context"
-	"fmt"
 	"go-ocs/internal/backend/graphql/model"
 )
 
 // ChargingTraceList is the resolver for the chargingTraceList field.
 func (r *queryResolver) ChargingTraceList(ctx context.Context, page *model.PageRequest, filter *model.FilterRequest) ([]*model.ChargingTrace, error) {
-	panic(fmt.Errorf("not implemented: ChargingTraceList - chargingTraceList"))
+	return r.ChargingTraceSvc.ListChargingTraces(ctx, page, filter)
 }
 
 // CountChargingTrace is the resolver for the countChargingTrace field.
 func (r *queryResolver) CountChargingTrace(ctx context.Context, filter *model.FilterRequest) (int, error) {
-	panic(fmt.Errorf("not implemented: CountChargingTrace - countChargingTrace"))
+	return r.ChargingTraceSvc.CountChargingTrace(ctx, filter)
 }
 
 // ChargingTraceByID is the resolver for the chargingTraceById field.
 func (r *queryResolver) ChargingTraceByID(ctx context.Context, traceID string) (*model.ChargingTrace, error) {
-	panic(fmt.Errorf("not implemented: ChargingTraceByID - chargingTraceById"))
+	return r.ChargingTraceSvc.ChargingTraceById(ctx, traceID)
 }
