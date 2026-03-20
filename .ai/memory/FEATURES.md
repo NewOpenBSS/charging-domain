@@ -26,12 +26,10 @@ Read by AI agents at the start of every design and development session.
 
 ## F-001 — ChargingTraceResource
 
-**Status:** In Review
+**Status:** Backlog
 **Priority:** High
 **Created:** 2026-03-20
-**Branches:**
-- `feature/F-001-charging-trace-store` — Task 1: sqlc query + dynamic store methods
-- `feature/F-001-charging-trace-graphql` — Task 2: GraphQL schema + service + resolver
+**Branch:** (filled in by scoping)
 
 ### Implementation Approval Required
 - [ ] Yes — pause after AI Design for human review before implementation begins
