@@ -46,9 +46,7 @@ echo "Go $(go version) installed"
 # --- Goose ---
 echo ""
 echo ">>> Installing Goose..."
-curl -fsSL https://github.com/block/goose/releases/latest/download/goose_linux_amd64 -o /tmp/goose
-chmod +x /tmp/goose
-sudo mv /tmp/goose /usr/local/bin/goose
+curl -fsSL https://github.com/block/goose/releases/download/stable/download_cli.sh | bash
 echo "Goose $(goose --version) installed"
 
 # --- Claude Code ---
