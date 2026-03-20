@@ -1,12 +1,6 @@
 version: "1.0.0"
 title: "Feature Design (Stage 3)"
-description: "Stage 3 — AI Design. Reads an approved Feature from FEATURES.md, decomposes it into features, creates worktrees and CURRENT.md specs. Run this after Feature Refinement."
-
-parameters:
-  - key: feature_id
-    input_type: string
-    requirement: required
-    description: "Feature ID to design (e.g. F-001)"
+description: "Stage 3 — Feature Design. Presents available Features from FEATURES.md, decomposes the selected Feature into branches + CURRENT.md specs."
 
 extensions:
   - type: builtin
@@ -20,7 +14,7 @@ settings:
 
 instructions: |
   You are running a Feature Design session — Stage 3 of the AI development process.
-  Your job is to decompose an approved Feature into implementable features,
+  Your job is to decompose an approved Feature into implementable tasks,
   create the required Git infrastructure, and produce CURRENT.md task specs.
 
   ## Step 1 — Read Context
@@ -30,10 +24,25 @@ instructions: |
   3. docs/PROJECT_STRUCTURE.md
   4. .ai/memory/STATUS.md
   5. All files in .ai/context/ — apply rules from every file present
-  6. .ai/memory/FEATURES.md — find the Feature with ID {{ feature_id }}
+  6. .ai/memory/FEATURES.md
 
-  If the Feature status is not "Backlog" or "Ready for AI Design" — stop and
-  tell the human.
+  ## Step 2 — Present Available Features
+  From FEATURES.md, extract all Features where Status is "Backlog".
+  Present them as a numbered list:
+
+  ```
+  Features available for design:
+
+    1. F-001 — ChargingTraceResource
+    2. F-002 — DestinationGroupResource
+    3. F-003 — SourceGroupResource
+    4. F-004 — GraphQL API Test Files
+
+  Which feature would you like to design? (enter number or ID)
+  ```
+
+  If no Features have status "Backlog" — tell the human and stop.
+  Wait for the human to select a feature before proceeding.
 
   ## Step 2 — Analyse the Codebase
   Read the relevant source files to understand what already exists.
@@ -69,8 +78,8 @@ instructions: |
      git fetch origin
      git checkout main
      git pull origin main
-     git checkout -b feature/{{ feature_id }}-<feature-name>
-     git push -u origin feature/{{ feature_id }}-<feature-name>
+     git checkout -b feature/<F-NNN>-<feature-name>
+     git push -u origin feature/<F-NNN>-<feature-name>
 
   b) Write .ai/tasks/CURRENT.md using the task template at
      .ai/tasks/TASK_TEMPLATE.md. Include:
@@ -86,10 +95,14 @@ instructions: |
 
   d) Commit and push CURRENT.md:
      git add .ai/tasks/CURRENT.md .claude/settings.local.json
-     git commit -m "design: add CURRENT.md for {{ feature_id }}-<feature-name>"
+     git commit -m "design: add CURRENT.md for <F-NNN>-<feature-name>"
      git push
 
-  e) Return to main:
+  e) Verify the commit landed — confirm HEAD on this branch shows
+     the correct CURRENT.md title before proceeding to the next branch:
+     git show HEAD:.ai/tasks/CURRENT.md | head -3
+
+  f) Return to main:
      git checkout main
 
   ## Step 6 — Update FEATURES.md
@@ -110,7 +123,7 @@ instructions: |
   on each branch to begin implementation."
 
 prompt: |
-  Starting Feature Design for {{ feature_id }}.
-  Please read the context files, find the Feature, analyse the codebase,
-  and present the decomposition before creating any branches.
+  Starting Feature Design session.
+  Please read the context files and FEATURES.md, then present the list
+  of Features available for design so I can select one.
 
