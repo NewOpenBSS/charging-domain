@@ -145,7 +145,13 @@ instructions: |
   git commit -m "scoping: add F-NNN — [title] (from R-NNN)"
   git push
 
-  Confirm to the human: "F-NNN has been added and pushed. Ready for Feature Design."
+  Then open a PR for human review:
+  gh pr create \
+    --title "scoping: F-NNN — [title]" \
+    --body "## Scoping Output\n\nRequirement: R-NNN\n\n### Features Defined\n- F-NNN — [title]\n\nReview the Feature definitions in .ai/memory/FEATURES.md before running feature-design." \
+    --base main
+
+  Confirm to the human: "F-NNN has been added, pushed, and a PR has been opened for review."
 
 prompt: |
   Starting Feature Scoping session.

@@ -83,11 +83,15 @@ instructions: |
      - "Draft / not sure yet" → set status to "Draft",
        place in the Draft section
   3. Write the entry using the template in REQUIREMENTS.md
-  4. Commit and push the change:
+  4. Commit, push, and open a PR:
      git add .ai/memory/REQUIREMENTS.md
      git commit -m "requirements: add R-NNN — [title]"
      git push
-  5. Confirm to the human: "R-NNN has been added and pushed."
+     gh pr create \
+       --title "requirements: R-NNN — [title]" \
+       --body "## New Requirement\n\nR-NNN has been captured and is ready for review.\n\nStatus: [Draft / Ready for Scoping]\n\nReview the entry in .ai/memory/REQUIREMENTS.md." \
+       --base main
+  5. Confirm to the human: "R-NNN has been added, pushed, and a PR opened for review."
 
   When a requirement already exists and needs updating:
   1. Read the current entry
@@ -96,6 +100,10 @@ instructions: |
      git add .ai/memory/REQUIREMENTS.md
      git commit -m "requirements: update R-NNN — [what changed]"
      git push
+     gh pr create \
+       --title "requirements: update R-NNN — [what changed]" \
+       --body "## Updated Requirement\n\nR-NNN has been updated.\n\nChange: [what changed]\n\nReview the entry in .ai/memory/REQUIREMENTS.md." \
+       --base main
   4. Confirm the change to the human
 
   ## No PR Required
