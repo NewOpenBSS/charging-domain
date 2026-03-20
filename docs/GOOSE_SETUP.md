@@ -100,7 +100,7 @@ Type a simple test message, then `/exit` to end the session.
 Goose recipes automate the development workflow. Two recipes are needed — one for
 design (interactive, Desktop app), one for implementation (autonomous, CLI).
 
-Recipes live in `~/.config/goose/recipes/` and are available to all projects.
+Recipes live in `.goose/recipes/` inside the repo — versioned alongside the code.
 
 ### The Four Recipes
 
@@ -132,7 +132,7 @@ Parameters it asks for:
 
 ```bash
 # Run the dev session from inside the feature worktree
-goose run --recipe ~/.config/goose/recipes/dev-session.yaml
+goose run --recipe .goose/recipes/dev-session.yaml
 ```
 
 ### Full Workflow
@@ -146,7 +146,7 @@ goose run --recipe ~/.config/goose/recipes/dev-session.yaml
 2. Open the worktree in your editor of choice
 
 3. Open terminal in the worktree directory
-   → goose run --recipe ~/.config/goose/recipes/dev-session.yaml
+   → goose run --recipe .goose/recipes/dev-session.yaml
    → Fill in parameters
    → Confirm the summary
    → Walk away — runs autonomously to PR
@@ -156,7 +156,7 @@ goose run --recipe ~/.config/goose/recipes/dev-session.yaml
 
 ## Notes
 
-- Both recipes are stored in `~/.config/goose/recipes/` — not in the project repo
+- Recipes are stored in `.goose/recipes/` inside the repo — always in sync
 - Copy them to the same location on any new machine
 - The `max_turns: 200` setting in dev-session.yaml gives enough headroom for
   complex multi-task features without hitting the default turn limit
