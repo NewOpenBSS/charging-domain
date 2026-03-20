@@ -1,4 +1,4 @@
-name: Dev Session (Stage 4)
+name: Dev Session
 
 on:
   push:
@@ -23,8 +23,7 @@ jobs:
         run: |
           goose run \
             --recipe .goose/recipes/dev-session.yaml \
-            --params branch_name=${{ github.ref_name }} \
-            --text "Starting Dev Session for branch: ${{ github.ref_name }}. Follow all steps in the recipe instructions."
+            --params branch_name=${{ github.ref_name }}
         env:
           GOOSE_PATH_ROOT: ${{ github.workspace }}/.goose
           GOOSE_PROVIDER: claude-code
