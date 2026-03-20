@@ -129,9 +129,9 @@ the next step clearly.
 
 ```
 STAGE 1: INTENT              Human brings a raw idea
-STAGE 2: HUMAN DESIGN        Human → well-formed Feature (what and why)
-STAGE 3: AI DESIGN           AI → technical decomposition + branches (how)
-STAGE 4: IMPLEMENTATION      AI → code + tests + PR (fully autonomous)
+STAGE 2: SCOPING        Human → well-formed Feature (what and why)
+STAGE 3: FEATURE DESIGN           AI → technical decomposition + branches (how)
+STAGE 4: DEVELOPMENT      AI → code + tests + PR (fully autonomous)
 STAGE 5: VALIDATION          Human → PR review → merge
 ```
 
@@ -163,7 +163,7 @@ The barrier to entry is deliberately low. Quality comes in Stage 2, not here.
 
 ---
 
-## Stage 2 — Human Design
+## Stage 2 — Scoping
 
 **Input:** Raw intent from Stage 1.
 **Output:** A well-formed Feature entry in `.ai/memory/FEATURES.md`.
@@ -226,7 +226,7 @@ If you cannot write the success criteria, the Feature is not ready.
 
 ---
 
-## Stage 3 — AI Design
+## Stage 3 — Feature Design
 
 **Input:** Approved Feature from `.ai/memory/FEATURES.md`.
 **Output:** One or more feature branches, each with a `CURRENT.md` task spec.
@@ -263,7 +263,7 @@ potentially with dependencies that determine sequencing.
 
 ---
 
-## Stage 4 — Implementation
+## Stage 4 — Development
 
 **Input:** `CURRENT.md` in the feature worktree.
 **Output:** A pull request on GitHub.
@@ -308,7 +308,48 @@ This is the final quality gate. The merge is the human's acceptance of the work.
 
 ---
 
-## The Artefact Set
+## Boundary — Delivery vs Release
+
+This framework governs **delivery** — the process by which code is written,
+tested, and merged. It does not govern **release** — the process by which
+capability becomes available to users.
+
+These are deliberately separated:
+
+| Delivery | Release |
+|---|---|
+| Code is written and merged | Feature is enabled for users |
+| Governed by this framework | Governed by business and product decisions |
+| Ends at a merged PR | Ends when users can access the feature |
+| Timeline driven by technical scope | Timeline driven by roadmap, marketing, commercialisation |
+| AI-assisted | Human-governed |
+
+**What the delivery framework provides to support release:**
+
+1. **Feature switch** — every user-visible feature is delivered behind a
+   switch. Release controls when the switch is enabled, for which tenants,
+   and under what conditions.
+
+2. **Delivery deadline** — the date by which a Feature must be merged to
+   support the release plan. Set externally by roadmap planning, carried
+   by the Feature as a constraint on prioritisation.
+
+**What the delivery framework deliberately does not own:**
+
+- Quarterly release planning
+- Roadmap commitments
+- Lead time activities (UAT, data migration, marketing, commercialisation)
+- Feature switch configuration per tenant
+- Release scheduling
+
+**The cross-quarter consideration:** Features needed for a Q2 release may
+need to start development in Q1. This is a planning concern — the roadmap
+process sets the delivery deadline, and the delivery pipeline honours it.
+The delivery framework has no opinion on quarters; it only sees the deadline.
+
+---
+
+
 
 | Artefact | Location | Maintained by | Purpose |
 |---|---|---|---|

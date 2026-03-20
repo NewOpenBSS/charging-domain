@@ -56,23 +56,20 @@ Do not edit directly — use the requirements-session recipe.
 **Created:** YYYY-MM-DD
 **Features:** — (populated after scoping)
 
-### Description
-What the user or stakeholder wants.
-In their words — no technical language.
+### The Idea
+What the person wants. In their own words. No structure imposed.
+Do not translate into technical language here.
 
-### Problem Being Solved
+### The Problem
 What is broken, missing, or painful right now.
 Who experiences it.
-Current state vs desired state.
 
-### Success Indicators
-High-level observable outcomes.
-How will we know this requirement is satisfied?
-Not acceptance criteria — those come in scoping.
-
-### Delivery Deadline
-Optional. Date driven by release planning, not development.
+### Wishlist
+High-level aspirations — not criteria, not requirements.
+What would "great" look like if everything went perfectly?
+Unconstrained thinking is welcome here.
 
 ### Notes
-Parking lot, open questions, context that doesn't fit above.
+Anything else worth capturing. Open questions. Context.
+Constraints if known.
 ```

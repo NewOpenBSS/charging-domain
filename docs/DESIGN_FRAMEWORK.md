@@ -322,6 +322,14 @@ What is explicitly not included in this Feature.
 ### Parking Lot
 - [Idea]: [why deferred]
 
+### Feature Switch
+Required field. Either:
+- The switch name (lowercase_underscore) if the feature changes
+  user-visible behaviour and needs to be release-controlled
+- "None" if the feature has no user-visible impact
+- "Prerequisite: feature switch infrastructure" if the system
+  does not yet support feature switches
+
 ### Future Considerations
 Architectural decisions this Feature must not foreclose.
 ```
