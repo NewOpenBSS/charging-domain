@@ -1,5 +1,5 @@
 version: "1.0.0"
-title: "Requirements Session"
+title: "Requirements Session (Stage 1)"
 description: "Conversational requirements capture. Distils raw ideas into structured entries in REQUIREMENTS.md that are ready for the scoping phase."
 
 extensions:

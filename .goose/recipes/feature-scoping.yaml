@@ -1,5 +1,5 @@
 version: "1.0.0"
-title: "Feature Scoping"
+title: "Feature Scoping (Stage 2)"
 description: "Stage 2 — Scoping. Guides the human through distilling a raw idea into one or more well-formed Features. Run this in Goose Desktop before any development begins."
 
 extensions:

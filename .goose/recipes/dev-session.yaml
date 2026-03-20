@@ -1,5 +1,5 @@
 version: "1.0.0"
-title: "Dev Session"
+title: "Dev Session (Stage 4)"
 description: "Stage 4 — Development. Processes the task queue sequentially on the feature branch. Commits each task. Workflow handles push and PR."
 
 parameters:
