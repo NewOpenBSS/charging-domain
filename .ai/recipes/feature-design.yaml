@@ -6,12 +6,7 @@ parameters:
   - key: feature_id
     input_type: string
     requirement: required
-    description: "Feature ID to decompose (e.g. F-001)"
-
-  - key: repo_name
-    input_type: string
-    requirement: required
-    description: "Repository directory name (e.g. go-ocs)"
+    description: "Feature ID to design (e.g. F-001)"
 
 extensions:
   - type: builtin
@@ -70,10 +65,14 @@ instructions: |
   ## Step 5 — Create Git Infrastructure (for each feature)
   For each feature, in dependency order:
 
-  a) Create the branch and worktree:
-     git worktree add ~/Development/goplay/branches/{{ repo_name }}-<feature-name> feature/{{ feature_id }}-<feature-name>
+  a) Create and push the branch from main:
+     git fetch origin
+     git checkout main
+     git pull origin main
+     git checkout -b feature/{{ feature_id }}-<feature-name>
+     git push -u origin feature/{{ feature_id }}-<feature-name>
 
-  b) Write .ai/tasks/CURRENT.md in the worktree using the task template at
+  b) Write .ai/tasks/CURRENT.md using the task template at
      .ai/tasks/TASK_TEMPLATE.md. Include:
      - Objective: what this feature builds
      - Scope: what is in and out of scope
@@ -82,20 +81,29 @@ instructions: |
      - Risk assessment: any risks to critical business logic
      - The Feature ID this feature belongs to
 
-  c) Stage the CURRENT.md immediately:
-     git -C ~/Development/goplay/branches/{{ repo_name }}-<feature-name> add .ai/tasks/CURRENT.md
+  c) Copy .claude/settings.local.json into the branch working directory
+     if it does not already exist.
 
-  d) Push the branch to origin:
-     git -C ~/Development/goplay/branches/{{ repo_name }}-<feature-name> push -u origin feature/{{ feature_id }}-<feature-name>
+  d) Commit and push CURRENT.md:
+     git add .ai/tasks/CURRENT.md .claude/settings.local.json
+     git commit -m "design: add CURRENT.md for {{ feature_id }}-<feature-name>"
+     git push
+
+  e) Return to main:
+     git checkout main
 
   ## Step 6 — Update FEATURES.md
   - Add the branch names under the Feature's "Branches" field
-  - Update the Feature status from "Backlog" to "In Development"
+  - Update the Feature status to "In Design"
+  - Commit and push:
+    git add .ai/memory/FEATURES.md
+    git commit -m "design: F-NNN branches created"
+    git push
 
   ## Step 7 — Report Completion
-  List all worktrees created with their paths.
-  Tell the human: "Worktrees are ready. Run the dev-session recipe
-  in each worktree to begin implementation."
+  List all branches created.
+  Tell the human: "Feature Design complete. Run dev-session on each
+  branch to begin implementation."
 
 prompt: |
   Starting Feature Design for {{ feature_id }}.
