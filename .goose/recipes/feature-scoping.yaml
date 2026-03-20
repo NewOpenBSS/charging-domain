@@ -106,6 +106,11 @@ instructions: |
   git checkout main
   git pull origin main
   git checkout -b feature/F-NNN-<feature-name>
+
+  Write the DESIGN sentinel file — this triggers the Feature Design workflow:
+  echo "Feature: F-NNN\nCreated: $(date -u +%Y-%m-%d)" > .ai/tasks/DESIGN
+  git add .ai/tasks/DESIGN
+  git commit -m "scoping: F-NNN ready for feature design"
   git push -u origin feature/F-NNN-<feature-name>
   git checkout main
 

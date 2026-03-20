@@ -1,9 +1,11 @@
-name: Feature Design
+name: Feature Design (Stage 3)
 
 on:
   push:
     branches:
       - 'feature/F-*'
+    paths:
+      - '.ai/tasks/DESIGN'
 
   workflow_dispatch:
     inputs:

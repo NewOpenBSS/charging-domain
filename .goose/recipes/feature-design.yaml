@@ -28,15 +28,6 @@ instructions: |
   The repo is available in the current directory (actions/checkout ran, or local).
   Run: git fetch origin && git checkout main && git pull origin main
 
-  ## Step 1b — Guard: Check if Already Designed
-  Check if the task queue already exists on the feature branch:
-    git show origin/{{ branch_name }}:.ai/tasks/READY > /dev/null 2>&1
-
-  If READY exists — the queue is already written. Stop and report:
-  "Task queue already exists on {{ branch_name }} — Feature Design already complete."
-
-  Only proceed if READY does not exist.
-
   ## Step 2 — Read Context
   Read these files in order:
   1. docs/PROJECT_BRIEF.md
@@ -91,10 +82,9 @@ instructions: |
      Tasks must be sequenced so each builds on working code from the previous.
      The smallest atomic unit that can be built, tested, and committed independently.
 
-  d) Create the READY sentinel file — this triggers the dev-session workflow:
-     echo "Feature: F-NNN\nTasks: <count>\nCreated: <date>" > .ai/tasks/READY
-
-  e) Stage and commit everything:
+  d) Remove the DESIGN sentinel and write the READY sentinel:
+     git rm .ai/tasks/DESIGN
+     echo "Feature: F-NNN\nTasks: <count>\nCreated: $(date -u +%Y-%m-%d)" > .ai/tasks/READY
      git add .ai/tasks/queue/ .ai/tasks/READY
      git commit -m "design: F-NNN task queue ready ([count] tasks)"
      git push
