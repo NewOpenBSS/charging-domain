@@ -29,8 +29,8 @@ instructions: |
 
   ## Step 1 — Bootstrap Workspace
   Create an isolated working directory for this session:
-  mkdir -p /workspace/{{ branch_name | replace('/', '-') | replace('feature-', '') }}
-  cd /workspace/{{ branch_name | replace('/', '-') | replace('feature-', '') }}
+  mkdir -p ~/workspace/{{ branch_name | replace('/', '-') | replace('feature-', '') }}
+  cd ~/workspace/{{ branch_name | replace('/', '-') | replace('feature-', '') }}
 
   Clone the repository and checkout the feature branch:
   git clone {{ repo_url }} .
