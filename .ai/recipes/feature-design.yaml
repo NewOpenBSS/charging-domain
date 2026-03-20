@@ -95,15 +95,19 @@ instructions: |
   ## Step 6 — Update FEATURES.md
   - Add the branch names under the Feature's "Branches" field
   - Update the Feature status to "In Design"
-  - Commit and push:
+  - Commit, push, and open a PR:
     git add .ai/memory/FEATURES.md
     git commit -m "design: F-NNN branches created"
     git push
+    gh pr create \
+      --title "design: F-NNN — [title] branches ready" \
+      --body "## Feature Design Complete\n\nFeature: F-NNN\n\n### Branches Created\n- [list branches]\n\nCURRENT.md has been written to each branch.\nRun dev-session on each branch to begin implementation." \
+      --base main
 
   ## Step 7 — Report Completion
   List all branches created.
-  Tell the human: "Feature Design complete. Run dev-session on each
-  branch to begin implementation."
+  Tell the human: "Feature Design complete and PR opened. Run dev-session
+  on each branch to begin implementation."
 
 prompt: |
   Starting Feature Design for {{ feature_id }}.
