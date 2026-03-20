@@ -11,6 +11,9 @@ jobs:
   dev-session:
     name: Run Dev Session
     runs-on: self-hosted
+    permissions:
+      contents: write
+      pull-requests: write
 
     steps:
       - name: Checkout

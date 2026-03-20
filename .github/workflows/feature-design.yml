@@ -17,6 +17,8 @@ jobs:
   feature-design:
     name: Run Feature Design
     runs-on: self-hosted
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout
