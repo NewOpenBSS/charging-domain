@@ -56,6 +56,17 @@ type ComplexityRoot struct {
 		SourceGroup      func(childComplexity int) int
 	}
 
+	ChargingTrace struct {
+		ChargingID    func(childComplexity int) int
+		CreatedAt     func(childComplexity int) int
+		ExecutionTime func(childComplexity int) int
+		Msisdn        func(childComplexity int) int
+		Request       func(childComplexity int) int
+		Response      func(childComplexity int) int
+		SequenceNr    func(childComplexity int) int
+		TraceID       func(childComplexity int) int
+	}
+
 	Classification struct {
 		ApprovedBy       func(childComplexity int) int
 		ClassificationID func(childComplexity int) int
@@ -137,9 +148,12 @@ type ComplexityRoot struct {
 	Query struct {
 		CarrierByPlmn        func(childComplexity int, plmn string) int
 		CarrierList          func(childComplexity int, page *model.PageRequest, filter *model.FilterRequest) int
+		ChargingTraceByID    func(childComplexity int, traceID string) int
+		ChargingTraceList    func(childComplexity int, page *model.PageRequest, filter *model.FilterRequest) int
 		Classification       func(childComplexity int, classificationID string) int
 		ClassificationList   func(childComplexity int, page *model.PageRequest, filter *model.FilterRequest) int
 		CountCarriers        func(childComplexity int, filter *model.FilterRequest) int
+		CountChargingTrace   func(childComplexity int, filter *model.FilterRequest) int
 		CountClassifications func(childComplexity int, filter *model.FilterRequest) int
 		CountNumberPlans     func(childComplexity int, filter *model.FilterRequest) int
 		CountRatePlans       func(childComplexity int, filter *model.FilterRequest) int
@@ -262,6 +276,9 @@ type QueryResolver interface {
 	CarrierList(ctx context.Context, page *model.PageRequest, filter *model.FilterRequest) ([]*model.Carrier, error)
 	CarrierByPlmn(ctx context.Context, plmn string) (*model.Carrier, error)
 	CountCarriers(ctx context.Context, filter *model.FilterRequest) (int, error)
+	ChargingTraceList(ctx context.Context, page *model.PageRequest, filter *model.FilterRequest) ([]*model.ChargingTrace, error)
+	CountChargingTrace(ctx context.Context, filter *model.FilterRequest) (int, error)
+	ChargingTraceByID(ctx context.Context, traceID string) (*model.ChargingTrace, error)
 	ClassificationList(ctx context.Context, page *model.PageRequest, filter *model.FilterRequest) ([]*model.Classification, error)
 	CountClassifications(ctx context.Context, filter *model.FilterRequest) (int, error)
 	RateKeyInput(ctx context.Context) (*model.RateKeyInput, error)
@@ -382,6 +399,55 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Carrier.SourceGroup(childComplexity), true
+
+	case "ChargingTrace.chargingId":
+		if e.ComplexityRoot.ChargingTrace.ChargingID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ChargingTrace.ChargingID(childComplexity), true
+	case "ChargingTrace.createdAt":
+		if e.ComplexityRoot.ChargingTrace.CreatedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ChargingTrace.CreatedAt(childComplexity), true
+	case "ChargingTrace.executionTime":
+		if e.ComplexityRoot.ChargingTrace.ExecutionTime == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ChargingTrace.ExecutionTime(childComplexity), true
+	case "ChargingTrace.msisdn":
+		if e.ComplexityRoot.ChargingTrace.Msisdn == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ChargingTrace.Msisdn(childComplexity), true
+	case "ChargingTrace.request":
+		if e.ComplexityRoot.ChargingTrace.Request == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ChargingTrace.Request(childComplexity), true
+	case "ChargingTrace.response":
+		if e.ComplexityRoot.ChargingTrace.Response == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ChargingTrace.Response(childComplexity), true
+	case "ChargingTrace.sequenceNr":
+		if e.ComplexityRoot.ChargingTrace.SequenceNr == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ChargingTrace.SequenceNr(childComplexity), true
+	case "ChargingTrace.traceId":
+		if e.ComplexityRoot.ChargingTrace.TraceID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ChargingTrace.TraceID(childComplexity), true
 
 	case "Classification.approvedBy":
 		if e.ComplexityRoot.Classification.ApprovedBy == nil {
@@ -891,6 +957,28 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.CarrierList(childComplexity, args["page"].(*model.PageRequest), args["filter"].(*model.FilterRequest)), true
+	case "Query.chargingTraceById":
+		if e.ComplexityRoot.Query.ChargingTraceByID == nil {
+			break
+		}
+
+		args, err := ec.field_Query_chargingTraceById_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.ChargingTraceByID(childComplexity, args["traceId"].(string)), true
+	case "Query.chargingTraceList":
+		if e.ComplexityRoot.Query.ChargingTraceList == nil {
+			break
+		}
+
+		args, err := ec.field_Query_chargingTraceList_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.ChargingTraceList(childComplexity, args["page"].(*model.PageRequest), args["filter"].(*model.FilterRequest)), true
 	case "Query.classification":
 		if e.ComplexityRoot.Query.Classification == nil {
 			break
@@ -924,6 +1012,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.CountCarriers(childComplexity, args["filter"].(*model.FilterRequest)), true
+	case "Query.countChargingTrace":
+		if e.ComplexityRoot.Query.CountChargingTrace == nil {
+			break
+		}
+
+		args, err := ec.field_Query_countChargingTrace_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.CountChargingTrace(childComplexity, args["filter"].(*model.FilterRequest)), true
 	case "Query.countClassifications":
 		if e.ComplexityRoot.Query.CountClassifications == nil {
 			break
@@ -1476,6 +1575,31 @@ extend type Mutation {
 
   # Deletes a carrier by PLMN. Returns true on success.
   deleteCarrier(plmn: String!): Boolean!
+}
+`, BuiltIn: false},
+	{Name: "../../../../gql/schema/charging_trace.graphql", Input: `# ChargingTrace resource — read-only audit trail of all charging requests.
+# Maps directly to the charging_trace database table.
+
+type ChargingTrace {
+  traceId:       String!   # Primary key — UUID serialised to string
+  createdAt:     DateTime  # Timestamp of when the trace entry was created
+  request:       String!   # NCHF request payload serialised as JSON string
+  response:      String!   # NCHF response payload serialised as JSON string
+  executionTime: Int!      # Processing duration in milliseconds
+  chargingId:    String!   # Charging session ID assigned by the NF
+  sequenceNr:    Int!      # Sequence number within the charging session
+  msisdn:        String!   # MSISDN of the subscriber being charged
+}
+
+extend type Query {
+  # Returns a filtered, sorted, paginated list of charging traces.
+  chargingTraceList(page: PageRequest, filter: FilterRequest): [ChargingTrace!]!
+
+  # Returns the total count of charging traces matching the supplied filter.
+  countChargingTrace(filter: FilterRequest): Int!
+
+  # Returns a single charging trace by its UUID, or null if not found.
+  chargingTraceById(traceId: String!): ChargingTrace
 }
 `, BuiltIn: false},
 	{Name: "../../../../gql/schema/classification.graphql", Input: `# Classification domain GraphQL types.
@@ -2445,6 +2569,33 @@ func (ec *executionContext) field_Query_carrierList_args(ctx context.Context, ra
 	return args, nil
 }
 
+func (ec *executionContext) field_Query_chargingTraceById_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "traceId", ec.unmarshalNString2string)
+	if err != nil {
+		return nil, err
+	}
+	args["traceId"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_chargingTraceList_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "page", ec.unmarshalOPageRequest2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐPageRequest)
+	if err != nil {
+		return nil, err
+	}
+	args["page"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "filter", ec.unmarshalOFilterRequest2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐFilterRequest)
+	if err != nil {
+		return nil, err
+	}
+	args["filter"] = arg1
+	return args, nil
+}
+
 func (ec *executionContext) field_Query_classificationList_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -2473,6 +2624,17 @@ func (ec *executionContext) field_Query_classification_args(ctx context.Context,
 }
 
 func (ec *executionContext) field_Query_countCarriers_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "filter", ec.unmarshalOFilterRequest2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐFilterRequest)
+	if err != nil {
+		return nil, err
+	}
+	args["filter"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_countChargingTrace_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
 	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "filter", ec.unmarshalOFilterRequest2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐFilterRequest)
@@ -3085,6 +3247,238 @@ func (ec *executionContext) fieldContext_Carrier_modifiedOn(_ context.Context, f
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ChargingTrace_traceId(ctx context.Context, field graphql.CollectedField, obj *model.ChargingTrace) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ChargingTrace_traceId,
+		func(ctx context.Context) (any, error) {
+			return obj.TraceID, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ChargingTrace_traceId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ChargingTrace",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ChargingTrace_createdAt(ctx context.Context, field graphql.CollectedField, obj *model.ChargingTrace) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ChargingTrace_createdAt,
+		func(ctx context.Context) (any, error) {
+			return obj.CreatedAt, nil
+		},
+		nil,
+		ec.marshalODateTime2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ChargingTrace_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ChargingTrace",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ChargingTrace_request(ctx context.Context, field graphql.CollectedField, obj *model.ChargingTrace) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ChargingTrace_request,
+		func(ctx context.Context) (any, error) {
+			return obj.Request, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ChargingTrace_request(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ChargingTrace",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ChargingTrace_response(ctx context.Context, field graphql.CollectedField, obj *model.ChargingTrace) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ChargingTrace_response,
+		func(ctx context.Context) (any, error) {
+			return obj.Response, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ChargingTrace_response(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ChargingTrace",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ChargingTrace_executionTime(ctx context.Context, field graphql.CollectedField, obj *model.ChargingTrace) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ChargingTrace_executionTime,
+		func(ctx context.Context) (any, error) {
+			return obj.ExecutionTime, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ChargingTrace_executionTime(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ChargingTrace",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ChargingTrace_chargingId(ctx context.Context, field graphql.CollectedField, obj *model.ChargingTrace) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ChargingTrace_chargingId,
+		func(ctx context.Context) (any, error) {
+			return obj.ChargingID, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ChargingTrace_chargingId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ChargingTrace",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ChargingTrace_sequenceNr(ctx context.Context, field graphql.CollectedField, obj *model.ChargingTrace) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ChargingTrace_sequenceNr,
+		func(ctx context.Context) (any, error) {
+			return obj.SequenceNr, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ChargingTrace_sequenceNr(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ChargingTrace",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ChargingTrace_msisdn(ctx context.Context, field graphql.CollectedField, obj *model.ChargingTrace) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ChargingTrace_msisdn,
+		func(ctx context.Context) (any, error) {
+			return obj.Msisdn, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ChargingTrace_msisdn(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ChargingTrace",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -5708,6 +6102,165 @@ func (ec *executionContext) fieldContext_Query_countCarriers(ctx context.Context
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Query_countCarriers_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_chargingTraceList(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_chargingTraceList,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().ChargingTraceList(ctx, fc.Args["page"].(*model.PageRequest), fc.Args["filter"].(*model.FilterRequest))
+		},
+		nil,
+		ec.marshalNChargingTrace2ᚕᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐChargingTraceᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_chargingTraceList(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "traceId":
+				return ec.fieldContext_ChargingTrace_traceId(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_ChargingTrace_createdAt(ctx, field)
+			case "request":
+				return ec.fieldContext_ChargingTrace_request(ctx, field)
+			case "response":
+				return ec.fieldContext_ChargingTrace_response(ctx, field)
+			case "executionTime":
+				return ec.fieldContext_ChargingTrace_executionTime(ctx, field)
+			case "chargingId":
+				return ec.fieldContext_ChargingTrace_chargingId(ctx, field)
+			case "sequenceNr":
+				return ec.fieldContext_ChargingTrace_sequenceNr(ctx, field)
+			case "msisdn":
+				return ec.fieldContext_ChargingTrace_msisdn(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ChargingTrace", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_chargingTraceList_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_countChargingTrace(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_countChargingTrace,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().CountChargingTrace(ctx, fc.Args["filter"].(*model.FilterRequest))
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_countChargingTrace(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_countChargingTrace_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_chargingTraceById(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_chargingTraceById,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().ChargingTraceByID(ctx, fc.Args["traceId"].(string))
+		},
+		nil,
+		ec.marshalOChargingTrace2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐChargingTrace,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_chargingTraceById(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "traceId":
+				return ec.fieldContext_ChargingTrace_traceId(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_ChargingTrace_createdAt(ctx, field)
+			case "request":
+				return ec.fieldContext_ChargingTrace_request(ctx, field)
+			case "response":
+				return ec.fieldContext_ChargingTrace_response(ctx, field)
+			case "executionTime":
+				return ec.fieldContext_ChargingTrace_executionTime(ctx, field)
+			case "chargingId":
+				return ec.fieldContext_ChargingTrace_chargingId(ctx, field)
+			case "sequenceNr":
+				return ec.fieldContext_ChargingTrace_sequenceNr(ctx, field)
+			case "msisdn":
+				return ec.fieldContext_ChargingTrace_msisdn(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ChargingTrace", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_chargingTraceById_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -10313,6 +10866,77 @@ func (ec *executionContext) _Carrier(ctx context.Context, sel ast.SelectionSet, 
 	return out
 }
 
+var chargingTraceImplementors = []string{"ChargingTrace"}
+
+func (ec *executionContext) _ChargingTrace(ctx context.Context, sel ast.SelectionSet, obj *model.ChargingTrace) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, chargingTraceImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ChargingTrace")
+		case "traceId":
+			out.Values[i] = ec._ChargingTrace_traceId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "createdAt":
+			out.Values[i] = ec._ChargingTrace_createdAt(ctx, field, obj)
+		case "request":
+			out.Values[i] = ec._ChargingTrace_request(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "response":
+			out.Values[i] = ec._ChargingTrace_response(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "executionTime":
+			out.Values[i] = ec._ChargingTrace_executionTime(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "chargingId":
+			out.Values[i] = ec._ChargingTrace_chargingId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "sequenceNr":
+			out.Values[i] = ec._ChargingTrace_sequenceNr(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "msisdn":
+			out.Values[i] = ec._ChargingTrace_msisdn(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var classificationImplementors = []string{"Classification"}
 
 func (ec *executionContext) _Classification(ctx context.Context, sel ast.SelectionSet, obj *model.Classification) graphql.Marshaler {
@@ -10925,6 +11549,69 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "chargingTraceList":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_chargingTraceList(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "countChargingTrace":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_countChargingTrace(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "chargingTraceById":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_chargingTraceById(ctx, field)
 				return res
 			}
 
@@ -12182,6 +12869,32 @@ func (ec *executionContext) unmarshalNCarrierInput2goᚑocsᚋinternalᚋbackend
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) marshalNChargingTrace2ᚕᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐChargingTraceᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.ChargingTrace) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNChargingTrace2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐChargingTrace(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNChargingTrace2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐChargingTrace(ctx context.Context, sel ast.SelectionSet, v *model.ChargingTrace) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ChargingTrace(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNClassification2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐClassification(ctx context.Context, sel ast.SelectionSet, v model.Classification) graphql.Marshaler {
 	return ec._Classification(ctx, sel, &v)
 }
@@ -12877,6 +13590,13 @@ func (ec *executionContext) marshalOCarrier2ᚖgoᚑocsᚋinternalᚋbackendᚋg
 		return graphql.Null
 	}
 	return ec._Carrier(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOChargingTrace2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐChargingTrace(ctx context.Context, sel ast.SelectionSet, v *model.ChargingTrace) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._ChargingTrace(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOClassification2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐClassification(ctx context.Context, sel ast.SelectionSet, v *model.Classification) graphql.Marshaler {

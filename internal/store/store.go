@@ -41,6 +41,16 @@ func NewStore(dbUrl string) *Store {
 	return &Store{DB: db, Q: q, querier: db}
 }
 
+// NewTestStore creates a Store with injected mock dependencies for unit tests.
+// dbtx is used to create the sqlc.Queries (for static queries via Q).
+// querier is used for dynamic queries (ListX, CountX). In practice both arguments
+// should be the same mock object that satisfies both sqlc.DBTX and DBQuerier.
+//
+// Must only be used in test code — not in production paths.
+func NewTestStore(dbtx sqlc.DBTX, q DBQuerier) *Store {
+	return &Store{Q: sqlc.New(dbtx), querier: q}
+}
+
 func sanitizeDBURL(dbURL string) string {
 	u, err := url.Parse(dbURL)
 	if err != nil {

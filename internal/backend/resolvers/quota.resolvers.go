@@ -7,9 +7,8 @@ package resolvers
 
 import (
 	"context"
-	"time"
-
 	"go-ocs/internal/backend/graphql/model"
+	"time"
 )
 
 // CancelQuotaReservations is the resolver for the cancelQuotaReservations field.

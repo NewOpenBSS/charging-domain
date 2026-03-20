@@ -184,6 +184,15 @@ define their own `allowedCols` map.
 
 ---
 
+## ADR-012 — store.NewTestStore for cross-package service test injection
+**Status:** Accepted
+**Area:** internal/store, internal/backend/services
+**Decision:** Added `NewTestStore(dbtx sqlc.DBTX, q DBQuerier) *Store` to the store package to enable service-layer unit tests to inject mock implementations without exposing the unexported `querier` field.
+**Rationale:** The `querier` field is unexported so it cannot be set from outside the `store` package. Service tests (in `services` package) need to mock both the static sqlc path (via `Q`) and the dynamic query path (via `querier`). A named constructor is cleaner than exporting the field and makes the testing intent explicit.
+**Consequences:** A new exported function in the store package. Must only be called in test code. Any new dynamic store methods that services need to test will benefit from this constructor automatically.
+
+---
+
 ## ADR-010 — DBQuerier interface for testable dynamic store methods
 **Status:** Accepted
 **Area:** internal/store

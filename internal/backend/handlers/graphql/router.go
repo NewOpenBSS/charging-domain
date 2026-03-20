@@ -43,6 +43,7 @@ func NewRouter(appCtx *appcontext.AppContext) http.Handler {
 		NumberPlanSvc:     appCtx.NumberPlanSvc,
 		RatePlanSvc:       appCtx.RatePlanSvc,
 		QuotaSvc:          appCtx.QuotaSvc,
+		ChargingTraceSvc:  appCtx.ChargingTraceSvc,
 	}
 
 	srv := handler.New(generated.NewExecutableSchema(generated.Config{Resolvers: resolver}))
