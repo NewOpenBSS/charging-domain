@@ -25,6 +25,11 @@ jobs:
           ref: ${{ github.ref_name }}
           fetch-depth: 0
 
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
       - name: Run feature design recipe
         run: |
           goose run \
@@ -36,3 +41,8 @@ jobs:
           GOOSE_MODEL: default
           GOOSE_MODE: auto
           GOOSE_DISABLE_SESSION_NAMING: "true"
+
+      - name: Push commits
+        if: success()
+        run: |
+          git push origin ${{ github.ref_name }}
