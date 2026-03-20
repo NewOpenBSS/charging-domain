@@ -43,11 +43,24 @@ instructions: |
   If .ai/tasks/CURRENT.md does not exist — stop and report.
   The feature-design step must have failed to write CURRENT.md.
 
-  ## Step 3 — Check for Open PR
+  ## Step 3 — Check Dependencies
+  Read the Dependencies section of CURRENT.md.
+
+  For each dependency branch listed (skip if "None"):
+    Run: gh pr list --head <dependency-branch> --state merged --json number --jq length
+    If the count is 0 — the dependency has NOT been merged yet.
+    Stop and report:
+    "This task depends on <branch> which has not been merged yet.
+     Wait for that PR to be merged, then re-trigger this workflow."
+    Exit without implementing anything.
+
+  Only proceed if ALL dependencies are merged or there are no dependencies.
+
+  ## Step 4 — Check for Open PR
   gh pr list --head {{ branch_name }}
   If a PR already exists — stop and report. Do not duplicate work.
 
-  ## Step 4 — Confirmation
+  ## Step 5 — Confirmation
   Summarise in plain language:
   - What will be built (from CURRENT.md)
   - Whether it decomposes into multiple sequential tasks
@@ -57,7 +70,7 @@ instructions: |
   Print the summary and proceed immediately — do NOT wait for human input.
   There is no human present to confirm.
 
-  ## Step 5 — Autonomous Implementation
+  ## Step 6 — Autonomous Implementation
   Once confirmed, proceed fully autonomously with no further interruptions.
 
   For each task:

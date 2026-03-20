@@ -77,6 +77,10 @@ instructions: |
      git checkout feature/<F-NNN>-<feature-name>
 
   b) Write .ai/tasks/CURRENT.md using .ai/tasks/TASK_TEMPLATE.md. Include:
+     - Dependencies: branches that must be merged before this task starts
+       (derived from the decomposition sequence — if this task depends on
+       another task in this Feature, list its branch here. Write "None" if
+       this is the first task in the sequence.)
      - Objective: what this feature builds
      - Scope: in and out of scope
      - Context: relevant existing code references

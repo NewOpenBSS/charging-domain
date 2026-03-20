@@ -5,6 +5,15 @@
 
 ---
 
+## Dependencies
+
+List any branches that must be merged into main before this task can start.
+Write "None" if this task has no dependencies.
+
+- `feature/F-NNN-name` — reason why this must land first
+
+---
+
 ## Objective
 
 One paragraph. What is being built and why. No implementation detail.
