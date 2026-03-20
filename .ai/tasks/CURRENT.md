@@ -17,6 +17,7 @@ GraphQL endpoint at `/api/charging/graphql`.
 ## Scope
 
 **In scope:**
+
 - `gql/schema/quota.graphql` — new schema file with types, enums, queries, mutations
 - `internal/backend/services/quota_service.go` — service wrapping `QuotaManagerInterface`
 - `internal/backend/services/quota_service_test.go` — unit tests
@@ -26,6 +27,7 @@ GraphQL endpoint at `/api/charging/graphql`.
 - Fix `KafkaManager.PublishEvent` nil safety (calls `m.KafkaClient.Produce` directly, panics when disabled)
 
 **Out of scope:**
+
 - Subscriber admin CRUD (separate future task)
 - Loan balance operations
 - Changes to the charging pipeline or DRA
@@ -37,6 +39,7 @@ GraphQL endpoint at `/api/charging/graphql`.
 ### Java contract to match (field names authoritative)
 
 **Queries:**
+
 ```
 quotaBalance(balanceEnquiryRequest: QuotaBalanceRequestInput!): QuotaBalanceResponse
   - subscriberId and unitType are required
@@ -48,6 +51,7 @@ quotaBalances(balanceEnquiryRequest: QuotaBalanceRequestInput!): [QuotaBalanceRe
 ```
 
 **Mutations:**
+
 ```
 cancelQuotaReservations(reservationId: ID!, subscriberId: ID!): QuotaOperationResponse!
 reserveQuota(reservationId, subscriberId, reasonCode, rateKey, unitType,
@@ -64,6 +68,7 @@ debitQuota(subscriberId, reservationId, usedUnits, unitType,
 | `CONVERTABLE_BALANCE` | `BalanceQuery{Convertible: ptr(true)}` |
 
 ### Key domain types
+
 - `quota.QuotaManagerInterface.GetBalance` — implemented in Task A
 - `quota.QuotaManagerInterface.ReserveQuota` — existing
 - `quota.QuotaManagerInterface.Debit` — existing
@@ -74,16 +79,19 @@ debitQuota(subscriberId, reservationId, usedUnits, unitType,
 ### Aggregation logic
 
 `quotaBalance` and `quotaBalances` aggregate per UnitType:
+
 - `TotalBalance` = sum of `CounterBalance.TotalBalance` for all matching counters of that UnitType
 - `AvailableBalance` = sum of `CounterBalance.AvailableBalance` for all matching counters
 
 ### Pattern references
+
 - Schema: `gql/schema/charging.graphql` — follow this style
 - Service: `internal/backend/services/carrier_service.go` — follow this pattern
 - Resolver: `internal/backend/resolvers/charging.resolvers.go`
 - AppContext wiring: `internal/backend/appcontext/context.go`
 
 ### Kafka requirement
+
 The mutations (reserve, debit) call `QuotaManager` which publishes journal events.
 `QuotaManager` requires a `*events.KafkaManager`. Add Kafka config to `BackendConfig`
 and wire it through `AppContext`. With `enabled: false` in dev config, no connection
@@ -94,15 +102,15 @@ instead of calling `m.KafkaClient.Produce()` directly.
 
 ## Decisions Made During Design
 
-| Decision | Rationale |
-|---|---|
-| Aggregate counters by UnitType in service layer | Java returns one DTO per UnitType; Go GetBalance returns per-counter slices. Service aggregates to match contract. |
-| Decimal values serialised as String in GraphQL | Consistent with existing RatePlan schema (BaseTariff, Multiplier are strings). Avoids float precision loss. |
-| `validitySeconds: Int!` for reservation duration | `time.Duration` has no native GraphQL scalar; seconds as Int is simple and unambiguous. |
-| Java `provisioningRequest` param dropped from debitQuota | Go `Debit()` uses `reservationId.String()` as requestId directly. No equivalent param needed. |
-| Java `multiplier` hardcoded to 1 in reserveQuota | Java source hardcodes `BigDecimal.ONE`. Kept in service layer, not exposed in schema. |
-| Kafka added to charging-backend | Reserve/debit mutations call QuotaManager which publishes journal events. Backend must have Kafka to support these operations. `enabled: false` default for dev. |
-| Fix PublishEvent nil safety | `PublishEvent` calls `m.KafkaClient.Produce()` directly — panics when `KafkaClient` is nil. Use `m.Produce()` which is already nil-safe. |
+| Decision                                                 | Rationale                                                                                                                                                        |
+|----------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Aggregate counters by UnitType in service layer          | Java returns one DTO per UnitType; Go GetBalance returns per-counter slices. Service aggregates to match contract.                                               |
+| Decimal values serialised as String in GraphQL           | Consistent with existing RatePlan schema (BaseTariff, Multiplier are strings). Avoids float precision loss.                                                      |
+| `validitySeconds: Int!` for reservation duration         | `time.Duration` has no native GraphQL scalar; seconds as Int is simple and unambiguous.                                                                          |
+| Java `provisioningRequest` param dropped from debitQuota | Go `Debit()` uses `reservationId.String()` as requestId directly. No equivalent param needed.                                                                    |
+| Java `multiplier` hardcoded to 1 in reserveQuota         | Java source hardcodes `BigDecimal.ONE`. Kept in service layer, not exposed in schema.                                                                            |
+| Kafka added to charging-backend                          | Reserve/debit mutations call QuotaManager which publishes journal events. Backend must have Kafka to support these operations. `enabled: false` default for dev. |
+| Fix PublishEvent nil safety                              | `PublishEvent` calls `m.KafkaClient.Produce()` directly — panics when `KafkaClient` is nil. Use `m.Produce()` which is already nil-safe.                         |
 
 ---
 
@@ -133,9 +141,12 @@ path used by the charging engine. Risk: a malformed GraphQL request could corrup
 quota state or create phantom reservations.
 
 Mitigations:
+
 - Input validation in the service layer mirrors the Java null/range checks
 - `QuotaManager` already handles idempotency at the domain level
 - `now` is injected via `time.Now()` at the resolver boundary (not inside business logic)
 - Kafka publish failures are logged but non-fatal — quota state is committed independently
 
 **Read operations (balance queries) are completely safe** — no mutations.
+
+## end
