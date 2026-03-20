@@ -48,7 +48,6 @@ Thumbs.db
 .goose/state/
 .goose/config/config.yaml.bak
 
-# Task sentinels and queue — only exist on feature branches, never on main
-.ai/tasks/DESIGN
-.ai/tasks/READY
+# Task queue files — ignored globally, force-add on feature branches if needed
+# Sentinels (DESIGN, READY) are committed on feature branches and removed by recipes
 .ai/tasks/queue/*.md
