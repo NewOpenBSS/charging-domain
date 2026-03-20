@@ -8,11 +8,6 @@ parameters:
     requirement: required
     description: "Feature branch to implement (e.g. feature/F-001-charging-trace-store)"
 
-  - key: repo_url
-    input_type: string
-    requirement: required
-    description: "Git repository URL (e.g. git@github.com:eddiecarpenter/go-ocs.git)"
-
 extensions:
   - type: builtin
     name: developer
@@ -28,17 +23,12 @@ instructions: |
   You bootstrap the workspace, read CURRENT.md, and implement autonomously to a PR.
 
   ## Step 1 — Bootstrap Workspace
-  Create an isolated working directory for this session:
-  mkdir -p ~/workspace/{{ branch_name | replace('/', '-') | replace('feature-', '') }}
-  cd ~/workspace/{{ branch_name | replace('/', '-') | replace('feature-', '') }}
+  The repo has been checked out by GitHub Actions into the current directory
+  on the feature branch. Verify the correct branch:
 
-  Clone the repository and checkout the feature branch:
-  git clone {{ repo_url }} .
-  git checkout {{ branch_name }}
-
-  Verify branch:
   git branch --show-current
-  If not on {{ branch_name }} — stop and report the error.
+  If not on {{ branch_name }}:
+    git checkout {{ branch_name }} 2>/dev/null || git checkout -b {{ branch_name }} origin/{{ branch_name }}
 
 
   ## Step 2 — Read Context

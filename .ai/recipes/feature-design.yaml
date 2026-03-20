@@ -6,6 +6,7 @@ parameters:
   - key: branch_name
     input_type: string
     requirement: optional
+    default: ""
     description: "Branch name to design (e.g. feature/F-001-charging-trace-store). If not provided, presents interactive list."
 
 extensions:
@@ -24,13 +25,11 @@ instructions: |
 
   ## Step 1 — Bootstrap
   Determine the working directory:
-  - If running via GitHub Actions, the repo is at ~/go-ocs
-  - If running interactively, use the current directory
+  - If running via GitHub Actions, the current directory IS the repo
+    (actions/checkout already ran). Use the current directory.
+  - If running interactively, use the current directory.
 
-  cd ~/go-ocs (or current directory if that fails)
-  git fetch origin
-  git checkout main
-  git pull origin main
+  Run: git fetch origin && git checkout main && git pull origin main
 
   ## Step 2 — Read Context
   Read these files in order:
