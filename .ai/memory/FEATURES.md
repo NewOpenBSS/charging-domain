@@ -137,10 +137,10 @@ None
 
 ## F-002 — DestinationGroupResource
 
-**Status:** Backlog
+**Status:** In Development
 **Priority:** High
 **Created:** 2026-03-20
-**Branches:** (filled in by AI during Stage 3)
+**Branches:** feature/F-002-destination-group-resource
 
 ### Implementation Approval Required
 - [ ] Yes — pause after AI Design for human review before implementation begins
