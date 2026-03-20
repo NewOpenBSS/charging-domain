@@ -1,0 +1,49 @@
+version: "1.0.0"
+title: "Design Session"
+description: "Creates a feature worktree and summarises what will be built. Run this in the main repository directory on master."
+
+parameters:
+  - key: feature_name
+    input_type: string
+    requirement: required
+    description: "Short feature name used for branch and worktree (e.g. wholesaler-admin, fix-rateplan-query)"
+
+  - key: feature_description
+    input_type: string
+    requirement: required
+    description: "Plain language description of the feature to build"
+
+  - key: repo_name
+    input_type: string
+    requirement: required
+    description: "Repository directory name (e.g. go-ocs)"
+
+extensions:
+  - type: builtin
+    name: developer
+    display_name: Developer
+    timeout: 300
+    bundled: true
+
+instructions: |
+  You are running a Design Session for an agentic development workflow.
+
+  Your only job is to:
+  1. Verify you are on the main branch — run: git branch --show-current
+     If NOT on main, stop immediately and tell the user.
+  2. Create a Git worktree for the feature:
+     git worktree add ~/Development/goplay/branches/{{ repo_name }}-{{ feature_name }} feature/{{ feature_name }}
+  3. Produce a brief summary (1 short paragraph) of what will be built based on the feature description.
+  4. Tell the user the worktree is ready at:
+     ~/Development/goplay/branches/{{ repo_name }}-{{ feature_name }}
+     and that they should open it in their IDE and run the Dev Session recipe there.
+  5. Push the feature branch to origin so it is visible to all machines:
+     cd ~/Development/goplay/branches/{{ repo_name }}-{{ feature_name }} && git push -u origin feature/{{ feature_name }}
+  6. Stop — do not write any code, do not create any files in the main repo.
+
+prompt: |
+  Design session starting for feature: {{ feature_name }}
+
+  Feature description: {{ feature_description }}
+
+  Please verify the branch, create the worktree, summarise the feature, and stop.

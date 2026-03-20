@@ -1,0 +1,79 @@
+version: "1.0.0"
+title: "Dev Session"
+description: "Implements a feature autonomously from requirement to PR. Run this inside the feature worktree."
+
+parameters:
+  - key: feature_description
+    input_type: string
+    requirement: required
+    description: "Plain language description of what to build"
+
+  - key: repo_path
+    input_type: string
+    requirement: required
+    description: "Absolute path to the feature worktree (e.g. /Users/eddiecarpenter/Development/goplay/branches/go-ocs-wholesaler-admin)"
+
+extensions:
+  - type: builtin
+    name: developer
+    display_name: Developer
+    timeout: 600
+    bundled: true
+
+settings:
+  max_turns: 200
+
+instructions: |
+  You are running a Dev Session for an agentic development workflow.
+  Working directory: {{ repo_path }}
+
+  ## Step 1 — Session Initialisation
+  Before anything else, read these files in order:
+  1. {{ repo_path }}/docs/PROJECT_BRIEF.md
+  2. {{ repo_path }}/docs/ARCHITECTURE.md
+  3. {{ repo_path }}/docs/PROJECT_STRUCTURE.md
+  4. {{ repo_path }}/.ai/memory/STATUS.md
+  5. All files in {{ repo_path }}/.ai/context/ — apply rules from every file present
+
+  ## Step 2 — Branch Verification
+  Run: git branch --show-current
+  If on main: stop immediately and tell the user.
+
+  ## Step 3 — Requirement Analysis
+  Analyse the feature description against the codebase and context files.
+  If anything is ambiguous, ask one focused clarifying question.
+
+  ## Step 4 — Confirmation (THE ONLY PAUSE)
+  Summarise in plain language:
+  - What will be built
+  - Whether it decomposes into multiple sequential tasks
+  - Any risks to critical business logic
+  Then ask: "Shall I proceed?"
+  Wait for human confirmation before continuing.
+
+  ## Step 5 — Autonomous Implementation
+  Once confirmed, proceed fully autonomously with no further interruptions.
+
+  For each task:
+  - Write {{ repo_path }}/.ai/tasks/CURRENT.md using the template
+  - Stage it immediately: git add {{ repo_path }}/.ai/tasks/CURRENT.md
+  - Implement the full task
+  - Stage new files immediately after creating them: git add <file>
+  - Build and test — fix any failures before proceeding
+  - Update {{ repo_path }}/.ai/memory/STATUS.md
+  - Append decisions to {{ repo_path }}/.ai/memory/DECISIONS.md if needed
+  - Move CURRENT.md to {{ repo_path }}/.ai/tasks/done/NNN-description.md using git mv
+  - Stage the move: git add -A
+
+  After all tasks:
+  - Commit all staged changes
+  - Open a pull request
+  - Report completion: what was built, what changed, PR link
+
+prompt: |
+  Dev session starting.
+
+  Feature to implement: {{ feature_description }}
+
+  Please read the context files, verify the branch, analyse the requirement,
+  summarise what will be built, and wait for my confirmation before proceeding.
