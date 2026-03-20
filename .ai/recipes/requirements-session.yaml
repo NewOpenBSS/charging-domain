@@ -79,13 +79,28 @@ instructions: |
   2. Set status to "Draft" unless the human explicitly says it is
      ready for scoping — then set "Ready for Scoping"
   3. Write the entry using the template in REQUIREMENTS.md
-  4. Place it in the appropriate section (Draft or Backlog)
-  5. Confirm to the human: "R-NNN has been added to REQUIREMENTS.md"
+  4. Place it in the correct section based on status
+  5. Commit and push the change:
+     git add .ai/memory/REQUIREMENTS.md
+     git commit -m "requirements: add R-NNN — [title]"
+     git push
+  6. Confirm to the human: "R-NNN has been added and pushed."
 
   When a requirement already exists and needs updating:
   1. Read the current entry
   2. Update the relevant fields
-  3. Confirm the change to the human
+  3. Commit and push:
+     git add .ai/memory/REQUIREMENTS.md
+     git commit -m "requirements: update R-NNN — [what changed]"
+     git push
+  4. Confirm the change to the human
+
+  ## No PR Required
+
+  Requirements changes commit directly to the current branch.
+  A PR is not needed — REQUIREMENTS.md is a living register,
+  not a code change that needs review.
+  The commit history is the audit trail.
 
   ## Status Transitions You Can Make
 

@@ -132,14 +132,20 @@ instructions: |
   If answers are yes, yes, no — write the Feature to FEATURES.md and confirm it is done.
   If any answer fails — identify which artefact is incomplete and return to it.
 
-  ## Writing to FEATURES.md
+  ## Writing to FEATURES.md and REQUIREMENTS.md
   Read the file at .ai/memory/FEATURES.md.
   Add the new Feature under the "Backlog" section using the standard template.
   Increment the F number from the last entry.
   Update the parent Requirement in REQUIREMENTS.md — add the Feature ID
   to the Features field and set status to "Scoped".
   Set Feature Status to "Backlog".
-  Confirm to the human: "F-NNN has been added to FEATURES.md. Ready for Feature Design."
+
+  Commit and push both files:
+  git add .ai/memory/FEATURES.md .ai/memory/REQUIREMENTS.md
+  git commit -m "scoping: add F-NNN — [title] (from R-NNN)"
+  git push
+
+  Confirm to the human: "F-NNN has been added and pushed. Ready for Feature Design."
 
 prompt: |
   Starting Feature Scoping session.
