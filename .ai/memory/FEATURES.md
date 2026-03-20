@@ -29,7 +29,7 @@ Read by AI agents at the start of every design and development session.
 **Status:** Backlog
 **Priority:** High
 **Created:** 2026-03-20
-**Branch:** (filled in by scoping)
+**Branch:** feature/F-001-charging-trace-resource
 
 ### Implementation Approval Required
 - [ ] Yes — pause after AI Design for human review before implementation begins
