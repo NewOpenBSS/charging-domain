@@ -21,6 +21,7 @@ _Last updated: 2026-03-20 (F-005)_
 | Subscriber store queries | ✅ Complete | InsertSubscriber, UpdateSubscriber, DeleteSubscriber (sqlc) |
 | `internal/events/subscriber_event.go` | ✅ Complete | SubscriberEvent struct + 5 event type constants |
 | `internal/backend/consumer` | ✅ Complete | SubscriberEventConsumer with dispatch logic, unit tests |
+| F-005 wiring | ✅ Complete | Consumer wired into AppContext + main.go; subscriber-event topic in config |
 | `internal/auth` | ✅ Complete | Keycloak client, JWT middleware, claims extraction |
 
 ### charging-engine (`cmd/charging-engine`, port :8080)
@@ -71,7 +72,7 @@ _Last updated: 2026-03-20 (F-005)_
 
 ## Current Focus
 
-F-005 — SubscriberEventConsumer — **in progress**.
+F-005 — SubscriberEventConsumer — **complete**, in review.
 
 ---
 

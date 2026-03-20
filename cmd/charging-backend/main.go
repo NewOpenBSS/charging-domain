@@ -52,6 +52,12 @@ func main() {
 	defer tenantCancel()
 	appCtx.TenantResolver.Start(tenantCtx)
 
+	// Start the subscriber event consumer so the shadow subscriber table stays in sync.
+	consumerCtx, consumerCancel := context.WithCancel(context.Background())
+	defer consumerCancel()
+	defer appCtx.SubscriberConsumer.Stop()
+	appCtx.SubscriberConsumer.Start(consumerCtx)
+
 	metricsSrv := appl.StartMetricsServer(&cfg.Base)
 	defer func() {
 		if metricsSrv != nil {
