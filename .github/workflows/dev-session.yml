@@ -5,7 +5,7 @@ on:
     branches:
       - 'feature/F-*'
     paths:
-      - '.ai/tasks/CURRENT.md'
+      - '.ai/tasks/READY'
 
 jobs:
   dev-session:
@@ -15,8 +15,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
 
       - name: Run dev session recipe
+        id: goose
         run: |
           goose run \
             --recipe .goose/recipes/dev-session.yaml \
@@ -26,4 +29,24 @@ jobs:
           GOOSE_PATH_ROOT: ${{ github.workspace }}/.goose
           GOOSE_PROVIDER: claude-code
           GOOSE_MODEL: default
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push commits
+        if: success()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git push origin ${{ github.ref_name }}
+
+      - name: Open PR
+        if: success()
+        run: |
+          FEATURE_ID=$(echo "${{ github.ref_name }}" | grep -oP 'F-\d+')
+          FEATURE_TITLE=$(grep -A1 "## ${FEATURE_ID}" .ai/memory/FEATURES.md | tail -1 | sed 's/.*— //')
+          gh pr create \
+            --title "feat: ${FEATURE_ID} — ${FEATURE_TITLE}" \
+            --body "## Feature ${FEATURE_ID}\n\nAll tasks implemented and tested.\nReview against acceptance criteria in \`.ai/memory/FEATURES.md\`." \
+            --base main \
+            --head ${{ github.ref_name }}
+        env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

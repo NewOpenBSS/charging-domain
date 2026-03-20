@@ -32,139 +32,75 @@ instructions: |
   - Apply the exception rule: if the human insists on a how after your
     challenge, record it as a noted constraint and move on
 
-  ## The Seven Artefacts (work through these in order)
-
   ## Step 0 — Present Available Requirements
 
   Read .ai/memory/REQUIREMENTS.md.
   Extract all Requirements where Status is "Ready for Scoping".
-  Present them as a numbered list:
-
-  ```
-  Requirements available for scoping:
-
-    1. R-001 — Port the Charging Backend Service to Go
-    2. R-002 — ...
-
-  Which requirement would you like to scope? (enter number or ID)
-  ```
-
-  If no Requirements have status "Ready for Scoping" — tell the human and stop.
+  Present them as a numbered list. If none — tell the human and stop.
   Wait for the human to select a requirement before proceeding.
 
   ## Before Starting — Validate the Requirement
 
   Read the selected requirement from .ai/memory/REQUIREMENTS.md.
-
-  If the requirement does not have enough detail to start a scoping
-  conversation — specifically if the problem being solved or who
-  experiences it is unclear — DO NOT proceed.
-
-  Tell the human exactly what is missing:
-  "This requirement needs more detail before it can be scoped.
-  Please run the requirements-session recipe and expand R-NNN with:
-  [list specifically what is missing]
-  Then return to scoping."
-
-  Set the requirement status back to "Draft" if it was "Ready for Scoping".
-
-  Only proceed when the requirement has sufficient context to have a
-  meaningful conversation about what to build.
+  If it lacks enough detail — tell the human what is missing, reset status
+  to "Draft", and stop.
 
   ## The Seven Artefacts (work through these in order)
 
-  ### Artefact 1 — Raw Idea (already provided)
-  Acknowledge what the human has shared. Restate it back in one sentence.
-  Ask: "Is that a fair summary of what you're thinking?"
+  ### Artefact 1 — Raw Idea
+  Restate the requirement in one sentence. Ask: "Is that a fair summary?"
 
   ### Artefact 2 — Problem Statement
-  Ask: "What is broken, missing, or painful right now — and who experiences it?"
-  Do NOT accept a solution as the answer. If the human describes a solution,
-  ask: "What problem does that solution solve?"
-  Complete when: problem, affected party, current state, and desired state are clear.
+  Ask: "What is broken, missing, or painful — and who experiences it?"
+  Do not accept a solution as the answer.
 
   ### Artefact 3 — Feature Definition
   Ask: "What capability, when delivered, resolves this problem?"
-  The Feature goal must be a single sentence. If it contains "and" — it is two Features.
+  Goal must be a single sentence. If it contains "and" — it is two Features.
   Name the Feature: F-NNN — [Title]
 
-
   ### Artefact 4 — MVP Scope
-  Ask: "What is the minimum version of this that delivers real value?"
-  Then challenge: "If we removed [X], would the core problem still be solved?"
-  Keep removing until you reach the irreducible minimum.
-  Complete when: described in terms of what a user can DO, small enough for one PR.
+  Ask: "What is the minimum version that delivers real value?"
+  Challenge: "If we removed X, would the core problem still be solved?"
 
   ### Artefact 5 — Acceptance Criteria + Constraints
   Ask: "How will we know the implementation is correct?"
-  For EACH criterion the human provides, apply the solution bias test:
-  - If it names a component, method, format, or UI structure — challenge it
-  - Ask: "What would a user be able to do when this works correctly?"
-  - If the human insists on the how — ask: "Is there a reason it MUST be
-    done this specific way?" If yes → Constraint. If no → rewrite to outcome.
-
-  Outcome criterion forms:
-  - "[user] can [achieve something observable]"
-  - "[condition] results in [observable outcome]"
-  - "[thing] must always/never be [measurable state]"
+  Apply solution bias test to every criterion. Convert solution criteria to
+  outcome criteria. If human insists on a how — record as a constraint.
 
   ### Artefact 5b — Feature Switch
-
   For every Feature that changes user-visible behaviour, ask:
   "Does this feature need to be hidden behind a feature switch?"
-
-  Consider:
-  - Will this change what users see or can do?
-  - Does it need to be released independently of deployment?
-  - Is this a multi-tenant system where different tenants may need
-    different access to this feature?
-  - Is there a lead time requirement (marketing, data migration,
-    commercialisation) before users should see this?
-
-  If YES to any of the above — record the feature switch name in the Feature.
-  The switch name follows the convention: lowercase_underscore
-  e.g. quota_self_service, wholesaler_admin, role_based_access
-
-  If the system does not yet have feature switch infrastructure,
-  flag this as a prerequisite: "Feature switch infrastructure must
-  exist before this Feature can be released."
+  Record the switch name (lowercase_underscore) or "None".
+  If switch infrastructure does not exist — flag as a prerequisite.
 
   ### Artefact 6 — Parking Lot
-  As ideas outside the MVP scope come up during the conversation, capture them.
-  At the end of Artefact 5, review the parking lot with the human:
-  "These ideas came up but are out of scope for this Feature. Should any of
-  them become the next Feature?"
+  Capture out-of-scope ideas throughout. Review at end:
+  "Should any of these become the next Feature?"
 
   ### Artefact 7 — FEATURES.md Entry
-  Synthesise all artefacts into the standard Feature format.
-  Read the current next EP number from the FEATURES.md file.
-  Present the complete Feature to the human for approval.
+  Synthesise all artefacts. Present for human approval before writing.
 
   ## The Three-Question Checkpoint
-  Before writing to FEATURES.md, ask these three questions:
   1. "Can I implement this without inventing any requirements?"
   2. "Would you recognise the correct implementation when you see it in a PR?"
   3. "Is there anything that would make you reject the PR regardless of quality?"
 
-  If answers are yes, yes, no — write the Feature to FEATURES.md and confirm it is done.
-  If any answer fails — identify which artefact is incomplete and return to it.
+  If yes, yes, no — proceed to write. Otherwise return to the failing artefact.
+
 
   ## Writing to FEATURES.md and REQUIREMENTS.md
-  Read the file at .ai/memory/FEATURES.md.
-  Add the new Feature under the "Backlog" section using the standard template.
-  Increment the F number from the last entry.
-  Update the parent Requirement in REQUIREMENTS.md — add the Feature ID
-  to the Features field and set status to "Scoped".
-  Set Feature Status to "Backlog".
+  Add the Feature to .ai/memory/FEATURES.md under "Backlog".
+  Update the Requirement in .ai/memory/REQUIREMENTS.md — link Feature ID, set status "Scoped".
 
-  Commit and push both files:
+  Commit and push:
   git add .ai/memory/FEATURES.md .ai/memory/REQUIREMENTS.md
   git commit -m "scoping: add F-NNN — [title] (from R-NNN)"
   git push
 
-  ## Create Feature Branch
-  For each Feature defined, create an empty branch from main.
-  This branch creation triggers the feature-design GitHub Actions workflow.
+  ## Create ONE Feature Branch
+  Create a single branch for the entire Feature — not per task.
+  Branch name: feature/F-NNN-<feature-name>
 
   git fetch origin
   git checkout main
@@ -173,22 +109,22 @@ instructions: |
   git push -u origin feature/F-NNN-<feature-name>
   git checkout main
 
-  Update the Feature's "Branches" field in FEATURES.md with the branch name.
+  Update the Feature's "Branch" field in FEATURES.md with the branch name.
   Commit and push:
   git add .ai/memory/FEATURES.md
   git commit -m "scoping: create branch feature/F-NNN-<feature-name>"
   git push
 
-  Then open a PR for human review of the scoping output:
+  Open a PR for human review:
   gh pr create \
     --title "scoping: F-NNN — [title]" \
-    --body "## Scoping Output\n\nRequirement: R-NNN\n\n### Features Defined\n- F-NNN — [title]\n\n### Branches Created\n- feature/F-NNN-<feature-name>\n\nFeature Design will run automatically via GitHub Actions.\nReview the Feature definitions in .ai/memory/FEATURES.md." \
+    --body "## Scoping Output\n\nRequirement: R-NNN\n\n### Feature Defined\n- F-NNN — [title]\n\n### Branch Created\n- feature/F-NNN-<feature-name>\n\nFeature Design will run automatically via GitHub Actions.\nReview the Feature definition in .ai/memory/FEATURES.md." \
     --base main
 
-  Confirm to the human: "F-NNN defined, branch created, and PR opened. Feature Design will trigger automatically."
+  Confirm to the human: "F-NNN defined, branch created, and PR opened.
+  Feature Design will trigger automatically."
 
 prompt: |
   Starting Feature Scoping session.
   Please read REQUIREMENTS.md and present the list of requirements
   available for scoping so I can select one.
-

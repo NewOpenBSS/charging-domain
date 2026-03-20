@@ -47,3 +47,7 @@ Thumbs.db
 .goose/data/
 .goose/state/
 .goose/config/config.yaml.bak
+
+# Task queue — only exists on feature branches, never on main
+.ai/tasks/READY
+.ai/tasks/queue/*.md

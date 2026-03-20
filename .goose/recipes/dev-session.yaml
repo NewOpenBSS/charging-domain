@@ -1,12 +1,12 @@
 version: "1.0.0"
 title: "Dev Session"
-description: "Stage 4 — Development. Bootstraps the workspace, reads CURRENT.md, and implements autonomously to PR. Designed to run on a self-hosted GitHub Actions runner."
+description: "Stage 4 — Development. Processes the task queue sequentially on the feature branch. Commits each task. Workflow handles push and PR."
 
 parameters:
   - key: branch_name
     input_type: string
     requirement: required
-    description: "Feature branch to implement (e.g. feature/F-001-charging-trace-store)"
+    description: "Feature branch to implement (e.g. feature/F-001-charging-trace)"
 
 extensions:
   - type: builtin
@@ -20,16 +20,15 @@ settings:
 
 instructions: |
   You are running a Dev Session — Stage 4 of the agentic development pipeline.
-  You bootstrap the workspace, read CURRENT.md, and implement autonomously to a PR.
+  You process the task queue on the feature branch, implementing each task
+  in sequence. You commit after each task. You do NOT push or open a PR —
+  the GitHub Actions workflow handles those steps after you exit cleanly.
 
-  ## Step 1 — Bootstrap Workspace
-  The repo has been checked out by GitHub Actions into the current directory
-  on the feature branch. Verify the correct branch:
-
+  ## Step 1 — Verify Branch
   git branch --show-current
   If not on {{ branch_name }}:
-    git checkout {{ branch_name }} 2>/dev/null || git checkout -b {{ branch_name }} origin/{{ branch_name }}
-
+    git checkout {{ branch_name }} 2>/dev/null || \
+    git checkout -b {{ branch_name }} origin/{{ branch_name }}
 
   ## Step 2 — Read Context
   Read these files in order:
@@ -38,77 +37,65 @@ instructions: |
   3. docs/PROJECT_STRUCTURE.md
   4. .ai/memory/STATUS.md
   5. All files in .ai/context/ — apply rules from every file present
-  6. .ai/tasks/CURRENT.md — this is what you are building
 
-  If .ai/tasks/CURRENT.md does not exist — stop and report.
-  The feature-design step must have failed to write CURRENT.md.
+  Verify .ai/tasks/READY exists — if not, stop and report.
+  Verify .ai/tasks/queue/ contains files — if empty, stop and report.
 
-  ## Step 3 — Check Dependencies
-  Read the Dependencies section of CURRENT.md.
+  ## Step 3 — Process the Task Queue
+  List all files in .ai/tasks/queue/ sorted numerically (001 before 002).
+  This is the implementation sequence. Do not change the order.
 
-  For each dependency branch listed (skip if "None"):
-    Run: gh pr list --head <dependency-branch> --state merged --json number --jq length
-    If the count is 0 — the dependency has NOT been merged yet.
-    Stop and report:
-    "This task depends on <branch> which has not been merged yet.
-     Wait for that PR to be merged, then re-trigger this workflow."
-    Exit without implementing anything.
+  For EACH task file in sequence:
 
-  Only proceed if ALL dependencies are merged or there are no dependencies.
+  ### 3a — Read the task
+  Read the task file. Understand what must be built before touching any code.
 
-  ## Step 4 — Check for Open PR
-  gh pr list --head {{ branch_name }}
-  If a PR already exists — stop and report. Do not duplicate work.
+  ### 3b — Implement
+  Implement the task against its acceptance criteria.
+  Stage new files immediately after creating them: git add <file>
+  Do not make changes outside the task scope.
 
-  ## Step 5 — Confirmation
-  Summarise in plain language:
-  - What will be built (from CURRENT.md)
-  - Whether it decomposes into multiple sequential tasks
-  - Any risks to critical business logic
 
-  Since branch_name was provided as a parameter, this is an automated run.
-  Print the summary and proceed immediately — do NOT wait for human input.
-  There is no human present to confirm.
+  ### 3c — Build and test
+  Run the full build and test suite.
+  If build fails — diagnose and fix. Do not move to the next task with a broken build.
+  If tests fail — diagnose and fix. Do not move to the next task with failing tests.
+  If you cannot fix the failure — stop and exit with a clear error message.
+  The workflow will turn red. A human will investigate and re-trigger.
 
-  ## Step 6 — Autonomous Implementation
-  Once confirmed, proceed fully autonomously with no further interruptions.
-
-  For each task:
-  - Implement against the acceptance criteria in CURRENT.md
-  - Stage new files immediately: git add <file>
-  - Build and test — fix all failures before proceeding
-  - Never claim complete with failing tests or build errors
-
-  After all tasks complete:
-  - Update .ai/memory/STATUS.md
-  - Append significant decisions to .ai/memory/DECISIONS.md in ADR format
-  - Archive CURRENT.md:
-    git mv .ai/tasks/CURRENT.md .ai/tasks/done/NNN-short-description.md
-  - Commit all changes:
+  ### 3d — Commit the task
+  Archive the completed task file:
+    git mv .ai/tasks/queue/NNN-task-name.md .ai/tasks/done/NNN-task-name.md
+  Update .ai/memory/STATUS.md to reflect what was just built.
+  Append significant decisions to .ai/memory/DECISIONS.md in ADR format.
+  Commit all changes:
     git add -A
-    git commit -m "feat: [description] ({{ branch_name }})"
-  - Push:
-    git push
-  - Open PR:
-    gh pr create \
-      --title "feat: [description]" \
-      --body "## Summary\n\n[what was built]\n\n## Changes\n[packages affected]\n\n## Risks\n[risks to critical business logic]\n\n## Testing\n[what was tested and how]" \
-      --base main
-  - Update .ai/memory/FEATURES.md — set Feature status to "In Review"
-  - Commit and push the status update:
-    git add .ai/memory/FEATURES.md
-    git commit -m "status: F-NNN In Review"
-    git push
-  - Report completion: what was built, what changed, PR link
+    git commit -m "feat: [task description] — task NNN of N (F-NNN)"
+
+  Proceed to the next task in the queue.
+
+  ## Step 4 — All Tasks Complete
+  When the queue is empty (all files moved to done/):
+
+  Remove the READY sentinel — it has served its purpose:
+    git rm .ai/tasks/READY
+
+  Update .ai/memory/FEATURES.md — set Feature status to "In Review".
+  Commit:
+    git add -A
+    git commit -m "feat: F-NNN complete — all tasks implemented"
+
+  Exit cleanly with a success message listing what was built.
+  The workflow will now push and open the PR.
 
   ## Rules
   - Never commit or push to main
-  - Never merge pull requests
-  - Fix failing tests before moving forward
+  - Never push — the workflow does this after you exit
+  - Never open a PR — the workflow does this after you exit
+  - Fix failing tests before moving to the next task
   - Stage new files immediately after creating them
-  - Every commit must be pushed
+  - If build or tests cannot be fixed — stop and exit with a clear error
 
 prompt: |
   Dev session starting for {{ branch_name }}.
-  Bootstrapping workspace, then reading CURRENT.md.
-  Will summarise what will be built and wait for confirmation before proceeding.
+  Verifying branch, reading context, then processing the task queue.

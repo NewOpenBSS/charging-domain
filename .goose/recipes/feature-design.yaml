@@ -1,13 +1,13 @@
 version: "1.0.0"
 title: "Feature Design (Stage 3)"
-description: "Stage 3 — Feature Design. Triggered by branch push (automated) or run interactively. Writes CURRENT.md to feature branches."
+description: "Stage 3 — Feature Design. Analyses the Feature, decomposes into a numbered task queue, and writes queue files to the feature branch."
 
 parameters:
   - key: branch_name
     input_type: string
     requirement: optional
     default: ""
-    description: "Branch name to design (e.g. feature/F-001-charging-trace-store). If not provided, presents interactive list."
+    description: "Branch name (e.g. feature/F-001-charging-trace). If not provided, presents interactive list."
 
 extensions:
   - type: builtin
@@ -21,14 +21,11 @@ settings:
 
 instructions: |
   You are running a Feature Design session — Stage 3 of the AI development process.
-  Your job is to write a CURRENT.md task spec to the correct feature branch.
+  Your job is to decompose a Feature into a numbered task queue on the feature branch.
+  The dev-session recipe will process the queue sequentially to implement the Feature.
 
   ## Step 1 — Bootstrap
-  Determine the working directory:
-  - If running via GitHub Actions, the current directory IS the repo
-    (actions/checkout already ran). Use the current directory.
-  - If running interactively, use the current directory.
-
+  The repo is available in the current directory (actions/checkout ran, or local).
   Run: git fetch origin && git checkout main && git pull origin main
 
   ## Step 2 — Read Context
@@ -40,80 +37,79 @@ instructions: |
   5. All files in .ai/context/
   6. .ai/memory/FEATURES.md
 
-
   ## Step 3 — Identify the Feature
-  Check if branch_name parameter was provided:
+  IF branch_name is provided (automated mode):
+    Extract Feature ID from branch name: feature/F-001-name → F-001
+    Find that Feature in FEATURES.md. If not found or not "Backlog" — stop and report.
 
-  IF branch_name is provided (automated/server mode):
-    - Extract the Feature ID from the branch name
-      e.g. feature/F-001-charging-trace-store → F-001
-    - Find F-001 in FEATURES.md
-    - Proceed directly to Step 4
-
-  IF branch_name is NOT provided (interactive mode):
-    - Extract all Features from FEATURES.md where Status is "Backlog"
-    - Present as a numbered list and wait for human selection
-    - Use the selected Feature ID for Step 4
-
-  If no matching Feature found in FEATURES.md — stop and report.
+  IF branch_name NOT provided (interactive mode):
+    List all Features with Status "Backlog" and wait for human selection.
 
   ## Step 4 — Check Implementation Approval
   Read the Feature's "Implementation Approval Required" field.
-
-  If "Yes — pause after AI Design":
-    Present the decomposition plan and wait for human confirmation.
-
-  If "No — proceed automatically":
-    Proceed directly without waiting.
+  If "Yes" — present the decomposition plan and wait for human confirmation.
+  If "No" — proceed automatically.
 
   ## Step 5 — Analyse the Codebase
-  Read the relevant source files to understand what already exists.
-  Identify what needs to be built, what can be reused, where it lives.
+  Read relevant source files to understand what exists.
+  Identify what needs to be built, what can be reused, where new code lives.
+  Determine the minimum number of tasks needed and their correct sequence.
 
-  ## Step 6 — Write CURRENT.md to the Branch
-  For each branch associated with this Feature, in dependency order:
 
-  a) Checkout the branch:
-     git checkout feature/<F-NNN>-<feature-name>
+  ## Step 6 — Write Task Queue to the Feature Branch
+  All tasks go on the SAME branch. The branch was created by the scoping recipe.
 
-  b) Write .ai/tasks/CURRENT.md using .ai/tasks/TASK_TEMPLATE.md. Include:
-     - Dependencies: branches that must be merged before this task starts
-       (derived from the decomposition sequence — if this task depends on
-       another task in this Feature, list its branch here. Write "None" if
-       this is the first task in the sequence.)
-     - Objective: what this feature builds
-     - Scope: in and out of scope
+  a) Checkout the feature branch:
+     git checkout feature/F-NNN-<feature-name>
+
+  b) Create the queue directory:
+     mkdir -p .ai/tasks/queue
+
+  c) For each task in sequence, write a numbered queue file using TASK_TEMPLATE.md:
+     .ai/tasks/queue/001-<task-name>.md
+     .ai/tasks/queue/002-<task-name>.md
+     etc.
+
+     Each queue file must include:
+     - Sequence number and task title
+     - Objective: what this specific task builds
+     - Scope: in and out of scope for this task only
      - Context: relevant existing code references
-     - Acceptance criteria: outcome criteria only from the Feature
+     - Acceptance criteria: outcome criteria for this task
      - Risk assessment: risks to critical business logic
      - Feature ID this task belongs to
 
-  c) Commit and push:
-     git add .ai/tasks/CURRENT.md
-     git commit -m "design: add CURRENT.md for <F-NNN>-<feature-name>"
+     Tasks must be sequenced so each builds on working code from the previous.
+     The smallest atomic unit that can be built, tested, and committed independently.
+
+  d) Create the READY sentinel file — this triggers the dev-session workflow:
+     echo "Feature: F-NNN\nTasks: <count>\nCreated: <date>" > .ai/tasks/READY
+
+  e) Stage and commit everything:
+     git add .ai/tasks/queue/ .ai/tasks/READY
+     git commit -m "design: F-NNN task queue ready ([count] tasks)"
      git push
 
-  d) Verify commit landed:
-     git show HEAD:.ai/tasks/CURRENT.md | head -3
-
-  e) Return to main:
+  f) Return to main:
      git checkout main
 
   ## Step 7 — Update FEATURES.md
-  - Update Feature status to "In Design"
-  - Commit and push:
-    git add .ai/memory/FEATURES.md
-    git commit -m "design: F-NNN In Design"
-    git push
+  Update Feature status to "In Design".
+  Commit and push:
+  git add .ai/memory/FEATURES.md
+  git commit -m "design: F-NNN In Design"
+  git push
 
   ## Step 8 — Report Completion
-  State which branches received CURRENT.md and confirm completion.
+  List the queue files created with a one-line description of each task.
+  State the total number of tasks and their sequence.
+  Confirm: "Task queue written. Dev Session will trigger automatically."
 
 prompt: |
   Starting Feature Design session.
   {% if branch_name %}
   Triggered for branch: {{ branch_name }}
-  Reading context and writing CURRENT.md automatically.
+  Reading context and writing task queue automatically.
   {% else %}
   Please read the context and FEATURES.md, then present available
   features for selection.

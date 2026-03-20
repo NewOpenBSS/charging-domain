@@ -1,22 +1,16 @@
-# Task: [Short descriptive title]
+# Task NNN — [Short descriptive title]
 
+**Feature:** F-NNN — [Feature Title]
+**Sequence:** NNN of N
 **Date:** YYYY-MM-DD
 **Status:** Active | Complete
 
 ---
 
-## Dependencies
-
-List any branches that must be merged into main before this task can start.
-Write "None" if this task has no dependencies.
-
-- `feature/F-NNN-name` — reason why this must land first
-
----
-
 ## Objective
 
-One paragraph. What is being built and why. No implementation detail.
+One paragraph. What this specific task builds and why.
+This task must be small enough to implement, build, test, and commit independently.
 
 ---
 
@@ -27,19 +21,17 @@ One paragraph. What is being built and why. No implementation detail.
 - Specific thing 2
 
 **Out of scope:**
-- Things that are explicitly not part of this task
+- Things explicitly not part of this task (may be in a later task)
 
 ---
 
 ## Context
 
-What Claude Code needs to know that isn't already in the project memory files.
+What the AI needs to know that isn't already in the project memory files.
 References to relevant existing packages, patterns to follow, constraints to observe.
 
-Example:
-- Follow the pattern established in `internal/backend/services/carrier_service.go`
-- The `classification` table schema is in `db/migrations/000001_init.up.sql`
-- GraphQL schema lives in `gql/schema/` — update the relevant `.graphql` file first
+- Follow the pattern established in `internal/...`
+- The relevant schema is in `db/migrations/...`
 
 ---
 
@@ -55,18 +47,17 @@ Key decisions made before implementation started. Will be copied to DECISIONS.md
 
 ## Acceptance Criteria
 
-How to know the task is done. Be specific.
+How to know this task is done. Be specific.
 
 - [ ] All new functions have unit tests
 - [ ] `go build ./...` passes
 - [ ] `go test ./...` passes
-- [ ] PR description includes risk assessment if charging logic is touched
 
 ---
 
 ## Risk Assessment
 
-Any risks to charging, quota, or rating behaviour. Required field — write "None" if not applicable.
+Any risks to charging, quota, or rating behaviour. Required — write "None" if not applicable.
 
 ---
 

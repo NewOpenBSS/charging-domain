@@ -23,88 +23,57 @@ Do not skip any file. Do not begin work until all five steps are complete.
 
 ## Session Types
 
-There are three distinct session types. The human will state which one applies.
+There are three distinct session types.
 
-### Design Session
+### Feature Design Session
 
-Runs in the **main repository directory** on `main`. Its only job is to create
-the worktree and produce a task summary.
+Triggered automatically by GitHub Actions when a feature branch is pushed.
+Runs on the feature branch. Decomposes the Feature into a numbered task queue.
 
-1. Read context files in order (see Session Initialisation above)
-2. Confirm current branch is `main`: `git branch --show-current`
-   - If NOT on `main`: stop and tell the human
-3. Ask the human for the feature name if not already provided
-4. Create the worktree:
-   ```bash
-   git worktree add ~/Development/goplay/branches/<repo>-<feature> feature/<feature>
-   ```
-5. Produce a brief task summary (1 paragraph) describing what will be built
-6. Tell the human the worktree path and to open it in their preferred
-   editor and agent tool for the implementation session
-7. Stop — do not write any code or files in the main repo
+1. Read context files (see Session Initialisation above)
+2. Read the Feature definition from `.ai/memory/FEATURES.md`
+3. Analyse the codebase to understand what exists and what must be built
+4. Write numbered task files to `.ai/tasks/queue/` — one file per task
+5. Write `.ai/tasks/READY` sentinel to trigger the Dev Session workflow
+6. Commit and push — do not open a PR
 
+### Dev Session
 
-### Spec and Implementation Session
+Triggered automatically by GitHub Actions when `.ai/tasks/READY` is pushed.
+Runs on the feature branch. Processes the task queue to completion.
 
-Runs inside the **feature worktree**. Clarifies the requirement, confirms understanding,
-then proceeds fully autonomously through implementation to PR.
+1. Read context files (see Session Initialisation above)
+2. Process `.ai/tasks/queue/` files in numerical order
+3. For each task: implement → build → test → commit → archive to `done/`
+4. If build or tests fail — stop and exit. Do not proceed to the next task.
+   The workflow turns red. A human investigates and re-triggers.
+5. When queue is empty — remove READY, update STATUS.md, exit cleanly
+6. Do NOT push or open a PR — the workflow handles this after clean exit
 
-1. Read context files in order (see Session Initialisation above)
-2. Confirm current branch is NOT `main`: `git branch --show-current`
-   - If on `main`: stop immediately and tell the human
-3. Analyse the requirement against the existing codebase and context files
-4. If anything is ambiguous, ask focused clarifying questions — one exchange only
-5. Summarise in plain language what will be built, including:
-   - Whether the requirement decomposes into multiple sequential tasks
-   - The order tasks will run if more than one
-   - Any risks to critical business logic
-6. **Wait for human confirmation — this is the only pause in the session**
-7. Once confirmed, proceed fully autonomously through all remaining steps
-   with no further interruptions:
+### Interactive Session
 
-   **For each task (repeat if requirement decomposes into multiple):**
-   - Write `.ai/tasks/CURRENT.md` using the template in `.ai/tasks/TASK_TEMPLATE.md`
-   - Implement the full task
-   - Build and test — fix any failures before proceeding
-   - Update `.ai/memory/STATUS.md`
-   - Append any decisions to `.ai/memory/DECISIONS.md`
-   - Move `.ai/tasks/CURRENT.md` to `.ai/tasks/done/NNN-short-description.md`
+Run manually by a human on a feature branch for investigation or manual work.
 
-   **After all tasks complete:**
-   - Open a single pull request covering all work
-   - Report completion — what was built, what changed, PR link
+1. Read context files (see Session Initialisation above)
+2. Confirm not on `main` before making any changes
+3. Follow the same build/test discipline as Dev Session
 
 ---
 
 ## Git Rules
 
-This project uses **Git worktrees** for feature development. The main repository
-directory always tracks `main` and mirrors production. Feature branches live under
-a sibling `branches/` directory:
-
-```
-~/Development/goplay/
-    <repo>/                      ← main, always clean
-    branches/
-        <repo>-<feature>/        ← feature worktree, own CURRENT.md
-```
+One branch per Feature. Tasks are commits on that branch, not separate branches.
 
 **Rules:**
 - Never commit or make changes on `main` — unconditional
+- Never push from within a recipe — the workflow pushes after the recipe exits cleanly
+- Never open a PR from within a recipe — the workflow handles this
 - Never merge pull requests — leave that for human review
-- **Always use `git mv` to rename or move tracked files** — never use an OS-level
-  `mv` command. OS-level moves cause Git to see a deletion and a new untracked file,
-  losing all commit history on the file.
-- **Stage new files immediately after creating them** using `git add <file>` — do not
-  wait until the end of the task. This keeps the working tree clean and makes it easy
-  to see what has been added versus modified in the IDE at any point during development.
-- **Every recipe that commits to the repo must also push and open a PR** — no commit
-  should be left unpushed and unreviewed. Register updates (REQUIREMENTS.md, FEATURES.md)
-  commit directly to the current branch — no separate branch needed. Code changes always
-  go via a feature branch and PR — never direct to main.
-- Branch names must reflect purpose: `feature/wholesaler-admin`, `fix/rateplan-query`
-- PR description must include: what changed, why, packages affected, risks to
-  critical business logic, and a testing summary
+- **Always use `git mv` to rename or move tracked files** — never OS-level `mv`
+- **Stage new files immediately** using `git add <file>` after creating them
+- Branch names reflect the Feature: `feature/F-001-charging-trace`
+- Commit messages per task: `feat: [task description] — task N of N (F-NNN)`
+- PR description: what the Feature delivers, packages affected, risks, testing summary
 
 
 ## Testing — Universal Rules
@@ -163,10 +132,17 @@ Always ask a human before:
 
 ## Memory and Task Lifecycle
 
-**At session end, before opening a PR:**
-1. Update `.ai/memory/STATUS.md` — reflect what changed, mark completed items
-2. Append significant decisions to `.ai/memory/DECISIONS.md` using ADR format
-3. Move `.ai/tasks/CURRENT.md` to `.ai/tasks/done/NNN-short-description.md`
+**After each task completes (before moving to the next):**
+1. Update `.ai/memory/STATUS.md` — reflect what was built
+2. Append significant decisions to `.ai/memory/DECISIONS.md` in ADR format
+3. Archive the task: `git mv .ai/tasks/queue/NNN-name.md .ai/tasks/done/NNN-name.md`
+4. Commit: `git add -A && git commit -m "feat: [description] — task N of N (F-NNN)"`
+
+**When all tasks are complete:**
+1. Remove `.ai/tasks/READY` — `git rm .ai/tasks/READY`
+2. Update `.ai/memory/FEATURES.md` — set Feature status to "In Review"
+3. Final commit: `git add -A && git commit -m "feat: F-NNN complete — all tasks implemented"`
+4. Exit cleanly — the workflow pushes and opens the PR
 
 **ADR format for DECISIONS.md:**
 ```
