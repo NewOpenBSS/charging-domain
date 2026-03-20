@@ -70,3 +70,32 @@ func (q *Queries) FindChargingTraceByIdSeqNr(ctx context.Context, chargingID str
 	)
 	return i, err
 }
+
+const findChargingTraceByTraceId = `-- name: FindChargingTraceByTraceId :one
+SELECT trace_id,
+       created_at,
+       request,
+       response,
+       execution_time,
+       charging_id,
+       sequence_nr,
+       msisdn
+FROM charging_trace
+WHERE trace_id = $1
+`
+
+func (q *Queries) FindChargingTraceByTraceId(ctx context.Context, traceID pgtype.UUID) (ChargingTrace, error) {
+	row := q.db.QueryRow(ctx, findChargingTraceByTraceId, traceID)
+	var i ChargingTrace
+	err := row.Scan(
+		&i.TraceID,
+		&i.CreatedAt,
+		&i.Request,
+		&i.Response,
+		&i.ExecutionTime,
+		&i.ChargingID,
+		&i.SequenceNr,
+		&i.Msisdn,
+	)
+	return i, err
+}

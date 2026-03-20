@@ -9,8 +9,16 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+// PoolDB is the subset of pgxpool.Pool methods used by the dynamic store queries.
+// Defining it as an interface allows unit tests to substitute a mock without
+// requiring a real PostgreSQL connection. pgxpool.Pool satisfies this interface.
+type PoolDB interface {
+	sqlc.DBTX
+	Close()
+}
+
 type Store struct {
-	DB *pgxpool.Pool
+	DB PoolDB
 	Q  *sqlc.Queries
 }
 

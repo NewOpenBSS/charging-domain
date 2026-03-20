@@ -157,6 +157,15 @@ All quota operations must go through this manager.
 
 ---
 
+## ADR-011 — PoolDB interface for testable store dynamic queries
+**Status:** Accepted
+**Area:** internal/store
+**Decision:** Introduced PoolDB interface (sqlc.DBTX + Close) and changed Store.DB from *pgxpool.Pool to PoolDB.
+**Rationale:** Dynamic store methods (ListX, CountX) use Store.DB directly rather than sqlc.Queries. Without an interface, unit tests cannot mock the DB and would require a live PostgreSQL instance, violating the no-external-services rule for unit tests. *pgxpool.Pool satisfies PoolDB so all production code is unaffected.
+**Consequences:** New dynamic store methods must use Store.DB (not Store.Q). Tests in the store package can create Store{DB: mockDB} with a mock that satisfies PoolDB.
+
+---
+
 ## ADR-010 — Filter/pagination: generic builder with per-resource column allowlist
 
 **Status:** Accepted

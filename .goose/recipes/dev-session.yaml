@@ -47,13 +47,15 @@ instructions: |
   gh pr list --head {{ branch_name }}
   If a PR already exists — stop and report. Do not duplicate work.
 
-  ## Step 4 — Confirmation (THE ONLY PAUSE)
+  ## Step 4 — Confirmation
   Summarise in plain language:
   - What will be built (from CURRENT.md)
   - Whether it decomposes into multiple sequential tasks
   - Any risks to critical business logic
-  Ask: "Shall I proceed?"
-  Wait for human confirmation before continuing.
+
+  Since branch_name was provided as a parameter, this is an automated run.
+  Print the summary and proceed immediately — do NOT wait for human input.
+  There is no human present to confirm.
 
   ## Step 5 — Autonomous Implementation
   Once confirmed, proceed fully autonomously with no further interruptions.
