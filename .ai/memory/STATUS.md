@@ -20,6 +20,7 @@ _Last updated: 2026-03-20 (F-005)_
 | `internal/events` | ✅ Complete | Kafka producer via franz-go |
 | Subscriber store queries | ✅ Complete | InsertSubscriber, UpdateSubscriber, DeleteSubscriber (sqlc) |
 | `internal/events/subscriber_event.go` | ✅ Complete | SubscriberEvent struct + 5 event type constants |
+| `internal/backend/consumer` | ✅ Complete | SubscriberEventConsumer with dispatch logic, unit tests |
 | `internal/auth` | ✅ Complete | Keycloak client, JWT middleware, claims extraction |
 
 ### charging-engine (`cmd/charging-engine`, port :8080)
