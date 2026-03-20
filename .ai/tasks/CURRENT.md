@@ -1,134 +1,79 @@
-# Task: QuotaResource GraphQL
+# Task: F-001 ChargingTrace — Store Layer
 
-**Date:** 2026-03-19
+**Date:** 2026-03-20
 **Status:** Active
+**Feature:** F-001 — ChargingTraceResource
 
 ---
 
 ## Objective
 
-Port the Java `QuotaResource` GraphQL API to the Go charging-backend, keeping the
-interface identical so that existing callers are not broken. The resource exposes
-two balance queries and three quota mutation operations through the gqlgen-generated
-GraphQL endpoint at `/api/charging/graphql`.
+Add the database query and store-layer infrastructure needed to serve charging trace
+data through the GraphQL API. The `charging_trace` table and its write-path queries
+already exist; this task adds a read-by-trace-id sqlc query and the two dynamic store
+methods (`ListChargingTraces`, `CountChargingTraces`) that the service layer will call.
+No business logic or GraphQL changes are part of this task.
 
 ---
 
 ## Scope
 
 **In scope:**
-
-- `gql/schema/quota.graphql` — new schema file with types, enums, queries, mutations
-- `internal/backend/services/quota_service.go` — service wrapping `QuotaManagerInterface`
-- `internal/backend/services/quota_service_test.go` — unit tests
-- `internal/backend/resolvers/quota.resolvers.go` — resolver implementations (post-gqlgen)
-- Wire `QuotaSvc` into `AppContext`, `Resolver`, `router.go`
-- Add Kafka config to `BackendConfig` and backend wiring (mutations publish journal events)
-- Fix `KafkaManager.PublishEvent` nil safety (calls `m.KafkaClient.Produce` directly, panics when disabled)
+- New sqlc query `FindChargingTraceByTraceId` in `internal/store/queries/charging_trace.sql`
+- Regenerate sqlc (`sqlc generate`) to produce updated `internal/store/sqlc/charging_trace.sql.go`
+- New `internal/store/charging_trace_store.go` with `ListChargingTraces` and `CountChargingTraces`
+  following the pattern of `internal/store/carrier_store.go`
+- Unit tests for the new store methods (using the mock/stub pattern from existing store tests)
 
 **Out of scope:**
-
-- Subscriber admin CRUD (separate future task)
-- Loan balance operations
-- Changes to the charging pipeline or DRA
+- GraphQL schema changes
+- Service or resolver implementation
+- Any changes to the write-path queries (`CreateChargingTrace`, `FindChargingTraceByIdSeqNr`)
 
 ---
 
 ## Context
 
-### Java contract to match (field names authoritative)
-
-**Queries:**
-
-```
-quotaBalance(balanceEnquiryRequest: QuotaBalanceRequestInput!): QuotaBalanceResponse
-  - subscriberId and unitType are required
-  - Returns aggregated balance (sum) across all matching counters for that unitType
-
-quotaBalances(balanceEnquiryRequest: QuotaBalanceRequestInput!): [QuotaBalanceResponse!]!
-  - subscriberId is required; unitType is optional
-  - Returns one aggregated QuotaBalanceResponse per distinct UnitType
-```
-
-**Mutations:**
-
-```
-cancelQuotaReservations(reservationId: ID!, subscriberId: ID!): QuotaOperationResponse!
-reserveQuota(reservationId, subscriberId, reasonCode, rateKey, unitType,
-             requestedUnits, unitPrice, validitySeconds, allowOOBCharging): QuotaReserveResponse!
-debitQuota(subscriberId, reservationId, usedUnits, unitType,
-           reclaimUnusedUnits): QuotaDebitResponse!
-```
-
-**BalanceType → BalanceQuery mapping:**
-| Java BalanceType | Go BalanceQuery |
-|---|---|
-| `AVAILABLE_BALANCE` | `BalanceQuery{}` (no filter) |
-| `TRANSFERABLE_BALANCE` | `BalanceQuery{Transferable: ptr(true)}` |
-| `CONVERTABLE_BALANCE` | `BalanceQuery{Convertible: ptr(true)}` |
-
-### Key domain types
-
-- `quota.QuotaManagerInterface.GetBalance` — implemented in Task A
-- `quota.QuotaManagerInterface.ReserveQuota` — existing
-- `quota.QuotaManagerInterface.Debit` — existing
-- `quota.QuotaManagerInterface.Release` — existing
-- `charging.RateKey` — serialised as dot-separated string e.g. `"VOICE.HOME.MO.LOCAL"`
-- `charging.UnitType` — `SECONDS | OCTETS | UNITS | MONETARY`
-
-### Aggregation logic
-
-`quotaBalance` and `quotaBalances` aggregate per UnitType:
-
-- `TotalBalance` = sum of `CounterBalance.TotalBalance` for all matching counters of that UnitType
-- `AvailableBalance` = sum of `CounterBalance.AvailableBalance` for all matching counters
-
-### Pattern references
-
-- Schema: `gql/schema/charging.graphql` — follow this style
-- Service: `internal/backend/services/carrier_service.go` — follow this pattern
-- Resolver: `internal/backend/resolvers/charging.resolvers.go`
-- AppContext wiring: `internal/backend/appcontext/context.go`
-
-### Kafka requirement
-
-The mutations (reserve, debit) call `QuotaManager` which publishes journal events.
-`QuotaManager` requires a `*events.KafkaManager`. Add Kafka config to `BackendConfig`
-and wire it through `AppContext`. With `enabled: false` in dev config, no connection
-is made but the struct is non-nil. Fix `PublishEvent` to use the nil-safe `m.Produce()`
-instead of calling `m.KafkaClient.Produce()` directly.
+- **Existing table:** `charging_trace` — defined in `db/migrations/000001_init.up.sql`
+  - Columns: `trace_id UUID PK`, `created_at TIMESTAMPTZ`, `request JSONB`, `response JSONB`,
+    `execution_time BIGINT`, `charging_id VARCHAR`, `sequence_nr INTEGER`, `msisdn VARCHAR`
+- **Existing sqlc queries:** `internal/store/queries/charging_trace.sql`
+  — already has `FindChargingTraceByIdSeqNr` and `CreateChargingTrace`
+- **Pattern to follow:** `internal/store/carrier_store.go` — `ListCarriers` and `CountCarriers`
+  show the exact pattern for dynamic WHERE/ORDER BY construction
+- **sqlc config:** `sqlc.yaml` at project root — run `sqlc generate` after adding the new query
+- **New query required:**
+  ```sql
+  -- name: FindChargingTraceByTraceId :one
+  SELECT trace_id, created_at, request, response, execution_time,
+         charging_id, sequence_nr, msisdn
+  FROM charging_trace
+  WHERE trace_id = $1
+  ```
+- **Store params struct** should follow the same shape as `ListCarriersParams`:
+  `WhereSQL string`, `Args []any`, `OrderSQL string`, `Limit int`, `Offset int`
+- **Wildcard filter columns** for list/count: `charging_id`, `msisdn`
+  (matching the Feature acceptance criteria for wildcard match)
 
 ---
 
 ## Decisions Made During Design
 
-| Decision                                                 | Rationale                                                                                                                                                        |
-|----------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Aggregate counters by UnitType in service layer          | Java returns one DTO per UnitType; Go GetBalance returns per-counter slices. Service aggregates to match contract.                                               |
-| Decimal values serialised as String in GraphQL           | Consistent with existing RatePlan schema (BaseTariff, Multiplier are strings). Avoids float precision loss.                                                      |
-| `validitySeconds: Int!` for reservation duration         | `time.Duration` has no native GraphQL scalar; seconds as Int is simple and unambiguous.                                                                          |
-| Java `provisioningRequest` param dropped from debitQuota | Go `Debit()` uses `reservationId.String()` as requestId directly. No equivalent param needed.                                                                    |
-| Java `multiplier` hardcoded to 1 in reserveQuota         | Java source hardcodes `BigDecimal.ONE`. Kept in service layer, not exposed in schema.                                                                            |
-| Kafka added to charging-backend                          | Reserve/debit mutations call QuotaManager which publishes journal events. Backend must have Kafka to support these operations. `enabled: false` default for dev. |
-| Fix PublishEvent nil safety                              | `PublishEvent` calls `m.KafkaClient.Produce()` directly — panics when `KafkaClient` is nil. Use `m.Produce()` which is already nil-safe.                         |
+| Decision | Rationale |
+|---|---|
+| Add `FindChargingTraceByTraceId` as a new sqlc query | The existing `FindChargingTraceByIdSeqNr` queries by charging_id + sequence_nr; the GraphQL `chargingTraceById` operation must fetch by `traceId` (UUID primary key) — a separate query is required |
+| Dynamic store methods for list/count | Consistent with all other resources; centralised filter builder prevents SQL injection |
+| Separate task from GraphQL layer | Isolates DB changes from schema changes; allows sqlc generation to complete before gqlgen needs the store interface |
 
 ---
 
 ## Acceptance Criteria
 
-- [ ] `gql/schema/quota.graphql` defines all types, enums, queries, mutations
-- [ ] `gqlgen generate` runs cleanly and updates generated files
-- [ ] `QuotaService` wraps `QuotaManagerInterface` and converts types correctly
-- [ ] `quotaBalance` requires subscriberId + unitType; returns nil if no match
-- [ ] `quotaBalances` requires subscriberId; unitType optional; returns one entry per UnitType
-- [ ] Balance results aggregate TotalBalance and AvailableBalance per UnitType
-- [ ] `cancelQuotaReservations` delegates to `QuotaManager.Release`
-- [ ] `reserveQuota` delegates to `QuotaManager.ReserveQuota`
-- [ ] `debitQuota` delegates to `QuotaManager.Debit`
-- [ ] `KafkaManager.PublishEvent` is nil-safe
-- [ ] Kafka wired into charging-backend (optional, `enabled: false` default)
-- [ ] `QuotaSvc` wired into `AppContext`, `Resolver`, `router.go`
-- [ ] Unit tests for `QuotaService` covering success, not-found, and error paths
+- [ ] `internal/store/queries/charging_trace.sql` has `FindChargingTraceByTraceId :one` query
+- [ ] `sqlc generate` runs cleanly and `internal/store/sqlc/charging_trace.sql.go` contains the new method
+- [ ] `internal/store/charging_trace_store.go` exists with `ListChargingTraces` and `CountChargingTraces`
+- [ ] Both store methods accept a params struct with `WhereSQL`, `Args`, `OrderSQL`, `Limit`, `Offset`
+- [ ] Unit tests cover `ListChargingTraces` and `CountChargingTraces` (success, empty result, filter applied)
 - [ ] `go build ./...` passes
 - [ ] `go test ./...` passes
 
@@ -136,17 +81,16 @@ instead of calling `m.KafkaClient.Produce()` directly.
 
 ## Risk Assessment
 
-**Mutations (reserve, debit, cancel) modify quota state.** This is the same mutation
-path used by the charging engine. Risk: a malformed GraphQL request could corrupt
-quota state or create phantom reservations.
+None. This task only adds new read-path queries and store methods. No existing write-path
+code (`CreateChargingTrace`, charging pipeline) is touched. No charging, quota, or rating
+logic is affected.
 
-Mitigations:
+---
 
-- Input validation in the service layer mirrors the Java null/range checks
-- `QuotaManager` already handles idempotency at the domain level
-- `now` is injected via `time.Now()` at the resolver boundary (not inside business logic)
-- Kafka publish failures are logged but non-fatal — quota state is committed independently
+## Notes
 
-**Read operations (balance queries) are completely safe** — no mutations.
-
-## end
+- `request` and `response` columns are `JSONB` — in the sqlc generated struct they appear
+  as `[]byte`. The service layer (Task 2) is responsible for converting these to JSON strings
+  for the GraphQL response.
+- Wildcard columns for filter should be `charging_id` and `msisdn` — matching the Feature
+  acceptance criteria (filter by `chargingId` or `msisdn` with wildcard match).
