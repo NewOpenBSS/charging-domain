@@ -160,10 +160,10 @@ None
 
 ## F-005 — SubscriberEventConsumer
 
-**Status:** Backlog
+**Status:** In Development
 **Priority:** High
 **Created:** 2026-03-20
-**Branch:** (filled in by AI during Stage 3)
+**Branch:** feature/F-005-subscriber-event-consumer
 
 ### Implementation Approval Required
 - [ ] Yes — pause after AI Design for human review before implementation begins
