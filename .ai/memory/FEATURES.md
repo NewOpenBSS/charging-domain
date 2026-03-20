@@ -24,6 +24,184 @@ Read by AI agents at the start of every design and development session.
 
 <!-- Approved Features waiting to be started go here -->
 
+## F-001 — ChargingTraceResource
+
+**Status:** Backlog
+**Priority:** High
+**Created:** 2026-03-20
+**Branches:** (filled in by AI during Stage 3)
+
+### Implementation Approval Required
+- [ ] Yes — pause after AI Design for human review before implementation begins
+- [x] No — proceed to implementation automatically after AI Design
+
+### Feature Switch
+None
+
+### Goal
+Expose charging trace records via three read-only GraphQL queries in the Go charging-backend, matching the Java API surface exactly.
+
+### Problem Statement
+Operators need to query the charging audit trail to investigate billing disputes and debug charging sessions by MSISDN or charging ID. The Go charging-engine already writes traces to the DB; the Go charging-backend currently has no way to expose them.
+
+### MVP
+An admin can query charging traces using three read-only GraphQL operations — list (paginated + filtered), count, and fetch by ID — with no mutations exposed.
+
+### Acceptance Criteria
+- [ ] An admin can retrieve a paginated list of charging traces, filtered by `chargingId` or `msisdn` (wildcard match)
+- [ ] An admin can count charging traces matching a given filter
+- [ ] An admin can retrieve a single charging trace by `traceId`, with `request` and `response` returned as JSON strings
+- [ ] No mutations are exposed — the resource is strictly read-only
+- [ ] The GraphQL query names (`chargingTraceList`, `countChargingTrace`, `chargingTraceById`) match the Java service exactly
+
+### Constraints
+- GraphQL query names, field names, and behaviour must be identical to the Java service — external clients must work without modification
+- Read-only — no mutations under any circumstances
+
+### Out of Scope
+- Write operations on charging traces
+- Subscriptions or real-time streaming of trace events
+
+### Parking Lot
+None
+
+### Future Considerations
+- Cursor-based pagination (current OFFSET-based approach degrades on large trace tables — acceptable for now)
+
+## F-002 — DestinationGroupResource
+
+**Status:** Backlog
+**Priority:** High
+**Created:** 2026-03-20
+**Branches:** (filled in by AI during Stage 3)
+
+### Implementation Approval Required
+- [ ] Yes — pause after AI Design for human review before implementation begins
+- [x] No — proceed to implementation automatically after AI Design
+
+### Feature Switch
+None
+
+### Goal
+Expose full CRUD for carrier destination groups via GraphQL in the Go charging-backend, matching the Java API surface exactly.
+
+### Problem Statement
+Admins need to manage destination groups — named groupings of destinations by region used in the charging domain. The Go charging-backend currently has no way to create, read, update, or delete these records.
+
+### MVP
+An admin can perform full CRUD on destination groups via six GraphQL operations — list (paginated + filtered), count, fetch by name, create, update, and delete.
+
+### Acceptance Criteria
+- [ ] An admin can retrieve a paginated list of destination groups, filtered by `groupName` or `region` (wildcard match)
+- [ ] An admin can count destination groups matching a given filter
+- [ ] An admin can retrieve a single destination group by `groupName`
+- [ ] An admin can create a new destination group
+- [ ] An admin can update an existing destination group
+- [ ] An admin can delete a destination group by `groupName`
+- [ ] GraphQL operation names (`destinationGroupList`, `countDestinationGroup`, `destinationGroupByGroupName`, `createDestinationGroup`, `updateDestinationGroup`, `deleteDestinationGroup`) match the Java service exactly
+
+### Constraints
+- GraphQL operation names, field names, and behaviour must be identical to the Java service — external clients must work without modification
+- No state machine or approval workflow — plain CRUD only
+
+### Out of Scope
+- Approval workflows or state machines for destination groups
+- Bulk import or export of destination groups
+
+### Parking Lot
+None
+
+### Future Considerations
+- Cursor-based pagination (current OFFSET-based approach degrades on large datasets — acceptable for now)
+
+## F-003 — SourceGroupResource
+
+**Status:** Backlog
+**Priority:** High
+**Created:** 2026-03-20
+**Branches:** (filled in by AI during Stage 3)
+
+### Implementation Approval Required
+- [ ] Yes — pause after AI Design for human review before implementation begins
+- [x] No — proceed to implementation automatically after AI Design
+
+### Feature Switch
+None
+
+### Goal
+Expose full CRUD for carrier source groups via GraphQL in the Go charging-backend, matching the Java API surface exactly.
+
+### Problem Statement
+Admins need to manage source groups — named groupings of originating sources by region used in the charging domain. The Go charging-backend currently has no way to create, read, update, or delete these records.
+
+### MVP
+An admin can perform full CRUD on source groups via six GraphQL operations — list (paginated + filtered), count, fetch by name, create, update, and delete.
+
+### Acceptance Criteria
+- [ ] An admin can retrieve a paginated list of source groups, filtered by `groupName` or `region` (wildcard match)
+- [ ] An admin can count source groups matching a given filter
+- [ ] An admin can retrieve a single source group by `groupName`
+- [ ] An admin can create a new source group
+- [ ] An admin can update an existing source group
+- [ ] An admin can delete a source group by `groupName`
+- [ ] GraphQL operation names (`sourceGroupList`, `countSourceGroup`, `sourceGroupByGroupName`, `createSourceGroup`, `updateSourceGroup`, `deleteSourceGroup`) match the Java service exactly
+
+### Constraints
+- GraphQL operation names, field names, and behaviour must be identical to the Java service — external clients must work without modification
+- No state machine or approval workflow — plain CRUD only
+
+### Out of Scope
+- Approval workflows or state machines for source groups
+- Bulk import or export of source groups
+
+### Parking Lot
+None
+
+### Future Considerations
+- Cursor-based pagination (current OFFSET-based approach degrades on large datasets — acceptable for now)
+
+## F-004 — GraphQL API Test Files
+
+**Status:** Backlog
+**Priority:** High
+**Created:** 2026-03-20
+**Branches:** (filled in by AI during Stage 3)
+
+### Implementation Approval Required
+- [ ] Yes — pause after AI Design for human review before implementation begins
+- [x] No — proceed to implementation automatically after AI Design
+
+### Feature Switch
+None
+
+### Goal
+Add `.http` API test files for QuotaResource, ChargingTraceResource, DestinationGroupResource, and SourceGroupResource, following the established pattern in `api-tests/`.
+
+### Problem Statement
+Developers have no way to manually exercise or quickly verify the new GraphQL endpoints from their IDE. QuotaResource is also missing a test file despite being complete. All existing resources have `.http` files — the new ones should too.
+
+### MVP
+Four new `.http` files in `api-tests/`, one per resource, covering every GraphQL operation with realistic sample data.
+
+### Acceptance Criteria
+- [ ] A developer can execute every GraphQL operation for QuotaResource, ChargingTraceResource, DestinationGroupResource, and SourceGroupResource directly from the `.http` files
+- [ ] Each file covers all operations for that resource (list with default page, list with wildcard, list with filter, get-by-key, count, and create/update/delete where applicable)
+- [ ] Sample data in each file is realistic and consistent with seed data in `db/seeds/`
+- [ ] Files follow the naming convention `[ResourceName]GraphQL.http`
+
+### Constraints
+- Must follow the exact structure and style of existing files in `api-tests/`
+
+### Out of Scope
+- Automated test execution or CI integration of `.http` files
+- Test files for resources already covered (`CarrierGraphQL.http`, `ClassficationGraphQL.http`, `RatePlanGraphQL.http`, `NumberPlanGraphQL.http`)
+
+### Parking Lot
+None
+
+### Future Considerations
+- Automated API test execution in CI pipeline
+
 ---
 
 ## Done

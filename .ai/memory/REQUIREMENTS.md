@@ -26,11 +26,195 @@ Do not edit directly — use the requirements-session recipe.
 
 <!-- Requirements ready or nearly ready for scoping -->
 
+## R-001 — Port the Charging Backend Service to Go
+
+**Status:** Scoped
+**Priority:** High
+**Created:** 2026-03-20
+**Features:** F-001, F-002, F-003, F-004
+
+### The Idea
+Port the charging backend service from Java to Go. Not a line-for-line translation — the goal is to do it the Go way, taking advantage of what Go is good at rather than reproducing Java patterns in a different language.
+
+### The Problem
+The Java implementation exists but Go is the target platform for the OCS. The existing admin console UI relies on a backend service to administer the charging domain — carriers, classifications, number plans, rate plans, quotas, and related entities. Without this service, the admin console has nothing to talk to.
+
+Hard constraints: the database schema, data model, REST endpoints, and GraphQL API cannot change. External systems depend on them.
+
+### Wishlist
+The REST and GraphQL endpoints implemented in Go are indistinguishable from the Java originals — same API surface, same behaviour, same contracts. Any client or external system that worked against the Java service works against the Go service without modification.
+
+Beyond API compatibility, the implementation takes advantage of Go's strengths: simplicity, explicit error handling, and lightweight concurrency — rather than carrying over Java patterns that don't belong in Go.
+
+### Notes
+- The port is already underway. Four of five core resources are complete (Carrier, Classification, NumberPlan, RatePlan). QuotaResource is in progress.
+- Remaining work tracked in `.ai/memory/STATUS.md` under Known Deferred Items.
+- The scoping session will identify the specific outstanding resources and capabilities needed to call this requirement fully delivered.
+
+---
+
+## Backlog
+
+<!-- Requirements ready or nearly ready for scoping -->
+
 ---
 
 ## Draft
 
 <!-- Requirements captured but not yet refined -->
+
+## R-002 — ChargingTraceResource GraphQL Endpoint
+
+**Status:** Scoped
+**Priority:** High
+**Created:** 2026-03-20
+**Features:** F-001
+
+### The Idea
+Add a ChargingTraceResource to the charging-backend GraphQL API, following the same pattern as the existing resources (Carrier, Classification, NumberPlan, RatePlan, Quota).
+
+### The Problem
+— (needs clarification: what does an admin need to do with charging traces? Read-only audit queries, or more?)
+
+### Wishlist
+—
+
+### Notes
+- Charging trace records are already written to the DB by the charging-engine pipeline.
+- Needs clarification on: what queries/mutations are required, who uses it and for what purpose.
+
+---
+
+## R-003 — DestinationGroupResource GraphQL Endpoint
+
+**Status:** Scoped
+**Priority:** High
+**Created:** 2026-03-20
+**Features:** F-002
+
+### The Idea
+Add a DestinationGroupResource to the charging-backend GraphQL API, following the same pattern as the existing resources.
+
+### The Problem
+— (needs clarification: what is a destination group, what does an admin need to do with it?)
+
+### Wishlist
+—
+
+### Notes
+- Needs clarification on: DB table/schema, what operations are required (CRUD? state machine?), relationship to other resources (NumberPlan? RatePlan?).
+
+---
+
+## R-004 — SourceGroupResource GraphQL Endpoint
+
+**Status:** Scoped
+**Priority:** High
+**Created:** 2026-03-20
+**Features:** F-003
+
+### The Idea
+Add a SourceGroupResource to the charging-backend GraphQL API, following the same pattern as the existing resources.
+
+### The Problem
+— (needs clarification: what is a source group, what does an admin need to do with it?)
+
+### Wishlist
+—
+
+### Notes
+- Needs clarification on: DB table/schema, what operations are required (CRUD? state machine?), relationship to other resources.
+- Completes the set of 8 resources required for the charging-backend port (R-001).
+
+---
+
+## R-008 — API Test Files for New GraphQL Resources
+
+**Status:** Scoped
+**Priority:** High
+**Created:** 2026-03-20
+**Features:** F-004
+
+### The Idea
+Create `.http` API test files in `api-tests/` for each new GraphQL resource, following the pattern of the existing files.
+
+### The Problem
+Developers have no way to manually exercise the new GraphQL endpoints from their IDE. QuotaResource is also missing a test file despite being complete.
+
+### Wishlist
+One `.http` file per resource, covering every operation with realistic sample data.
+
+### Notes
+- Follows the pattern of `CarrierGraphQL.http`, `ClassficationGraphQL.http`, etc.
+- Covers: QuotaResource, ChargingTraceResource, DestinationGroupResource, SourceGroupResource.
+
+---
+
+## R-005 — QuotaEventConsumer
+
+**Status:** Deferred
+**Priority:** —
+**Created:** 2026-03-20
+**Features:** — (populated after scoping)
+
+### The Idea
+Add a Kafka consumer for quota events.
+
+### The Problem
+— (needs clarification: what events are consumed, what does the consumer do with them, which service hosts it?)
+
+### Wishlist
+—
+
+### Notes
+- Kafka producer for quota journal events already exists in charging-engine.
+- Needs clarification on: topic name, event schema, consumer action (update DB? trigger downstream?), which application hosts the consumer.
+
+---
+
+## R-006 — SubscriberEventConsumer
+
+**Status:** Deferred
+**Priority:** —
+**Created:** 2026-03-20
+**Features:** — (populated after scoping)
+
+### The Idea
+Add a Kafka consumer for subscriber events.
+
+### The Problem
+— (needs clarification: what subscriber events are consumed, what triggers them, what the consumer does with them?)
+
+### Wishlist
+—
+
+### Notes
+- Subscriber table exists in DB but no GraphQL resource or consumer yet.
+- Needs clarification on: event source, topic name, event schema, consumer action, which application hosts the consumer.
+
+---
+
+## R-007 — WholesaleContractConsumer
+
+**Status:** Deferred
+**Priority:** —
+**Created:** 2026-03-20
+**Features:** — (populated after scoping)
+
+### The Idea
+Add a Kafka consumer for wholesale contract events.
+
+### The Problem
+— (needs clarification: what wholesale contract events are consumed, what triggers them, what the consumer does with them?)
+
+### Wishlist
+—
+
+### Notes
+- Wholesaler table exists in DB but no consumer yet.
+- Needs clarification on: event source, topic name, event schema, consumer action, which application hosts the consumer.
+
+---
 
 ---
 

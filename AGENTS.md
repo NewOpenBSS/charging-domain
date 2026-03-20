@@ -98,6 +98,10 @@ a sibling `branches/` directory:
 - **Stage new files immediately after creating them** using `git add <file>` — do not
   wait until the end of the task. This keeps the working tree clean and makes it easy
   to see what has been added versus modified in the IDE at any point during development.
+- **Every recipe that commits to the repo must also push and open a PR** — no commit
+  should be left unpushed and unreviewed. Register updates (REQUIREMENTS.md, FEATURES.md)
+  commit directly to the current branch — no separate branch needed. Code changes always
+  go via a feature branch and PR — never direct to main.
 - Branch names must reflect purpose: `feature/wholesaler-admin`, `fix/rateplan-query`
 - PR description must include: what changed, why, packages affected, risks to
   critical business logic, and a testing summary
