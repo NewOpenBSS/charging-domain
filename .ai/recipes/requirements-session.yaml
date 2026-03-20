@@ -76,15 +76,18 @@ instructions: |
 
   When the human and you agree a requirement is ready to capture:
   1. Assign the next R-NNN number from REQUIREMENTS.md
-  2. Set status to "Draft" unless the human explicitly says it is
-     ready for scoping — then set "Ready for Scoping"
+  2. Ask the human: "Is this ready to go into scoping, or do you
+     want to leave it as a draft for now?"
+     - "Ready for scoping" → set status to "Ready for Scoping",
+       place in the Backlog section
+     - "Draft / not sure yet" → set status to "Draft",
+       place in the Draft section
   3. Write the entry using the template in REQUIREMENTS.md
-  4. Place it in the correct section based on status
-  5. Commit and push the change:
+  4. Commit and push the change:
      git add .ai/memory/REQUIREMENTS.md
      git commit -m "requirements: add R-NNN — [title]"
      git push
-  6. Confirm to the human: "R-NNN has been added and pushed."
+  5. Confirm to the human: "R-NNN has been added and pushed."
 
   When a requirement already exists and needs updating:
   1. Read the current entry
