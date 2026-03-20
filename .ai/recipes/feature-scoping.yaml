@@ -34,10 +34,27 @@ instructions: |
 
   ## The Seven Artefacts (work through these in order)
 
+  ## Step 0 — Present Available Requirements
+
+  Read .ai/memory/REQUIREMENTS.md.
+  Extract all Requirements where Status is "Ready for Scoping".
+  Present them as a numbered list:
+
+  ```
+  Requirements available for scoping:
+
+    1. R-001 — Port the Charging Backend Service to Go
+    2. R-002 — ...
+
+  Which requirement would you like to scope? (enter number or ID)
+  ```
+
+  If no Requirements have status "Ready for Scoping" — tell the human and stop.
+  Wait for the human to select a requirement before proceeding.
+
   ## Before Starting — Validate the Requirement
 
-  Read the requirement from .ai/memory/REQUIREMENTS.md using the
-  feature_id provided.
+  Read the selected requirement from .ai/memory/REQUIREMENTS.md.
 
   If the requirement does not have enough detail to start a scoping
   conversation — specifically if the problem being solved or who
@@ -145,16 +162,33 @@ instructions: |
   git commit -m "scoping: add F-NNN — [title] (from R-NNN)"
   git push
 
-  Then open a PR for human review:
+  ## Create Feature Branch
+  For each Feature defined, create an empty branch from main.
+  This branch creation triggers the feature-design GitHub Actions workflow.
+
+  git fetch origin
+  git checkout main
+  git pull origin main
+  git checkout -b feature/F-NNN-<feature-name>
+  git push -u origin feature/F-NNN-<feature-name>
+  git checkout main
+
+  Update the Feature's "Branches" field in FEATURES.md with the branch name.
+  Commit and push:
+  git add .ai/memory/FEATURES.md
+  git commit -m "scoping: create branch feature/F-NNN-<feature-name>"
+  git push
+
+  Then open a PR for human review of the scoping output:
   gh pr create \
     --title "scoping: F-NNN — [title]" \
-    --body "## Scoping Output\n\nRequirement: R-NNN\n\n### Features Defined\n- F-NNN — [title]\n\nReview the Feature definitions in .ai/memory/FEATURES.md before running feature-design." \
+    --body "## Scoping Output\n\nRequirement: R-NNN\n\n### Features Defined\n- F-NNN — [title]\n\n### Branches Created\n- feature/F-NNN-<feature-name>\n\nFeature Design will run automatically via GitHub Actions.\nReview the Feature definitions in .ai/memory/FEATURES.md." \
     --base main
 
-  Confirm to the human: "F-NNN has been added, pushed, and a PR has been opened for review."
+  Confirm to the human: "F-NNN defined, branch created, and PR opened. Feature Design will trigger automatically."
 
 prompt: |
   Starting Feature Scoping session.
-  Please read the requirement, validate it has enough detail to proceed,
-  and then guide me through the scoping process.
+  Please read REQUIREMENTS.md and present the list of requirements
+  available for scoping so I can select one.
 

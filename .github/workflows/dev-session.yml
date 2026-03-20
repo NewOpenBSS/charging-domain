@@ -1,0 +1,44 @@
+name: Dev Session
+
+on:
+  push:
+    branches:
+      - 'feature/F-*'
+    paths:
+      - '.ai/tasks/CURRENT.md'
+
+jobs:
+  dev-session:
+    name: Run Dev Session
+    runs-on: self-hosted
+
+    steps:
+      - name: Verify CURRENT.md exists on branch
+        run: |
+          git fetch origin ${{ github.ref_name }}
+          if ! git show origin/${{ github.ref_name }}:.ai/tasks/CURRENT.md > /dev/null 2>&1; then
+            echo "CURRENT.md not found on ${{ github.ref_name }} — cannot run dev session"
+            exit 1
+          fi
+          echo "CURRENT.md found — proceeding with dev session"
+
+      - name: Check no open PR exists for this branch
+        run: |
+          PR_COUNT=$(gh pr list --head ${{ github.ref_name }} --json number --jq length)
+          if [ "$PR_COUNT" -gt "0" ]; then
+            echo "PR already open for ${{ github.ref_name }} — skipping"
+            exit 0
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run dev session recipe
+        run: |
+          goose run \
+            --recipe .ai/recipes/dev-session.yaml \
+            --params branch_name=${{ github.ref_name }} \
+            --params repo_url=${{ github.server_url }}/${{ github.repository }}.git
+        env:
+          GOOSE_PROVIDER: claude-code
+          GOOSE_MODEL: default
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

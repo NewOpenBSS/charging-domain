@@ -1,6 +1,17 @@
 version: "1.0.0"
 title: "Dev Session"
-description: "Stage 4 — Development. Reads CURRENT.md from the current branch and implements autonomously to PR. Run from inside the feature branch."
+description: "Stage 4 — Development. Bootstraps the workspace, reads CURRENT.md, and implements autonomously to PR. Designed to run on a self-hosted GitHub Actions runner."
+
+parameters:
+  - key: branch_name
+    input_type: string
+    requirement: required
+    description: "Feature branch to implement (e.g. feature/F-001-charging-trace-store)"
+
+  - key: repo_url
+    input_type: string
+    requirement: required
+    description: "Git repository URL (e.g. git@github.com:eddiecarpenter/go-ocs.git)"
 
 extensions:
   - type: builtin
@@ -14,11 +25,21 @@ settings:
 
 instructions: |
   You are running a Dev Session — Stage 4 of the agentic development pipeline.
-  You implement the task defined in .ai/tasks/CURRENT.md autonomously to a PR.
+  You bootstrap the workspace, read CURRENT.md, and implement autonomously to a PR.
 
-  ## Step 1 — Verify Branch
-  Run: git branch --show-current
-  If on main — stop immediately and tell the human to checkout the feature branch.
+  ## Step 1 — Bootstrap Workspace
+  Create an isolated working directory for this session:
+  mkdir -p /workspace/{{ branch_name | replace('/', '-') | replace('feature-', '') }}
+  cd /workspace/{{ branch_name | replace('/', '-') | replace('feature-', '') }}
+
+  Clone the repository and checkout the feature branch:
+  git clone {{ repo_url }} .
+  git checkout {{ branch_name }}
+
+  Verify branch:
+  git branch --show-current
+  If not on {{ branch_name }} — stop and report the error.
+
 
   ## Step 2 — Read Context
   Read these files in order:
@@ -29,12 +50,12 @@ instructions: |
   5. All files in .ai/context/ — apply rules from every file present
   6. .ai/tasks/CURRENT.md — this is what you are building
 
-  If .ai/tasks/CURRENT.md does not exist — stop and tell the human to run
-  the feature-design recipe first.
+  If .ai/tasks/CURRENT.md does not exist — stop and report.
+  The feature-design step must have failed to write CURRENT.md.
 
   ## Step 3 — Check for Open PR
-  Run: gh pr list --head $(git branch --show-current)
-  If a PR already exists for this branch — stop and tell the human.
+  gh pr list --head {{ branch_name }}
+  If a PR already exists — stop and report. Do not duplicate work.
 
   ## Step 4 — Confirmation (THE ONLY PAUSE)
   Summarise in plain language:
@@ -44,42 +65,45 @@ instructions: |
   Ask: "Shall I proceed?"
   Wait for human confirmation before continuing.
 
-
   ## Step 5 — Autonomous Implementation
   Once confirmed, proceed fully autonomously with no further interruptions.
 
   For each task:
-  - Implement the full task against the acceptance criteria in CURRENT.md
-  - Stage new files immediately after creating them: git add <file>
-  - Build and test — fix any failures before proceeding
-  - Never claim a task complete with failing tests or build errors
+  - Implement against the acceptance criteria in CURRENT.md
+  - Stage new files immediately: git add <file>
+  - Build and test — fix all failures before proceeding
+  - Never claim complete with failing tests or build errors
 
   After all tasks complete:
-  - Update .ai/memory/STATUS.md — reflect what changed
+  - Update .ai/memory/STATUS.md
   - Append significant decisions to .ai/memory/DECISIONS.md in ADR format
-  - Move .ai/tasks/CURRENT.md to .ai/tasks/done/NNN-short-description.md
-    using git mv — never OS-level mv
-  - Commit all staged changes:
+  - Archive CURRENT.md:
+    git mv .ai/tasks/CURRENT.md .ai/tasks/done/NNN-short-description.md
+  - Commit all changes:
     git add -A
-    git commit -m "feat: [description of what was built] (F-NNN)"
-  - Push the branch:
+    git commit -m "feat: [description] ({{ branch_name }})"
+  - Push:
     git push
-  - Open a PR:
+  - Open PR:
     gh pr create \
-      --title "feat: [description] (F-NNN)" \
+      --title "feat: [description]" \
       --body "## Summary\n\n[what was built]\n\n## Changes\n[packages affected]\n\n## Risks\n[risks to critical business logic]\n\n## Testing\n[what was tested and how]" \
       --base main
   - Update .ai/memory/FEATURES.md — set Feature status to "In Review"
+  - Commit and push the status update:
+    git add .ai/memory/FEATURES.md
+    git commit -m "status: F-NNN In Review"
+    git push
   - Report completion: what was built, what changed, PR link
 
   ## Rules
   - Never commit or push to main
-  - Never merge pull requests — leave for human review
-  - Fix failing tests before moving to the next step
+  - Never merge pull requests
+  - Fix failing tests before moving forward
   - Stage new files immediately after creating them
-  - Every recipe that commits must push and open a PR
+  - Every commit must be pushed
 
 prompt: |
-  Dev session starting.
-  Please verify the branch, read CURRENT.md, summarise what will be built,
-  and wait for my confirmation before proceeding.
+  Dev session starting for {{ branch_name }}.
+  Bootstrapping workspace, then reading CURRENT.md.
+  Will summarise what will be built and wait for confirmation before proceeding.

@@ -71,15 +71,12 @@ instructions: |
     Present the decomposition as an informational summary,
     then proceed directly to Step 5 without waiting.
 
-  ## Step 5 — Create Git Infrastructure (for each feature)
-  For each feature, in dependency order:
+  ## Step 5 — Write CURRENT.md to Each Branch
+  For each feature branch in the decomposition, in dependency order:
 
-  a) Create and push the branch from main:
+  a) Checkout the existing branch (created by the scoping recipe):
      git fetch origin
-     git checkout main
-     git pull origin main
-     git checkout -b feature/<F-NNN>-<feature-name>
-     git push -u origin feature/<F-NNN>-<feature-name>
+     git checkout feature/<F-NNN>-<feature-name>
 
   b) Write .ai/tasks/CURRENT.md using the task template at
      .ai/tasks/TASK_TEMPLATE.md. Include:
@@ -90,37 +87,30 @@ instructions: |
      - Risk assessment: any risks to critical business logic
      - The Feature ID this feature belongs to
 
-  c) Copy .claude/settings.local.json into the branch working directory
-     if it does not already exist.
+  c) Copy .claude/settings.local.json if it does not already exist.
 
   d) Commit and push CURRENT.md:
-     git add .ai/tasks/CURRENT.md .claude/settings.local.json
+     git add .ai/tasks/CURRENT.md
      git commit -m "design: add CURRENT.md for <F-NNN>-<feature-name>"
      git push
 
-  e) Verify the commit landed — confirm HEAD on this branch shows
-     the correct CURRENT.md title before proceeding to the next branch:
+  e) Verify the commit landed:
      git show HEAD:.ai/tasks/CURRENT.md | head -3
 
   f) Return to main:
      git checkout main
 
   ## Step 6 — Update FEATURES.md
-  - Add the branch names under the Feature's "Branches" field
   - Update the Feature status to "In Design"
-  - Commit, push, and open a PR:
+  - Commit and push:
     git add .ai/memory/FEATURES.md
-    git commit -m "design: F-NNN branches created"
+    git commit -m "design: F-NNN CURRENT.md written to all branches"
     git push
-    gh pr create \
-      --title "design: F-NNN — [title] branches ready" \
-      --body "## Feature Design Complete\n\nFeature: F-NNN\n\n### Branches Created\n- [list branches]\n\nCURRENT.md has been written to each branch.\nRun dev-session on each branch to begin implementation." \
-      --base main
 
   ## Step 7 — Report Completion
-  List all branches created.
-  Tell the human: "Feature Design complete and PR opened. Run dev-session
-  on each branch to begin implementation."
+  List all branches that received CURRENT.md.
+  Tell the human: "Feature Design complete. Dev Session will trigger
+  automatically via GitHub Actions on each branch."
 
 prompt: |
   Starting Feature Design session.
