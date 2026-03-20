@@ -28,10 +28,10 @@ Do not edit directly — use the requirements-session recipe.
 
 ## R-001 — Port the Charging Backend Service to Go
 
-**Status:** Ready for Scoping
+**Status:** Scoped
 **Priority:** High
 **Created:** 2026-03-20
-**Features:** — (populated after scoping)
+**Features:** F-001, F-002, F-003, F-004
 
 ### The Idea
 Port the charging backend service from Java to Go. Not a line-for-line translation — the goal is to do it the Go way, taking advantage of what Go is good at rather than reproducing Java patterns in a different language.
