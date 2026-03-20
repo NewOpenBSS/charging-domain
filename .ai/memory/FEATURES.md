@@ -48,6 +48,16 @@ Copy this template when adding a new Feature:
 - [ ] Yes — pause after AI Design for human review before implementation begins
 - [ ] No — proceed to implementation automatically after AI Design
 
+### Delivery Deadline
+<!-- Optional. Date by which this Feature must be merged to support release planning. -->
+<!-- Format: YYYY-MM-DD -->
+<!-- Set by the planning/roadmap process, not the delivery process. -->
+
+### Feature Switch
+<!-- Name of the feature switch if required, or "None" if not user-visible -->
+<!-- Convention: lowercase_underscore e.g. quota_self_service -->
+<!-- If switch infrastructure does not yet exist, note it as a prerequisite -->
+
 ### Goal
 One sentence. What this builds and why.
 

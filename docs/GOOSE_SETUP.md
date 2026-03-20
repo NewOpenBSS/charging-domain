@@ -106,7 +106,7 @@ Recipes live in `~/.config/goose/recipes/` and are available to all projects.
 
 | Recipe | Stage | Tool | Purpose |
 |---|---|---|---|
-| `feature-refinement.yaml` | Stage 2 — Human Design | Goose Desktop | Distils a raw idea into a well-formed Feature in FEATURES.md |
+| `feature-scoping.yaml` | Stage 2 — Human Design | Goose Desktop | Distils a raw idea into a well-formed Feature in FEATURES.md |
 | `feature-design.yaml` | Stage 3 — AI Design | Goose Desktop or CLI | Decomposes a Feature into features, creates worktrees + CURRENT.md |
 | `dev-session.yaml` | Stage 4 — Implementation | CLI (autonomous) | Implements a feature from CURRENT.md to PR |
 | `design-session.yaml` | Utility | Goose Desktop | Legacy — simple worktree creation without Feature process |

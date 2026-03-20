@@ -1,0 +1,104 @@
+version: "1.0.0"
+title: "Feature Design (Stage 3)"
+description: "Stage 3 — AI Design. Reads an approved Feature from FEATURES.md, decomposes it into features, creates worktrees and CURRENT.md specs. Run this after Feature Refinement."
+
+parameters:
+  - key: feature_id
+    input_type: string
+    requirement: required
+    description: "Feature ID to decompose (e.g. F-001)"
+
+  - key: repo_name
+    input_type: string
+    requirement: required
+    description: "Repository directory name (e.g. go-ocs)"
+
+extensions:
+  - type: builtin
+    name: developer
+    display_name: Developer
+    timeout: 600
+    bundled: true
+
+settings:
+  max_turns: 100
+
+instructions: |
+  You are running a Feature Design session — Stage 3 of the AI development process.
+  Your job is to decompose an approved Feature into implementable features,
+  create the required Git infrastructure, and produce CURRENT.md task specs.
+
+  ## Step 1 — Read Context
+  Read these files in order:
+  1. docs/PROJECT_BRIEF.md
+  2. docs/ARCHITECTURE.md
+  3. docs/PROJECT_STRUCTURE.md
+  4. .ai/memory/STATUS.md
+  5. All files in .ai/context/ — apply rules from every file present
+  6. .ai/memory/FEATURES.md — find the Feature with ID {{ feature_id }}
+
+  If the Feature status is not "Backlog" or "Ready for AI Design" — stop and
+  tell the human.
+
+  ## Step 2 — Analyse the Codebase
+  Read the relevant source files to understand what already exists.
+  Identify what needs to be built, what can be reused, and where the
+  new code will live.
+
+  ## Step 3 — Decompose the Feature
+  Break the Feature into the minimum number of implementable features needed
+  to satisfy the MVP. For each feature:
+  - Give it a descriptive name
+  - Identify its dependencies on other features in this decomposition
+  - Determine the implementation sequence
+
+  Decompose to the MVP boundary — not more, not less.
+  If an idea exceeds the Feature's MVP scope, it belongs in the Parking Lot.
+
+
+  ## Step 4 — Check Implementation Approval
+  Read the Feature's "Implementation Approval Required" field.
+
+  If "Yes — pause after AI Design":
+    Present the decomposition to the human and wait for confirmation
+    before proceeding to Step 5.
+
+  If "No — proceed automatically":
+    Present the decomposition as an informational summary,
+    then proceed directly to Step 5 without waiting.
+
+  ## Step 5 — Create Git Infrastructure (for each feature)
+  For each feature, in dependency order:
+
+  a) Create the branch and worktree:
+     git worktree add ~/Development/goplay/branches/{{ repo_name }}-<feature-name> feature/{{ feature_id }}-<feature-name>
+
+  b) Write .ai/tasks/CURRENT.md in the worktree using the task template at
+     .ai/tasks/TASK_TEMPLATE.md. Include:
+     - Objective: what this feature builds
+     - Scope: what is in and out of scope
+     - Context: relevant existing code references
+     - Acceptance criteria: mapped from the Feature (outcome criteria only)
+     - Risk assessment: any risks to critical business logic
+     - The Feature ID this feature belongs to
+
+  c) Stage the CURRENT.md immediately:
+     git -C ~/Development/goplay/branches/{{ repo_name }}-<feature-name> add .ai/tasks/CURRENT.md
+
+  d) Push the branch to origin:
+     git -C ~/Development/goplay/branches/{{ repo_name }}-<feature-name> push -u origin feature/{{ feature_id }}-<feature-name>
+
+  ## Step 6 — Update FEATURES.md
+  - Add the branch names under the Feature's "Branches" field
+  - Update the Feature status from "Backlog" to "In Development"
+
+  ## Step 7 — Report Completion
+  List all worktrees created with their paths.
+  Tell the human: "Worktrees are ready. Run the dev-session recipe
+  in each worktree to begin implementation."
+
+prompt: |
+  Starting Feature Design for {{ feature_id }}.
+  Please read the context files, find the Feature, analyse the codebase,
+  and present the decomposition before creating any branches.
+
