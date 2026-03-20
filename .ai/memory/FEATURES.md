@@ -158,6 +158,56 @@ None
 ### Future Considerations
 - Cursor-based pagination (current OFFSET-based approach degrades on large datasets — acceptable for now)
 
+## F-005 — SubscriberEventConsumer
+
+**Status:** Backlog
+**Priority:** High
+**Created:** 2026-03-20
+**Branch:** (filled in by AI during Stage 3)
+
+### Implementation Approval Required
+- [ ] Yes — pause after AI Design for human review before implementation begins
+- [x] No — proceed to implementation automatically after AI Design
+
+### Feature Switch
+None — port of existing Java functionality
+
+### Goal
+A Kafka consumer in `charging-backend` that processes `SubscriberEvent` messages from the Retail CRM domain and keeps the shadow subscriber table in sync.
+
+### Problem Statement
+The shadow `subscriber` table in the charging domain has no automated population mechanism. Without this consumer, subscriber records are never created, updated, or removed when the Retail CRM makes changes — leaving the charging engine with stale or missing subscriber data.
+
+### MVP
+`charging-backend` consumes `SubscriberEvent` messages from `public.subscriber-event` and applies one of three DB operations based on event type:
+- `CREATED` → INSERT subscriber row
+- `UPDATED`, `MSISDN_SWAP`, `SIM_SWAP` → UPDATE all fields by `subscriber_id`
+- `DELETED` → hard DELETE by `subscriber_id`
+
+### Acceptance Criteria
+- [ ] A `CREATED` event results in a new row inserted into `subscriber` with all fields populated from the event payload
+- [ ] A `UPDATED`, `MSISDN_SWAP`, or `SIM_SWAP` event results in the existing subscriber row being updated with all current field values from the payload
+- [ ] A `DELETED` event results in the subscriber row being hard-deleted from the `subscriber` table
+- [ ] A malformed or unrecognisable event is logged and skipped — the consumer continues processing without crashing
+- [ ] The consumer starts automatically with `charging-backend` and reconnects if the Kafka broker is unavailable
+
+### Constraints
+- Event schema (`SubscriberEvent`) is fixed — cannot be modified
+- Topic name: `public.subscriber-event`
+- Implemented in `charging-backend` only
+
+### Out of Scope
+- Cache invalidation in DRA or Engine on event receipt
+- Treating `MSISDN_SWAP` and `SIM_SWAP` as distinct partial-update operations
+
+### Parking Lot
+- **Cache invalidation on event receipt**: DRA/Engine could listen to `SubscriberEvent` and force an immediate cache refresh rather than waiting for TTL — deferred, not worth the effort at this stage
+
+### Future Considerations
+- If subscriber deletes become reversible, the hard-delete strategy would need revisiting in favour of soft-delete
+
+---
+
 ## F-004 — GraphQL API Test Files
 
 **Status:** Backlog

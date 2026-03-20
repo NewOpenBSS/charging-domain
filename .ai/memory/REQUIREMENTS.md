@@ -174,10 +174,10 @@ Add a Kafka consumer for quota events.
 
 ## R-006 — SubscriberEventConsumer
 
-**Status:** Deferred
-**Priority:** —
+**Status:** Scoped
+**Priority:** High
 **Created:** 2026-03-20
-**Features:** — (populated after scoping)
+**Features:** F-005
 
 ### The Idea
 Add a Kafka consumer for subscriber events.
