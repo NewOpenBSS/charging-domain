@@ -252,6 +252,53 @@ None
 
 ---
 
+## F-005 — SubscriberEventConsumer
+
+**Status:** Backlog
+**Priority:** High
+**Created:** 2026-03-20
+**Branch:** (filled in by scoping)
+
+### Implementation Approval Required
+- [ ] Yes — pause after AI Design for human review before implementation begins
+- [x] No — proceed to implementation automatically after AI Design
+
+### Feature Switch
+None — port of existing Java functionality
+
+### Goal
+Implement a Kafka consumer in charging-backend that processes SubscriberEvent messages from the `public.subscriber-event` topic, keeping the shadow subscriber table in sync.
+
+### Problem Statement
+The charging-backend has a shadow subscriber table that must stay in sync with the Retail CRM domain. The Java service has a Kafka consumer that handles this. The Go service currently has no equivalent — subscriber data is stale or missing.
+
+### MVP
+A Kafka consumer that processes SubscriberEvent messages and applies CREATE, UPDATE, and hard DELETE operations to the shadow subscriber table.
+
+### Acceptance Criteria
+- [ ] Consumer subscribes to `public.subscriber-event` topic on startup
+- [ ] CREATE events result in a new subscriber record being inserted
+- [ ] UPDATE events result in the existing subscriber record being updated
+- [ ] DELETE events result in the subscriber record being hard-deleted
+- [ ] Consumer handles unknown event types gracefully without crashing
+- [ ] Consumer resumes from last committed offset on restart
+
+### Constraints
+- Must match the Java service behaviour exactly — same topic, same event schema, same table operations
+- Hard delete only — no soft delete or tombstone records
+
+### Out of Scope
+- Subscriber query or admin API (separate feature)
+- Replay or backfill of historical events
+
+### Parking Lot
+None
+
+### Future Considerations
+- Dead letter queue for malformed messages
+
+---
+
 ## Done
 
 <!-- Completed Features go here — kept for reference -->

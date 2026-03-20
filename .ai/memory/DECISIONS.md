@@ -221,3 +221,9 @@ type conversions (uuid.UUID → pgtype.UUID) in one file.
 **Consequences:** Future Kafka consumers for the backend should follow the same
 pattern: consumer package in `internal/backend/consumer/`, narrow interface,
 store adapter, wired via AppContext.
+## ADR-012 — GitHub Organisation: NewOpenBSS
+**Status:** Accepted
+**Area:** Infrastructure / Repository Structure
+**Decision:** Create GitHub organisation `NewOpenBSS` to house all delivery repos and a shared requirements repo.
+**Rationale:** Separates requirements/roadmap from code. A dedicated requirements repo under the org serves multiple delivery projects. Continues the OpenBSS brand (the Java organisation) while signalling the new Go platform.
+**Consequences:** Requirements and Features will migrate from REQUIREMENTS.md and FEATURES.md to GitHub Issues in a new `NewOpenBSS/requirements` repo. Recipes will be updated to use `gh issue` commands with `--repo NewOpenBSS/requirements`. go-ocs will eventually move to `NewOpenBSS/go-ocs`.

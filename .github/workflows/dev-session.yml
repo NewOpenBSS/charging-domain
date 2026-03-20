@@ -10,8 +10,9 @@ on:
   workflow_dispatch:
     inputs:
       branch_name:
-        description: 'Branch to run dev session on'
+        description: 'Feature branch to run dev session on'
         required: true
+        type: string
 
 jobs:
   dev-session:
