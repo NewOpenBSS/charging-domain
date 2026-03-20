@@ -24,6 +24,7 @@ jobs:
         with:
           ref: ${{ github.ref_name }}
           fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Configure git
         run: |
@@ -41,6 +42,7 @@ jobs:
           GOOSE_MODEL: default
           GOOSE_MODE: auto
           GOOSE_DISABLE_SESSION_NAMING: "true"
+          HOME: /home/eddiecarpenter
 
       - name: Push commits
         if: success()
