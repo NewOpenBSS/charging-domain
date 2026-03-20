@@ -29,7 +29,7 @@ jobs:
           goose run \
             --recipe .goose/recipes/feature-design.yaml \
             --params branch_name=${{ github.ref_name }} \
-            --no-session
+            --text "Starting Feature Design for branch: ${{ github.ref_name }}. Follow all steps in the recipe instructions."
         env:
           GOOSE_PATH_ROOT: ${{ github.workspace }}/.goose
           GOOSE_PROVIDER: claude-code
