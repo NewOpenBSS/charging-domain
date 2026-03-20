@@ -14,24 +14,11 @@ jobs:
     runs-on: self-hosted
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          ref: main
-
-      - name: Verify CURRENT.md does not already exist on branch
-        run: |
-          git fetch origin ${{ github.ref_name }}
-          if git show origin/${{ github.ref_name }}:.ai/tasks/CURRENT.md > /dev/null 2>&1; then
-            echo "CURRENT.md already exists on ${{ github.ref_name }} — feature design already done"
-            exit 0
-          fi
-          echo "CURRENT.md not found — proceeding with feature design"
-
       - name: Run feature design recipe
         run: |
           goose run \
-            --recipe .ai/recipes/feature-design.yaml \
+            --recipe ~/go-ocs/.ai/recipes/feature-design.yaml \
+            --params branch_name=${{ github.ref_name }}
         env:
           GOOSE_PROVIDER: claude-code
           GOOSE_MODEL: default

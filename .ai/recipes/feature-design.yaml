@@ -1,6 +1,12 @@
 version: "1.0.0"
 title: "Feature Design (Stage 3)"
-description: "Stage 3 — Feature Design. Presents available Features from FEATURES.md, decomposes the selected Feature into branches + CURRENT.md specs."
+description: "Stage 3 — Feature Design. Triggered by branch push (automated) or run interactively. Writes CURRENT.md to feature branches."
+
+parameters:
+  - key: branch_name
+    input_type: string
+    requirement: optional
+    description: "Branch name to design (e.g. feature/F-001-charging-trace-store). If not provided, presents interactive list."
 
 extensions:
   - type: builtin
@@ -14,106 +20,98 @@ settings:
 
 instructions: |
   You are running a Feature Design session — Stage 3 of the AI development process.
-  Your job is to decompose an approved Feature into implementable tasks,
-  create the required Git infrastructure, and produce CURRENT.md task specs.
+  Your job is to write a CURRENT.md task spec to the correct feature branch.
 
-  ## Step 1 — Read Context
+  ## Step 1 — Bootstrap
+  Determine the working directory:
+  - If running via GitHub Actions, the repo is at ~/go-ocs
+  - If running interactively, use the current directory
+
+  cd ~/go-ocs (or current directory if that fails)
+  git fetch origin
+  git checkout main
+  git pull origin main
+
+  ## Step 2 — Read Context
   Read these files in order:
   1. docs/PROJECT_BRIEF.md
   2. docs/ARCHITECTURE.md
   3. docs/PROJECT_STRUCTURE.md
   4. .ai/memory/STATUS.md
-  5. All files in .ai/context/ — apply rules from every file present
+  5. All files in .ai/context/
   6. .ai/memory/FEATURES.md
 
-  ## Step 2 — Present Available Features
-  From FEATURES.md, extract all Features where Status is "Backlog".
-  Present them as a numbered list:
 
-  ```
-  Features available for design:
+  ## Step 3 — Identify the Feature
+  Check if branch_name parameter was provided:
 
-    1. F-001 — ChargingTraceResource
-    2. F-002 — DestinationGroupResource
-    3. F-003 — SourceGroupResource
-    4. F-004 — GraphQL API Test Files
+  IF branch_name is provided (automated/server mode):
+    - Extract the Feature ID from the branch name
+      e.g. feature/F-001-charging-trace-store → F-001
+    - Find F-001 in FEATURES.md
+    - Proceed directly to Step 4
 
-  Which feature would you like to design? (enter number or ID)
-  ```
+  IF branch_name is NOT provided (interactive mode):
+    - Extract all Features from FEATURES.md where Status is "Backlog"
+    - Present as a numbered list and wait for human selection
+    - Use the selected Feature ID for Step 4
 
-  If no Features have status "Backlog" — tell the human and stop.
-  Wait for the human to select a feature before proceeding.
-
-  ## Step 2 — Analyse the Codebase
-  Read the relevant source files to understand what already exists.
-  Identify what needs to be built, what can be reused, and where the
-  new code will live.
-
-  ## Step 3 — Decompose the Feature
-  Break the Feature into the minimum number of implementable features needed
-  to satisfy the MVP. For each feature:
-  - Give it a descriptive name
-  - Identify its dependencies on other features in this decomposition
-  - Determine the implementation sequence
-
-  Decompose to the MVP boundary — not more, not less.
-  If an idea exceeds the Feature's MVP scope, it belongs in the Parking Lot.
-
+  If no matching Feature found in FEATURES.md — stop and report.
 
   ## Step 4 — Check Implementation Approval
   Read the Feature's "Implementation Approval Required" field.
 
   If "Yes — pause after AI Design":
-    Present the decomposition to the human and wait for confirmation
-    before proceeding to Step 5.
+    Present the decomposition plan and wait for human confirmation.
 
   If "No — proceed automatically":
-    Present the decomposition as an informational summary,
-    then proceed directly to Step 5 without waiting.
+    Proceed directly without waiting.
 
-  ## Step 5 — Write CURRENT.md to Each Branch
-  For each feature branch in the decomposition, in dependency order:
+  ## Step 5 — Analyse the Codebase
+  Read the relevant source files to understand what already exists.
+  Identify what needs to be built, what can be reused, where it lives.
 
-  a) Checkout the existing branch (created by the scoping recipe):
-     git fetch origin
+  ## Step 6 — Write CURRENT.md to the Branch
+  For each branch associated with this Feature, in dependency order:
+
+  a) Checkout the branch:
      git checkout feature/<F-NNN>-<feature-name>
 
-  b) Write .ai/tasks/CURRENT.md using the task template at
-     .ai/tasks/TASK_TEMPLATE.md. Include:
+  b) Write .ai/tasks/CURRENT.md using .ai/tasks/TASK_TEMPLATE.md. Include:
      - Objective: what this feature builds
-     - Scope: what is in and out of scope
+     - Scope: in and out of scope
      - Context: relevant existing code references
-     - Acceptance criteria: mapped from the Feature (outcome criteria only)
-     - Risk assessment: any risks to critical business logic
-     - The Feature ID this feature belongs to
+     - Acceptance criteria: outcome criteria only from the Feature
+     - Risk assessment: risks to critical business logic
+     - Feature ID this task belongs to
 
-  c) Copy .claude/settings.local.json if it does not already exist.
-
-  d) Commit and push CURRENT.md:
+  c) Commit and push:
      git add .ai/tasks/CURRENT.md
      git commit -m "design: add CURRENT.md for <F-NNN>-<feature-name>"
      git push
 
-  e) Verify the commit landed:
+  d) Verify commit landed:
      git show HEAD:.ai/tasks/CURRENT.md | head -3
 
-  f) Return to main:
+  e) Return to main:
      git checkout main
 
-  ## Step 6 — Update FEATURES.md
-  - Update the Feature status to "In Design"
+  ## Step 7 — Update FEATURES.md
+  - Update Feature status to "In Design"
   - Commit and push:
     git add .ai/memory/FEATURES.md
-    git commit -m "design: F-NNN CURRENT.md written to all branches"
+    git commit -m "design: F-NNN In Design"
     git push
 
-  ## Step 7 — Report Completion
-  List all branches that received CURRENT.md.
-  Tell the human: "Feature Design complete. Dev Session will trigger
-  automatically via GitHub Actions on each branch."
+  ## Step 8 — Report Completion
+  State which branches received CURRENT.md and confirm completion.
 
 prompt: |
   Starting Feature Design session.
-  Please read the context files and FEATURES.md, then present the list
-  of Features available for design so I can select one.
-
+  {% if branch_name %}
+  Triggered for branch: {{ branch_name }}
+  Reading context and writing CURRENT.md automatically.
+  {% else %}
+  Please read the context and FEATURES.md, then present available
+  features for selection.
+  {% endif %}
