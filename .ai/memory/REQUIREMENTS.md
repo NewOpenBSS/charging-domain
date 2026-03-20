@@ -63,6 +63,137 @@ Beyond API compatibility, the implementation takes advantage of Go's strengths: 
 
 <!-- Requirements captured but not yet refined -->
 
+## R-002 — ChargingTraceResource GraphQL Endpoint
+
+**Status:** Scoped
+**Priority:** High
+**Created:** 2026-03-20
+**Features:** F-001
+
+### The Idea
+Add a ChargingTraceResource to the charging-backend GraphQL API, following the same pattern as the existing resources (Carrier, Classification, NumberPlan, RatePlan, Quota).
+
+### The Problem
+— (needs clarification: what does an admin need to do with charging traces? Read-only audit queries, or more?)
+
+### Wishlist
+—
+
+### Notes
+- Charging trace records are already written to the DB by the charging-engine pipeline.
+- Needs clarification on: what queries/mutations are required, who uses it and for what purpose.
+
+---
+
+## R-003 — DestinationGroupResource GraphQL Endpoint
+
+**Status:** Draft
+**Priority:** —
+**Created:** 2026-03-20
+**Features:** — (populated after scoping)
+
+### The Idea
+Add a DestinationGroupResource to the charging-backend GraphQL API, following the same pattern as the existing resources.
+
+### The Problem
+— (needs clarification: what is a destination group, what does an admin need to do with it?)
+
+### Wishlist
+—
+
+### Notes
+- Needs clarification on: DB table/schema, what operations are required (CRUD? state machine?), relationship to other resources (NumberPlan? RatePlan?).
+
+---
+
+## R-004 — SourceGroupResource GraphQL Endpoint
+
+**Status:** Draft
+**Priority:** —
+**Created:** 2026-03-20
+**Features:** — (populated after scoping)
+
+### The Idea
+Add a SourceGroupResource to the charging-backend GraphQL API, following the same pattern as the existing resources.
+
+### The Problem
+— (needs clarification: what is a source group, what does an admin need to do with it?)
+
+### Wishlist
+—
+
+### Notes
+- Needs clarification on: DB table/schema, what operations are required (CRUD? state machine?), relationship to other resources.
+- Completes the set of 8 resources required for the charging-backend port (R-001).
+
+---
+
+## R-005 — QuotaEventConsumer
+
+**Status:** Draft
+**Priority:** —
+**Created:** 2026-03-20
+**Features:** — (populated after scoping)
+
+### The Idea
+Add a Kafka consumer for quota events.
+
+### The Problem
+— (needs clarification: what events are consumed, what does the consumer do with them, which service hosts it?)
+
+### Wishlist
+—
+
+### Notes
+- Kafka producer for quota journal events already exists in charging-engine.
+- Needs clarification on: topic name, event schema, consumer action (update DB? trigger downstream?), which application hosts the consumer.
+
+---
+
+## R-006 — SubscriberEventConsumer
+
+**Status:** Draft
+**Priority:** —
+**Created:** 2026-03-20
+**Features:** — (populated after scoping)
+
+### The Idea
+Add a Kafka consumer for subscriber events.
+
+### The Problem
+— (needs clarification: what subscriber events are consumed, what triggers them, what the consumer does with them?)
+
+### Wishlist
+—
+
+### Notes
+- Subscriber table exists in DB but no GraphQL resource or consumer yet.
+- Needs clarification on: event source, topic name, event schema, consumer action, which application hosts the consumer.
+
+---
+
+## R-007 — WholesaleContractConsumer
+
+**Status:** Draft
+**Priority:** —
+**Created:** 2026-03-20
+**Features:** — (populated after scoping)
+
+### The Idea
+Add a Kafka consumer for wholesale contract events.
+
+### The Problem
+— (needs clarification: what wholesale contract events are consumed, what triggers them, what the consumer does with them?)
+
+### Wishlist
+—
+
+### Notes
+- Wholesaler table exists in DB but no consumer yet.
+- Needs clarification on: event source, topic name, event schema, consumer action, which application hosts the consumer.
+
+---
+
 ---
 
 ## Deferred

@@ -24,6 +24,50 @@ Read by AI agents at the start of every design and development session.
 
 <!-- Approved Features waiting to be started go here -->
 
+## F-001 — ChargingTraceResource
+
+**Status:** Backlog
+**Priority:** High
+**Created:** 2026-03-20
+**Branches:** (filled in by AI during Stage 3)
+
+### Implementation Approval Required
+- [ ] Yes — pause after AI Design for human review before implementation begins
+- [x] No — proceed to implementation automatically after AI Design
+
+### Feature Switch
+None
+
+### Goal
+Expose charging trace records via three read-only GraphQL queries in the Go charging-backend, matching the Java API surface exactly.
+
+### Problem Statement
+Operators need to query the charging audit trail to investigate billing disputes and debug charging sessions by MSISDN or charging ID. The Go charging-engine already writes traces to the DB; the Go charging-backend currently has no way to expose them.
+
+### MVP
+An admin can query charging traces using three read-only GraphQL operations — list (paginated + filtered), count, and fetch by ID — with no mutations exposed.
+
+### Acceptance Criteria
+- [ ] An admin can retrieve a paginated list of charging traces, filtered by `chargingId` or `msisdn` (wildcard match)
+- [ ] An admin can count charging traces matching a given filter
+- [ ] An admin can retrieve a single charging trace by `traceId`, with `request` and `response` returned as JSON strings
+- [ ] No mutations are exposed — the resource is strictly read-only
+- [ ] The GraphQL query names (`chargingTraceList`, `countChargingTrace`, `chargingTraceById`) match the Java service exactly
+
+### Constraints
+- GraphQL query names, field names, and behaviour must be identical to the Java service — external clients must work without modification
+- Read-only — no mutations under any circumstances
+
+### Out of Scope
+- Write operations on charging traces
+- Subscriptions or real-time streaming of trace events
+
+### Parking Lot
+None
+
+### Future Considerations
+- Cursor-based pagination (current OFFSET-based approach degrades on large trace tables — acceptable for now)
+
 ---
 
 ## Done
