@@ -160,6 +160,48 @@ None
 ### Future Considerations
 - Cursor-based pagination (current OFFSET-based approach degrades on large datasets — acceptable for now)
 
+## F-004 — GraphQL API Test Files
+
+**Status:** Backlog
+**Priority:** High
+**Created:** 2026-03-20
+**Branches:** (filled in by AI during Stage 3)
+
+### Implementation Approval Required
+- [ ] Yes — pause after AI Design for human review before implementation begins
+- [x] No — proceed to implementation automatically after AI Design
+
+### Feature Switch
+None
+
+### Goal
+Add `.http` API test files for QuotaResource, ChargingTraceResource, DestinationGroupResource, and SourceGroupResource, following the established pattern in `api-tests/`.
+
+### Problem Statement
+Developers have no way to manually exercise or quickly verify the new GraphQL endpoints from their IDE. QuotaResource is also missing a test file despite being complete. All existing resources have `.http` files — the new ones should too.
+
+### MVP
+Four new `.http` files in `api-tests/`, one per resource, covering every GraphQL operation with realistic sample data.
+
+### Acceptance Criteria
+- [ ] A developer can execute every GraphQL operation for QuotaResource, ChargingTraceResource, DestinationGroupResource, and SourceGroupResource directly from the `.http` files
+- [ ] Each file covers all operations for that resource (list with default page, list with wildcard, list with filter, get-by-key, count, and create/update/delete where applicable)
+- [ ] Sample data in each file is realistic and consistent with seed data in `db/seeds/`
+- [ ] Files follow the naming convention `[ResourceName]GraphQL.http`
+
+### Constraints
+- Must follow the exact structure and style of existing files in `api-tests/`
+
+### Out of Scope
+- Automated test execution or CI integration of `.http` files
+- Test files for resources already covered (`CarrierGraphQL.http`, `ClassficationGraphQL.http`, `RatePlanGraphQL.http`, `NumberPlanGraphQL.http`)
+
+### Parking Lot
+None
+
+### Future Considerations
+- Automated API test execution in CI pipeline
+
 ---
 
 ## Done

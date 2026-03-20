@@ -128,9 +128,31 @@ Add a SourceGroupResource to the charging-backend GraphQL API, following the sam
 
 ---
 
+## R-008 — API Test Files for New GraphQL Resources
+
+**Status:** Scoped
+**Priority:** High
+**Created:** 2026-03-20
+**Features:** F-004
+
+### The Idea
+Create `.http` API test files in `api-tests/` for each new GraphQL resource, following the pattern of the existing files.
+
+### The Problem
+Developers have no way to manually exercise the new GraphQL endpoints from their IDE. QuotaResource is also missing a test file despite being complete.
+
+### Wishlist
+One `.http` file per resource, covering every operation with realistic sample data.
+
+### Notes
+- Follows the pattern of `CarrierGraphQL.http`, `ClassficationGraphQL.http`, etc.
+- Covers: QuotaResource, ChargingTraceResource, DestinationGroupResource, SourceGroupResource.
+
+---
+
 ## R-005 — QuotaEventConsumer
 
-**Status:** Draft
+**Status:** Deferred
 **Priority:** —
 **Created:** 2026-03-20
 **Features:** — (populated after scoping)
@@ -152,7 +174,7 @@ Add a Kafka consumer for quota events.
 
 ## R-006 — SubscriberEventConsumer
 
-**Status:** Draft
+**Status:** Deferred
 **Priority:** —
 **Created:** 2026-03-20
 **Features:** — (populated after scoping)
@@ -174,7 +196,7 @@ Add a Kafka consumer for subscriber events.
 
 ## R-007 — WholesaleContractConsumer
 
-**Status:** Draft
+**Status:** Deferred
 **Priority:** —
 **Created:** 2026-03-20
 **Features:** — (populated after scoping)
