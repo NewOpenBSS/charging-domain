@@ -51,3 +51,12 @@ jobs:
         if: success()
         run: |
           git push origin ${{ github.ref_name }}
+
+      - name: Trigger dev session
+        if: success()
+        run: |
+          gh workflow run dev-session.yml \
+            --ref main \
+            --field branch_name=${{ github.ref_name }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
