@@ -42,3 +42,8 @@ out/
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Goose runtime files — config is versioned, runtime state is not
+.goose/data/
+.goose/state/
+.goose/config/config.yaml.bak
