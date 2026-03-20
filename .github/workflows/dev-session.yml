@@ -7,6 +7,12 @@ on:
     paths:
       - '.ai/tasks/READY'
 
+  workflow_dispatch:
+    inputs:
+      branch_name:
+        description: 'Branch to run dev session on'
+        required: true
+
 jobs:
   dev-session:
     name: Run Dev Session
@@ -19,7 +25,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.ref_name }}
+          ref: ${{ github.event.inputs.branch_name || github.ref_name }}
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -32,9 +38,10 @@ jobs:
       - name: Run dev session recipe
         id: goose
         run: |
+          BRANCH="${{ github.event.inputs.branch_name || github.ref_name }}"
           goose run \
             --recipe .goose/recipes/dev-session.yaml \
-            --params branch_name=${{ github.ref_name }}
+            --params branch_name=${BRANCH}
         env:
           GOOSE_PATH_ROOT: ${{ github.workspace }}/.goose
           GOOSE_PROVIDER: claude-code
@@ -47,19 +54,21 @@ jobs:
       - name: Push commits
         if: success()
         run: |
-          git push origin ${{ github.ref_name }}
+          BRANCH="${{ github.event.inputs.branch_name || github.ref_name }}"
+          git push origin ${BRANCH}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Open PR
         if: success()
         run: |
-          FEATURE_ID=$(echo "${{ github.ref_name }}" | grep -oP 'F-\d+')
+          BRANCH="${{ github.event.inputs.branch_name || github.ref_name }}"
+          FEATURE_ID=$(echo "${BRANCH}" | grep -oP 'F-\d+')
           FEATURE_TITLE=$(grep -A1 "## ${FEATURE_ID}" .ai/memory/FEATURES.md | tail -1 | sed 's/.*— //')
           gh pr create \
             --title "feat: ${FEATURE_ID} — ${FEATURE_TITLE}" \
             --body "## Feature ${FEATURE_ID}\n\nAll tasks implemented and tested.\nReview against acceptance criteria in \`.ai/memory/FEATURES.md\`." \
             --base main \
-            --head ${{ github.ref_name }}
+            --head ${BRANCH}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
