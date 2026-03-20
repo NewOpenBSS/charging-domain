@@ -67,7 +67,18 @@ _Last updated: 2026-03-19 (reverse-engineered from codebase)_
 
 ## Current Focus
 
-No active task. Awaiting next Feature.
+### In Progress / In Review
+
+| Feature | Task | Status | Branch |
+|---|---|---|---|
+| F-001 ChargingTraceResource | Task 1: Store Layer | In Review | `feature/F-001-charging-trace-store` |
+
+**F-001 Task 1 — Charging Trace Store Layer (complete, PR open)**
+- Added `FindChargingTraceByTraceId` sqlc query (lookup by UUID primary key)
+- Regenerated `internal/store/sqlc/charging_trace.sql.go`
+- Introduced `PoolDB` interface in `internal/store/store.go` (embeds `sqlc.DBTX` + `Close()`) — `Store.DB` field changed from `*pgxpool.Pool` to `PoolDB`
+- Added `ListChargingTraces` and `CountChargingTraces` dynamic store methods in `internal/store/charging_trace_store.go`
+- 7 unit tests in `internal/store/charging_trace_store_test.go` — all pass
 
 ---
 
