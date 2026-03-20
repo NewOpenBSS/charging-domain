@@ -16,17 +16,9 @@ Read by AI agents at the start of every design and development session.
 
 ## Active Features
 
-<!-- Features being worked on go here -->
-
----
-
-## Backlog
-
-<!-- Approved Features waiting to be started go here -->
-
 ## F-001 — ChargingTraceResource
 
-**Status:** Backlog
+**Status:** In Development
 **Priority:** High
 **Created:** 2026-03-20
 **Branch:** feature/F-001-charging-trace-resource
@@ -67,6 +59,12 @@ None
 
 ### Future Considerations
 - Cursor-based pagination (current OFFSET-based approach degrades on large trace tables — acceptable for now)
+
+---
+
+## Backlog
+
+<!-- Approved Features waiting to be started go here -->
 
 ## F-002 — DestinationGroupResource
 
