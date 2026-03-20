@@ -1,17 +1,6 @@
 version: "1.0.0"
 title: "Dev Session"
-description: "Implements a feature autonomously from requirement to PR. Run this inside the feature worktree."
-
-parameters:
-  - key: feature_description
-    input_type: string
-    requirement: required
-    description: "Plain language description of what to build"
-
-  - key: repo_path
-    input_type: string
-    requirement: required
-    description: "Absolute path to the feature worktree (e.g. /Users/eddiecarpenter/Development/goplay/branches/go-ocs-wholesaler-admin)"
+description: "Stage 4 — Development. Reads CURRENT.md from the current branch and implements autonomously to PR. Run from inside the feature branch."
 
 extensions:
   - type: builtin
@@ -24,56 +13,73 @@ settings:
   max_turns: 200
 
 instructions: |
-  You are running a Dev Session for an agentic development workflow.
-  Working directory: {{ repo_path }}
+  You are running a Dev Session — Stage 4 of the agentic development pipeline.
+  You implement the task defined in .ai/tasks/CURRENT.md autonomously to a PR.
 
-  ## Step 1 — Session Initialisation
-  Before anything else, read these files in order:
-  1. {{ repo_path }}/docs/PROJECT_BRIEF.md
-  2. {{ repo_path }}/docs/ARCHITECTURE.md
-  3. {{ repo_path }}/docs/PROJECT_STRUCTURE.md
-  4. {{ repo_path }}/.ai/memory/STATUS.md
-  5. All files in {{ repo_path }}/.ai/context/ — apply rules from every file present
-
-  ## Step 2 — Branch Verification
+  ## Step 1 — Verify Branch
   Run: git branch --show-current
-  If on main: stop immediately and tell the user.
+  If on main — stop immediately and tell the human to checkout the feature branch.
 
-  ## Step 3 — Requirement Analysis
-  Analyse the feature description against the codebase and context files.
-  If anything is ambiguous, ask one focused clarifying question.
+  ## Step 2 — Read Context
+  Read these files in order:
+  1. docs/PROJECT_BRIEF.md
+  2. docs/ARCHITECTURE.md
+  3. docs/PROJECT_STRUCTURE.md
+  4. .ai/memory/STATUS.md
+  5. All files in .ai/context/ — apply rules from every file present
+  6. .ai/tasks/CURRENT.md — this is what you are building
+
+  If .ai/tasks/CURRENT.md does not exist — stop and tell the human to run
+  the feature-design recipe first.
+
+  ## Step 3 — Check for Open PR
+  Run: gh pr list --head $(git branch --show-current)
+  If a PR already exists for this branch — stop and tell the human.
 
   ## Step 4 — Confirmation (THE ONLY PAUSE)
   Summarise in plain language:
-  - What will be built
+  - What will be built (from CURRENT.md)
   - Whether it decomposes into multiple sequential tasks
   - Any risks to critical business logic
-  Then ask: "Shall I proceed?"
+  Ask: "Shall I proceed?"
   Wait for human confirmation before continuing.
+
 
   ## Step 5 — Autonomous Implementation
   Once confirmed, proceed fully autonomously with no further interruptions.
 
   For each task:
-  - Write {{ repo_path }}/.ai/tasks/CURRENT.md using the template
-  - Stage it immediately: git add {{ repo_path }}/.ai/tasks/CURRENT.md
-  - Implement the full task
+  - Implement the full task against the acceptance criteria in CURRENT.md
   - Stage new files immediately after creating them: git add <file>
   - Build and test — fix any failures before proceeding
-  - Update {{ repo_path }}/.ai/memory/STATUS.md
-  - Append decisions to {{ repo_path }}/.ai/memory/DECISIONS.md if needed
-  - Move CURRENT.md to {{ repo_path }}/.ai/tasks/done/NNN-description.md using git mv
-  - Stage the move: git add -A
+  - Never claim a task complete with failing tests or build errors
 
-  After all tasks:
-  - Commit all staged changes
-  - Open a pull request
+  After all tasks complete:
+  - Update .ai/memory/STATUS.md — reflect what changed
+  - Append significant decisions to .ai/memory/DECISIONS.md in ADR format
+  - Move .ai/tasks/CURRENT.md to .ai/tasks/done/NNN-short-description.md
+    using git mv — never OS-level mv
+  - Commit all staged changes:
+    git add -A
+    git commit -m "feat: [description of what was built] (F-NNN)"
+  - Push the branch:
+    git push
+  - Open a PR:
+    gh pr create \
+      --title "feat: [description] (F-NNN)" \
+      --body "## Summary\n\n[what was built]\n\n## Changes\n[packages affected]\n\n## Risks\n[risks to critical business logic]\n\n## Testing\n[what was tested and how]" \
+      --base main
+  - Update .ai/memory/FEATURES.md — set Feature status to "In Review"
   - Report completion: what was built, what changed, PR link
+
+  ## Rules
+  - Never commit or push to main
+  - Never merge pull requests — leave for human review
+  - Fix failing tests before moving to the next step
+  - Stage new files immediately after creating them
+  - Every recipe that commits must push and open a PR
 
 prompt: |
   Dev session starting.
-
-  Feature to implement: {{ feature_description }}
-
-  Please read the context files, verify the branch, analyse the requirement,
-  summarise what will be built, and wait for my confirmation before proceeding.
+  Please verify the branch, read CURRENT.md, summarise what will be built,
+  and wait for my confirmation before proceeding.
