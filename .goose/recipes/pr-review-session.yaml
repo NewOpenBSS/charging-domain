@@ -11,6 +11,10 @@ parameters:
     input_type: string
     requirement: required
     description: "Feature branch the PR is open on (e.g. feature/F-007-quota-provisioning-event-consumer)"
+  - key: repo
+    input_type: string
+    requirement: required
+    description: "GitHub repository in owner/name format (e.g. eddiecarpenter/go-ocs)"
 
 extensions:
   - type: builtin
@@ -27,6 +31,8 @@ instructions: |
   A human has reviewed a PR and left review comments. Your job is to read those
   comments and respond appropriately — either answering questions or fixing issues.
   You do NOT push — the workflow handles that after you exit cleanly.
+
+  The target repository is: {{ repo }}
 
   ## Step 1 — Verify Branch
   git branch --show-current
@@ -45,8 +51,8 @@ instructions: |
   ## Step 3 — Fetch All Review Comments
   Fetch the PR review state and all inline review comments:
 
-    gh pr view {{ pr_number }} --json reviews,title,headRefName
-    gh api repos/{owner}/{repo}/pulls/{{ pr_number }}/comments
+    gh pr view {{ pr_number }} --repo {{ repo }} --json reviews,title,headRefName
+    gh api repos/{{ repo }}/pulls/{{ pr_number }}/comments
 
   For each review comment, extract:
   - comment body
@@ -56,7 +62,7 @@ instructions: |
   - review state (COMMENTED or CHANGES_REQUESTED)
 
   Also fetch the overall PR review state:
-    gh api repos/{owner}/{repo}/pulls/{{ pr_number }}/reviews
+    gh api repos/{{ repo }}/pulls/{{ pr_number }}/reviews
 
   ## Step 4 — Classify and Process Each Comment
 
@@ -67,7 +73,7 @@ instructions: |
   - Read the relevant file and line
   - Formulate a clear, concise response explaining the reasoning
   - Reply to the comment via the GitHub API:
-      gh api repos/{owner}/{repo}/pulls/{{ pr_number }}/comments \
+      gh api repos/{{ repo }}/pulls/{{ pr_number }}/comments \
         --method POST \
         --field body="<your response>" \
         --field in_reply_to=<comment_id>
@@ -83,7 +89,7 @@ instructions: |
       If build or tests fail — diagnose and fix before continuing.
       If you cannot fix — stop and exit with a clear error message.
   - Reply to the comment confirming what was fixed:
-      gh api repos/{owner}/{repo}/pulls/{{ pr_number }}/comments \
+      gh api repos/{{ repo }}/pulls/{{ pr_number }}/comments \
         --method POST \
         --field body="Fixed: <brief description of what was changed>" \
         --field in_reply_to=<comment_id>
@@ -94,7 +100,7 @@ instructions: |
   ## Step 5 — Summary
   After processing all comments:
   - If any code was changed: exit cleanly — the workflow will push
-  - If only questions were answered: exit cleanly — the workflow will push the reply commits (API replies don't need a push, but any code fixes do)
+  - If only questions were answered: exit cleanly — no push needed
   - Report a summary of what was answered and what was fixed
 
   ## Rules
@@ -107,5 +113,5 @@ instructions: |
     and what information is needed from the human before proceeding
 
 prompt: |
-  PR review session starting for PR #{{ pr_number }} on {{ branch_name }}.
+  PR review session starting for PR #{{ pr_number }} on {{ branch_name }} in {{ repo }}.
   Reading review comments and processing each one.

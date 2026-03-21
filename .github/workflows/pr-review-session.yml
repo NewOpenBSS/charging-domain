@@ -46,7 +46,8 @@ jobs:
           goose run \
             --recipe .goose/recipes/pr-review-session.yaml \
             --params pr_number=${PR_NUMBER} \
-            --params branch_name=${BRANCH}
+            --params branch_name=${BRANCH} \
+            --params repo=${{ github.repository }}
         env:
           GOOSE_PATH_ROOT: ${{ github.workspace }}/.goose
           GOOSE_PROVIDER: claude-code
