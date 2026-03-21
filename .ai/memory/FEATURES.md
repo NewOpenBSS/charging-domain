@@ -213,7 +213,7 @@ The shadow `subscriber` table in the charging domain has no automated population
 **Status:** Backlog
 **Priority:** High
 **Created:** 2026-03-21
-**Branch:** (filled in by scoping)
+**Branch:** feature/F-006-wholesale-contract-consumer
 
 ### Implementation Approval Required
 - [ ] Yes — pause after AI Design for human review before implementation begins
