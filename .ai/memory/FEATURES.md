@@ -273,7 +273,7 @@ Additionally, when a subscriber is deleted and their associated wholesaler is `a
 **Status:** Backlog
 **Priority:** High
 **Created:** 2026-03-21
-**Branch:** —
+**Branch:** feature/F-007-quota-provisioning-event-consumer
 **Requirement:** R-005
 
 ### Implementation Approval Required
