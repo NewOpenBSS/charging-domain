@@ -1,0 +1,72 @@
+name: PR Review Session (Stage 4b)
+
+on:
+  pull_request_review:
+    types: [submitted]
+  pull_request_review_comment:
+    types: [created]
+
+jobs:
+  pr-review-session:
+    name: Run PR Review Session
+    runs-on: self-hosted
+    permissions:
+      contents: write
+      pull-requests: write
+
+    # Only run on feature branches, and only when review state is
+    # COMMENTED or CHANGES_REQUESTED (not APPROVED)
+    if: |
+      startsWith(github.event.pull_request.head.ref, 'feature/F-') &&
+      (
+        github.event.review.state == 'commented' ||
+        github.event.review.state == 'changes_requested' ||
+        github.event_name == 'pull_request_review_comment'
+      )
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure environment
+        run: |
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Run PR review recipe
+        id: goose
+        run: |
+          PR_NUMBER="${{ github.event.pull_request.number }}"
+          BRANCH="${{ github.event.pull_request.head.ref }}"
+          goose run \
+            --recipe .goose/recipes/pr-review-session.yaml \
+            --params pr_number=${PR_NUMBER} \
+            --params branch_name=${BRANCH}
+        env:
+          GOOSE_PATH_ROOT: ${{ github.workspace }}/.goose
+          GOOSE_PROVIDER: claude-code
+          GOOSE_MODEL: default
+          GOOSE_MODE: auto
+          GOOSE_DISABLE_SESSION_NAMING: "true"
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HOME: /home/eddiecarpenter
+
+      - name: Push fixes
+        if: success()
+        run: |
+          BRANCH="${{ github.event.pull_request.head.ref }}"
+          # Only push if there are new commits (i.e. code was changed, not just API replies)
+          LOCAL=$(git rev-parse HEAD)
+          REMOTE=$(git rev-parse origin/${BRANCH})
+          if [ "$LOCAL" != "$REMOTE" ]; then
+            git push origin ${BRANCH}
+          else
+            echo "No code changes — only review replies posted, no push needed"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
