@@ -268,6 +268,71 @@ Additionally, when a subscriber is deleted and their associated wholesaler is `a
 
 ---
 
+## F-007 — QuotaProvisioningEventConsumer
+
+**Status:** Backlog
+**Priority:** High
+**Created:** 2026-03-21
+**Branch:** —
+**Requirement:** R-005
+
+### Implementation Approval Required
+- [ ] Yes — pause after AI Design for human review before implementation begins
+- [x] No — proceed to implementation automatically after AI Design
+
+### Feature Switch
+None — background Kafka consumer, no user-visible behaviour change
+
+### Goal
+A Kafka consumer in `charging-backend` that receives `QuotaProvisioningEvent` messages from the `public.quota-provisioning` topic and provisions a counter onto the subscriber's quota, with optional loan attachment and loan clawback, publishing `QuotaJournalEvent`s for all balance changes.
+
+### Problem Statement
+Quota provisioning events sent by upstream domains (e.g. product/billing systems) are silently dropped — subscribers never get counters added to their quota, loan repayment never triggers, and the Go port of `charging-backend` cannot replace the Java service in production. Without this consumer there is no mechanism to load value onto a subscriber's balance.
+
+### MVP
+`charging-backend` consumes `QuotaProvisioningEvent` messages and for each event:
+- Creates a new counter on the subscriber's quota (idempotent — skipped if already exists)
+- Optionally attaches a loan to the counter
+- Publishes a `QuotaJournalEvent` with the provisioning reason code
+- If eligible, triggers clawback repayment of existing loans from the new counter's balance, publishing separate `TRANSACTION_FEE` and `LOAN_REPAYMENT` journal events per loan
+
+### Acceptance Criteria
+- [ ] A consumed event results in a new counter appearing on the subscriber's quota record in the DB
+- [ ] A duplicate event (same `eventId`) is silently acknowledged with no changes made
+- [ ] If `loanInfo` is present, the counter's Loan is created with `loanBalance = initialBalance`, `transactFee = initialBalance`, and `canRepayLoan = false` forced on the counter
+- [ ] A `QuotaJournalEvent` is published for every successfully provisioned counter
+- [ ] When reason code is `QUOTA_PROVISIONED`, the journal event includes a fully-populated `CounterMetaData` field
+- [ ] When `canRepayLoan = true` on the new counter, one `TRANSACTION_FEE` and/or `LOAN_REPAYMENT` journal event is published per loan counter with outstanding balance, in that order, using the new counter's diminishing remaining balance for each successive clawback
+- [ ] An event carrying an unrecognised provisioning reason code is processed with reason code substituted to `QUOTA_PROVISIONED`; a warning is written to the log
+- [ ] Kafka offset is committed only after the event is successfully processed — on failure the offset is not committed and the event is redelivered on restart
+- [ ] On processing error: the error is logged at ERROR level, the offset is not committed, and the consumer continues polling
+
+### Constraints
+- `QuotaProvisioningEvent` payload is not changed — event schema is fixed
+- Loan initialisation matches Java exactly: `loanBalance = initialBalance`, `transactFee = initialBalance`
+- Clawback iterates loan counters oldest-first; `findCountersWithLoans` must return results in that order
+- Renewal fields (`renewalCount`, `renewalInterval`, `renewalDay`) are ignored — renewal is deprecated
+- Counter balance and loan balance are the same value in the current design (known limitation — see Parking Lot)
+- Kafka offset committed manually after successful processing (`kgo.DisableAutoCommit`) — deliberate divergence from existing Go consumer pattern to honour at-least-once delivery
+- Hosted in `charging-backend` only; no changes to `charging-engine`
+- Kafka topic: `public.quota-provisioning`; consumer group: `charging-backend-quota-provisioning`
+- Config key: `quota-provisioning` added to `backend-config.yaml`
+
+### Out of Scope
+- Dead-letter queue or retry policy for processing failures
+- Renewal/recurring counter logic
+- Any change to the `QuotaProvisioningEvent` or `LoanInfo` payload
+
+### Parking Lot
+- **Separate `loanBalance` field on `LoanInfo`**: The loan capital and counter balance should be independently specifiable (e.g. promotional loans where balance > loan capital). Requires a coordinated event schema change with Java producers. Deferred to a future Feature.
+- **Dead-letter topic**: Good practice for production hardening — deferred
+- **At-least-once audit for existing consumers**: `SubscriberEventConsumer` and `WholesaleContractConsumer` also use auto-commit and may benefit from the same manual-commit pattern — deferred
+
+### Future Considerations
+- When `LoanInfo` gains an explicit `loanBalance` field, the loan initialisation logic here must be updated to use it
+
+---
+
 ## F-004 — GraphQL API Test Files
 
 **Status:** Backlog

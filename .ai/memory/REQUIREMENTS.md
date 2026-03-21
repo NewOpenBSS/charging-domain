@@ -152,10 +152,10 @@ One `.http` file per resource, covering every operation with realistic sample da
 
 ## R-005 — QuotaEventConsumer
 
-**Status:** Deferred
-**Priority:** —
+**Status:** Scoped
+**Priority:** High
 **Created:** 2026-03-20
-**Features:** — (populated after scoping)
+**Features:** F-007
 
 ### The Idea
 Add a Kafka consumer for quota events.
