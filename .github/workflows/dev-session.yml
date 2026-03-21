@@ -1,18 +1,13 @@
 name: Dev Session (Stage 4)
 
 on:
-  push:
-    branches:
-      - 'feature/F-*'
-    paths:
-      - '.ai/tasks/READY'
-
   workflow_dispatch:
     inputs:
       branch_name:
         description: 'Feature branch to run dev session on'
         required: true
         type: string
+        default: ${{ github.branch_name }}
 
 jobs:
   dev-session:
