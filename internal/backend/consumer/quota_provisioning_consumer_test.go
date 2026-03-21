@@ -110,12 +110,14 @@ func TestQuotaProvisioningConsumer_HandleRecord_WithLoanInfo_PassesLoanInfoToReq
 	p := &mockQuotaProvisioner{}
 	event := baseProvisioningEvent()
 	event.LoanInfo = &events.LoanInfo{
+		TransactionFee:     decimal.NewFromInt(5),
 		MinRepayment:       decimal.NewFromInt(10),
 		ClawbackPercentage: decimal.NewFromFloat(0.5),
 	}
 
 	p.On("ProvisionCounter", mock.Anything, mock.MatchedBy(func(req quota.ProvisionCounterRequest) bool {
 		return req.LoanInfo != nil &&
+			req.LoanInfo.TransactionFee.Equal(decimal.NewFromInt(5)) &&
 			req.LoanInfo.MinRepayment.Equal(decimal.NewFromInt(10))
 	})).Return(nil)
 
@@ -261,11 +263,6 @@ func TestToQuotaReasonCode_KnownCodes_ReturnsTrueAndMappedCode(t *testing.T) {
 			name:     "TRANSFER_IN maps to ReasonTransferIn",
 			input:    events.ProvisioningReasonTransferIn,
 			expected: quota.ReasonTransferIn,
-		},
-		{
-			name:     "CONVERSION maps to ReasonConversion",
-			input:    events.ProvisioningReasonConversion,
-			expected: quota.ReasonConversion,
 		},
 	}
 	for _, tc := range tests {

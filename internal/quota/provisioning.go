@@ -80,6 +80,10 @@ type ProvisionCounterRequest struct {
 
 // LoanProvisionInfo carries the loan configuration from the provisioning event.
 type LoanProvisionInfo struct {
+	// TransactionFee is the fee charged for issuing this loan. It is collected first
+	// during clawback before any principal repayment is applied.
+	TransactionFee decimal.Decimal
+
 	// MinRepayment is the minimum repayment amount per clawback cycle.
 	MinRepayment decimal.Decimal
 
@@ -140,7 +144,7 @@ func (m *QuotaManager) applyProvisioning(q *Quota, req ProvisionCounterRequest) 
 	if req.LoanInfo != nil {
 		counter.Loan = &Loan{
 			LoanBalance:        req.InitialBalance,
-			TransactFee:        req.InitialBalance,
+			TransactFee:        req.LoanInfo.TransactionFee,
 			MinRepayment:       req.LoanInfo.MinRepayment,
 			ClawbackPercentage: req.LoanInfo.ClawbackPercentage,
 		}

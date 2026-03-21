@@ -176,6 +176,7 @@ func (c *QuotaProvisioningConsumer) handleRecord(ctx context.Context, r *kgo.Rec
 
 	if event.LoanInfo != nil {
 		req.LoanInfo = &quota.LoanProvisionInfo{
+			TransactionFee:     event.LoanInfo.TransactionFee,
 			MinRepayment:       event.LoanInfo.MinRepayment,
 			ClawbackPercentage: event.LoanInfo.ClawbackPercentage,
 		}
@@ -185,7 +186,8 @@ func (c *QuotaProvisioningConsumer) handleRecord(ctx context.Context, r *kgo.Rec
 }
 
 // toQuotaReasonCode maps a ProvisioningReasonCode from the event payload to a
-// quota.ReasonCode. Returns (code, true) on a known mapping and
+// quota.ReasonCode. Only QUOTA_PROVISIONED and TRANSFER_IN are valid provisioning
+// reasons. Returns (code, true) on a known mapping and
 // (ReasonQuotaProvisioned, false) for any unrecognised value.
 func toQuotaReasonCode(rc events.ProvisioningReasonCode) (quota.ReasonCode, bool) {
 	switch rc {
@@ -193,8 +195,6 @@ func toQuotaReasonCode(rc events.ProvisioningReasonCode) (quota.ReasonCode, bool
 		return quota.ReasonQuotaProvisioned, true
 	case events.ProvisioningReasonTransferIn:
 		return quota.ReasonTransferIn, true
-	case events.ProvisioningReasonConversion:
-		return quota.ReasonConversion, true
 	default:
 		return quota.ReasonQuotaProvisioned, false
 	}

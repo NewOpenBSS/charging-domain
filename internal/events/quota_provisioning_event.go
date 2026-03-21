@@ -20,15 +20,16 @@ const (
 
 	// ProvisioningReasonTransferIn signals that balance was transferred in from another counter.
 	ProvisioningReasonTransferIn ProvisioningReasonCode = "TRANSFER_IN"
-
-	// ProvisioningReasonConversion signals a unit-type conversion (e.g. MONETARY → service units).
-	ProvisioningReasonConversion ProvisioningReasonCode = "CONVERSION"
 )
 
 // LoanInfo carries the loan configuration embedded in a QuotaProvisioningEvent.
 // When present, the consumer creates a Loan on the new counter with
-// loanBalance = initialBalance and transactFee = initialBalance.
+// loanBalance = initialBalance and transactFee = transactionFee.
 type LoanInfo struct {
+	// TransactionFee is the fee charged for issuing this loan. It is collected first
+	// during clawback before any principal repayment is applied.
+	TransactionFee decimal.Decimal `json:"transactionFee"`
+
 	// MinRepayment is the minimum amount that must be repaid per clawback cycle.
 	MinRepayment decimal.Decimal `json:"minRepayment"`
 

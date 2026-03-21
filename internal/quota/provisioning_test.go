@@ -130,9 +130,11 @@ func TestProvisionCounter_WithLoanInfo_AttachesLoanAndForcesCanRepayLoanFalse(t 
 	mockRepo.On("Load", ctx, subscriberID).Return(loaded, nil)
 	mockRepo.On("Save", ctx, loaded).Return(nil)
 
+	txFee := decimal.NewFromInt(15)
 	req := makeBaseRequest(subscriberID, counterID, balance)
 	req.CanRepayLoan = true // would be true in event, but must be forced false
 	req.LoanInfo = &LoanProvisionInfo{
+		TransactionFee:     txFee,
 		MinRepayment:       decimal.NewFromInt(10),
 		ClawbackPercentage: decimal.NewFromFloat(0.5),
 	}
@@ -142,10 +144,10 @@ func TestProvisionCounter_WithLoanInfo_AttachesLoanAndForcesCanRepayLoanFalse(t 
 	assert.NoError(t, err)
 	assert.Len(t, quota.Counters, 1)
 	c := &quota.Counters[0]
-	// Loan should be attached with loanBalance = transactFee = initialBalance.
+	// Loan should be attached with loanBalance = initialBalance and transactFee = LoanInfo.TransactionFee.
 	assert.NotNil(t, c.Loan)
 	assert.True(t, c.Loan.LoanBalance.Equal(balance))
-	assert.True(t, c.Loan.TransactFee.Equal(balance))
+	assert.True(t, c.Loan.TransactFee.Equal(txFee), "TransactFee must be set from LoanInfo.TransactionFee")
 	assert.True(t, c.Loan.MinRepayment.Equal(decimal.NewFromInt(10)))
 	assert.True(t, c.Loan.ClawbackPercentage.Equal(decimal.NewFromFloat(0.5)))
 	mockRepo.AssertExpectations(t)
