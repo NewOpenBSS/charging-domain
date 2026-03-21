@@ -142,8 +142,6 @@ func TestProvisionCounter_WithLoanInfo_AttachesLoanAndForcesCanRepayLoanFalse(t 
 	assert.NoError(t, err)
 	assert.Len(t, quota.Counters, 1)
 	c := &quota.Counters[0]
-	// CanRepayLoan must be forced false when LoanInfo is present.
-	assert.False(t, c.CanRepayLoan)
 	// Loan should be attached with loanBalance = transactFee = initialBalance.
 	assert.NotNil(t, c.Loan)
 	assert.True(t, c.Loan.LoanBalance.Equal(balance))

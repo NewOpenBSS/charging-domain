@@ -39,11 +39,6 @@ type Counter struct {
 
 	CanConvert bool `json:"canConvert"`
 
-	// CanRepayLoan indicates whether newly provisioned balance on this counter is
-	// eligible to trigger clawback repayment of outstanding loans on other counters.
-	// Always false when the counter itself carries a Loan.
-	CanRepayLoan bool `json:"canRepayLoan"`
-
 	UnitPrice *decimal.Decimal `json:"UnitPrice"`
 
 	TaxRate *decimal.Decimal `json:"taxRate"`

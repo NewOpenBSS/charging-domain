@@ -127,7 +127,6 @@ func (m *QuotaManager) applyProvisioning(q *Quota, req ProvisionCounterRequest) 
 		InitialBalance:       &balance,
 		Balance:              &balance,
 		Expiry:               req.ExpiryDate,
-		CanRepayLoan:         req.CanRepayLoan,
 		CanTransfer:          req.CanTransfer,
 		CanConvert:           req.CanConvert,
 		UnitPrice:            req.UnitPrice,
@@ -137,7 +136,7 @@ func (m *QuotaManager) applyProvisioning(q *Quota, req ProvisionCounterRequest) 
 		Reservations:         make(map[uuid.UUID]Reservation),
 	}
 
-	// Attach loan if provided; force CanRepayLoan = false for loaned counters.
+	// Attach loan if provided.
 	if req.LoanInfo != nil {
 		counter.Loan = &Loan{
 			LoanBalance:        req.InitialBalance,
@@ -145,7 +144,6 @@ func (m *QuotaManager) applyProvisioning(q *Quota, req ProvisionCounterRequest) 
 			MinRepayment:       req.LoanInfo.MinRepayment,
 			ClawbackPercentage: req.LoanInfo.ClawbackPercentage,
 		}
-		counter.CanRepayLoan = false
 	}
 
 	q.AddCounter(counter)
@@ -174,8 +172,9 @@ func (m *QuotaManager) applyProvisioning(q *Quota, req ProvisionCounterRequest) 
 		req.Now,
 	)
 
-	// Trigger clawback if this counter can repay loans.
-	if newCounter.CanRepayLoan {
+	// Trigger clawback when the provisioning request permits loan repayment
+	// and the counter is not itself a loaned counter.
+	if req.CanRepayLoan && req.LoanInfo == nil {
 		m.applyClawback(q, newCounter, req)
 	}
 
@@ -260,7 +259,7 @@ func buildCounterMetaData(c *Counter, req ProvisionCounterRequest) *CounterEvent
 		InitialBalance:       initialBalance,
 		Balance:              balance,
 		Expiry:               expiry,
-		CanRepayLoan:         c.CanRepayLoan,
+		CanRepayLoan:         req.CanRepayLoan && req.LoanInfo == nil,
 		CanTransfer:          c.CanTransfer,
 		CanConvert:           c.CanConvert,
 		CounterSelectionKeys: req.CounterSelectionKeys,
