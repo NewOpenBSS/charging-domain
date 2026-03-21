@@ -1,0 +1,79 @@
+### Quota Provisioning — Monetary counter (standard)
+PUB public.quota-provisioning
+Host: kafka://localhost:9092
+Content-Type: application/json
+
+{
+  "eventId": "e0000001-0000-0000-0000-000000000001",
+  "subscriberId": "5ub00001-0000-0000-0000-000000000001",
+  "counterId": "c0000001-0000-0000-0000-000000000001",
+  "productId": "p0000001-0000-0000-0000-000000000001",
+  "productName": "Prepaid Data Bundle 1GB",
+  "description": "1GB data bundle — valid 30 days",
+  "unitType": "OCTETS",
+  "priority": 10,
+  "initialBalance": "1073741824",
+  "expiryDate": "2026-04-21T00:00:00Z",
+  "canRepayLoan": false,
+  "canTransfer": true,
+  "canConvert": false,
+  "counterSelectionKeys": [
+    { "key": "ratingGroup", "value": "10" }
+  ],
+  "externalReference": "EXT-REF-0001",
+  "reasonCode": "QUOTA_PROVISIONED"
+}
+
+### Quota Provisioning — Monetary counter with loan
+PUB public.quota-provisioning
+Host: kafka://localhost:9092
+Content-Type: application/json
+
+{
+  "eventId": "e0000002-0000-0000-0000-000000000002",
+  "subscriberId": "5ub00001-0000-0000-0000-000000000001",
+  "counterId": "c0000002-0000-0000-0000-000000000002",
+  "productId": "p0000002-0000-0000-0000-000000000002",
+  "productName": "Emergency Loan 50MB",
+  "description": "Emergency data loan — repaid on next recharge",
+  "unitType": "OCTETS",
+  "priority": 5,
+  "initialBalance": "52428800",
+  "expiryDate": "2026-04-21T00:00:00Z",
+  "canRepayLoan": false,
+  "canTransfer": false,
+  "canConvert": false,
+  "counterSelectionKeys": [
+    { "key": "ratingGroup", "value": "10" }
+  ],
+  "reasonCode": "QUOTA_PROVISIONED",
+  "loanInfo": {
+    "transactionFee": "5242880",
+    "minRepayment": "10485760",
+    "clawbackPercentage": "0.50"
+  }
+}
+
+### Quota Provisioning — Transfer in
+PUB public.quota-provisioning
+Host: kafka://localhost:9092
+Content-Type: application/json
+
+{
+  "eventId": "e0000003-0000-0000-0000-000000000003",
+  "subscriberId": "5ub00001-0000-0000-0000-000000000001",
+  "counterId": "c0000003-0000-0000-0000-000000000003",
+  "productId": "p0000001-0000-0000-0000-000000000001",
+  "productName": "Transferred Balance",
+  "description": "Balance transferred from previous counter",
+  "unitType": "OCTETS",
+  "priority": 10,
+  "initialBalance": "524288000",
+  "canRepayLoan": true,
+  "canTransfer": true,
+  "canConvert": false,
+  "counterSelectionKeys": [
+    { "key": "ratingGroup", "value": "10" }
+  ],
+  "reasonCode": "TRANSFER_IN"
+}

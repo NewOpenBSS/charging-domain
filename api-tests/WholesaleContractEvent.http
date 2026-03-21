@@ -1,0 +1,50 @@
+### Wholesale Contract — Provisioned
+PUB public.wholesale-contract-event
+Host: kafka://localhost:9092
+Content-Type: application/json
+
+{
+  "eventType": "WholesaleContractProvisionedEvent",
+  "wholesalerId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "contractId": "c0ntract-0001-0000-0000-000000000001",
+  "ratePlanId": "rateplan-0001-0000-0000-000000000001",
+  "legalName": "Acme Wholesale Pty Ltd",
+  "displayName": "Acme Wholesale",
+  "realm": "acme",
+  "hosts": ["acme.example.com", "acme-backup.example.com"],
+  "nchfUrl": "https://acme.example.com/nchf",
+  "rateLimit": 100.0,
+  "active": true
+}
+
+### Wholesale Contract — Suspend
+PUB public.wholesale-contract-event
+Host: kafka://localhost:9092
+Content-Type: application/json
+
+{
+  "eventType": "WholesaleContractSuspendEvent",
+  "wholesalerId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "suspend": true
+}
+
+### Wholesale Contract — Unsuspend
+PUB public.wholesale-contract-event
+Host: kafka://localhost:9092
+Content-Type: application/json
+
+{
+  "eventType": "WholesaleContractSuspendEvent",
+  "wholesalerId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "suspend": false
+}
+
+### Wholesale Contract — Deregistering
+PUB public.wholesale-contract-event
+Host: kafka://localhost:9092
+Content-Type: application/json
+
+{
+  "eventType": "WholesaleContractDeregisteringEvent",
+  "wholesalerId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+}

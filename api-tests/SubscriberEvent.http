@@ -1,0 +1,89 @@
+### Subscriber Event — Created
+PUB public.subscriber-event
+Host: kafka://localhost:9092
+Content-Type: application/json
+
+{
+  "eventType": "CREATED",
+  "subscriberId": "5ub00001-0000-0000-0000-000000000001",
+  "ratePlanId": "rateplan-0001-0000-0000-000000000001",
+  "customerId": "cust0001-0000-0000-0000-000000000001",
+  "wholesaleId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "msisdn": "27831234567",
+  "iccid": "8927001234567890123",
+  "contractId": "c0ntract-0001-0000-0000-000000000001",
+  "status": "ACTIVE",
+  "allowOobCharging": true
+}
+
+### Subscriber Event — Updated (status change)
+PUB public.subscriber-event
+Host: kafka://localhost:9092
+Content-Type: application/json
+
+{
+  "eventType": "UPDATED",
+  "subscriberId": "5ub00001-0000-0000-0000-000000000001",
+  "ratePlanId": "rateplan-0001-0000-0000-000000000001",
+  "customerId": "cust0001-0000-0000-0000-000000000001",
+  "wholesaleId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "msisdn": "27831234567",
+  "iccid": "8927001234567890123",
+  "contractId": "c0ntract-0001-0000-0000-000000000001",
+  "status": "BLOCKED",
+  "allowOobCharging": false
+}
+
+### Subscriber Event — MSISDN Swap
+PUB public.subscriber-event
+Host: kafka://localhost:9092
+Content-Type: application/json
+
+{
+  "eventType": "MSISDN_SWAP",
+  "subscriberId": "5ub00001-0000-0000-0000-000000000001",
+  "ratePlanId": "rateplan-0001-0000-0000-000000000001",
+  "customerId": "cust0001-0000-0000-0000-000000000001",
+  "wholesaleId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "msisdn": "27839999999",
+  "iccid": "8927001234567890123",
+  "contractId": "c0ntract-0001-0000-0000-000000000001",
+  "status": "ACTIVE",
+  "allowOobCharging": true
+}
+
+### Subscriber Event — SIM Swap
+PUB public.subscriber-event
+Host: kafka://localhost:9092
+Content-Type: application/json
+
+{
+  "eventType": "SIM_SWAP",
+  "subscriberId": "5ub00001-0000-0000-0000-000000000001",
+  "ratePlanId": "rateplan-0001-0000-0000-000000000001",
+  "customerId": "cust0001-0000-0000-0000-000000000001",
+  "wholesaleId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "msisdn": "27831234567",
+  "iccid": "8927009999999999999",
+  "contractId": "c0ntract-0001-0000-0000-000000000001",
+  "status": "ACTIVE",
+  "allowOobCharging": true
+}
+
+### Subscriber Event — Deleted
+PUB public.subscriber-event
+Host: kafka://localhost:9092
+Content-Type: application/json
+
+{
+  "eventType": "DELETED",
+  "subscriberId": "5ub00001-0000-0000-0000-000000000001",
+  "ratePlanId": "rateplan-0001-0000-0000-000000000001",
+  "customerId": "cust0001-0000-0000-0000-000000000001",
+  "wholesaleId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "msisdn": "27831234567",
+  "iccid": "8927001234567890123",
+  "contractId": "c0ntract-0001-0000-0000-000000000001",
+  "status": "INACTIVE",
+  "allowOobCharging": false
+}
