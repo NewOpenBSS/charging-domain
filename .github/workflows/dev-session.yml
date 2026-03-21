@@ -19,17 +19,17 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.event.inputs.branch_name || github.ref_name }}
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GOOSE_AGENT_PAT }}
 
       - name: Configure environment
         run: |
           echo "$HOME/.local/bin" >> $GITHUB_PATH
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "goose-agent"
+          git config user.email "270002424+goose-agent@users.noreply.github.com"
 
       - name: Run dev session recipe
         id: goose
@@ -44,7 +44,7 @@ jobs:
           GOOSE_MODEL: default
           GOOSE_MODE: auto
           GOOSE_DISABLE_SESSION_NAMING: "true"
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GOOSE_AGENT_PAT }}
           HOME: /home/eddiecarpenter
 
       - name: Push commits
@@ -53,7 +53,7 @@ jobs:
           BRANCH="${{ github.event.inputs.branch_name || github.ref_name }}"
           git push origin ${BRANCH}
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GOOSE_AGENT_PAT }}
 
       - name: Open PR
         if: success()
@@ -68,4 +68,4 @@ jobs:
             --base main \
             --head ${BRANCH}
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GOOSE_AGENT_PAT }}
