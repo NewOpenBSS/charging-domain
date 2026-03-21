@@ -56,8 +56,9 @@ jobs:
       - name: Trigger dev session
         if: success()
         run: |
-          gh workflow run dev-session.yml \
-            --ref main \
+          gh workflow -R ${{ github.repository }} \
+            run dev-session.yml \
+            --ref ${{ github.ref_name }} \
             --field branch_name=${{ github.ref_name }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
