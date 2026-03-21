@@ -59,8 +59,8 @@ jobs:
         if: success()
         run: |
           BRANCH="${{ github.event.inputs.branch_name || github.ref_name }}"
-          FEATURE_ID=$(echo "${BRANCH}" | grep -oP 'F-\d+')
-          FEATURE_TITLE=$(grep -A1 "## ${FEATURE_ID}" .ai/memory/FEATURES.md | tail -1 | sed 's/.*— //')
+          FEATURE_ID=$(echo "${BRANCH}" | sed 's/.*\(F-[0-9]*\).*/\1/')
+          FEATURE_TITLE=$(grep "## ${FEATURE_ID} —" .ai/memory/FEATURES.md | sed 's/.*— //')
           gh pr create \
             --repo ${{ github.repository }} \
             --title "feat: ${FEATURE_ID} — ${FEATURE_TITLE}" \
