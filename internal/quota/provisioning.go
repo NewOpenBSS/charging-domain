@@ -170,7 +170,7 @@ func (m *QuotaManager) applyProvisioning(q *Quota, req ProvisionCounterRequest) 
 		req.ReasonCode,
 		req.InitialBalance,
 		req.UnitType,
-		TaxCalculation{},
+		computeProvisioningTax(req),
 		req.SubscriberID,
 		metaData,
 		req.Now,
@@ -234,6 +234,21 @@ func (m *QuotaManager) applyClawback(q *Quota, newCounter *Counter, req Provisio
 			)
 		}
 	}
+}
+
+// computeProvisioningTax computes the tax for a QUOTA_PROVISIONED journal event.
+//
+// purchasePrice = UnitPrice × InitialBalance (ex-tax amount)
+// tax = CalculateTax(purchasePrice, TaxRate)
+//
+// Returns an empty TaxCalculation when UnitPrice or TaxRate is nil (i.e. the
+// counter has no monetary price or the tax rate is not configured).
+func computeProvisioningTax(req ProvisionCounterRequest) TaxCalculation {
+	if req.UnitPrice == nil || req.TaxRate == nil {
+		return TaxCalculation{}
+	}
+	purchasePrice := req.UnitPrice.Mul(req.InitialBalance)
+	return CalculateTax(purchasePrice, *req.TaxRate)
 }
 
 // buildCounterMetaData constructs the CounterEvent metadata payload included in

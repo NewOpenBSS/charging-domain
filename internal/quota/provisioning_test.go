@@ -284,6 +284,58 @@ func TestProvisionCounter_CanRepayLoan_StopsWhenRemainingBalanceExhausted(t *tes
 	mockRepo.AssertExpectations(t)
 }
 
+// --- computeProvisioningTax ---
+
+func TestComputeProvisioningTax_WithUnitPriceAndTaxRate_ReturnsTaxCalculation(t *testing.T) {
+	unitPrice := decimal.NewFromInt(5)   // 5 per unit
+	taxRate := decimal.NewFromFloat(0.15) // 15%
+	balance := decimal.NewFromInt(100)   // 100 units
+
+	req := makeBaseRequest(uuid.New(), uuid.New(), balance)
+	req.UnitPrice = &unitPrice
+	req.TaxRate = &taxRate
+
+	tc := computeProvisioningTax(req)
+
+	// purchasePrice = 5 * 100 = 500
+	// taxAmount     = 500 * 0.15 = 75
+	// exTaxValue    = 500
+	assert.True(t, tc.ExTaxValue.Equal(decimal.NewFromInt(500)),
+		"expected ex-tax value 500, got %s", tc.ExTaxValue.String())
+	assert.True(t, tc.TaxAmount.Equal(decimal.NewFromInt(75)),
+		"expected tax amount 75, got %s", tc.TaxAmount.String())
+	assert.True(t, tc.TaxRate.Equal(taxRate),
+		"expected tax rate 0.15, got %s", tc.TaxRate.String())
+}
+
+func TestComputeProvisioningTax_NilUnitPrice_ReturnsEmptyTaxCalculation(t *testing.T) {
+	taxRate := decimal.NewFromFloat(0.15)
+	balance := decimal.NewFromInt(100)
+
+	req := makeBaseRequest(uuid.New(), uuid.New(), balance)
+	req.UnitPrice = nil
+	req.TaxRate = &taxRate
+
+	tc := computeProvisioningTax(req)
+
+	assert.True(t, tc.ExTaxValue.Equal(decimal.Zero), "expected zero ex-tax value")
+	assert.True(t, tc.TaxAmount.Equal(decimal.Zero), "expected zero tax amount")
+}
+
+func TestComputeProvisioningTax_NilTaxRate_ReturnsEmptyTaxCalculation(t *testing.T) {
+	unitPrice := decimal.NewFromInt(5)
+	balance := decimal.NewFromInt(100)
+
+	req := makeBaseRequest(uuid.New(), uuid.New(), balance)
+	req.UnitPrice = &unitPrice
+	req.TaxRate = nil
+
+	tc := computeProvisioningTax(req)
+
+	assert.True(t, tc.ExTaxValue.Equal(decimal.Zero), "expected zero ex-tax value")
+	assert.True(t, tc.TaxAmount.Equal(decimal.Zero), "expected zero tax amount")
+}
+
 func TestFindCountersWithLoans_ReturnsOnlyLoanCounters(t *testing.T) {
 	loanBalance := decimal.NewFromInt(50)
 	balance := decimal.NewFromInt(100)
