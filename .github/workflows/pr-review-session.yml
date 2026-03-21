@@ -5,6 +5,16 @@ on:
     types: [submitted]
   pull_request_review_comment:
     types: [created]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR number to process review comments for'
+        required: true
+        type: string
+      branch_name:
+        description: 'Feature branch the PR is open on'
+        required: true
+        type: string
 
 jobs:
   pr-review-session:
@@ -17,18 +27,21 @@ jobs:
     # Only run on feature branches, and only when review state is
     # COMMENTED or CHANGES_REQUESTED (not APPROVED)
     if: |
-      startsWith(github.event.pull_request.head.ref, 'feature/F-') &&
+      github.event_name == 'workflow_dispatch' ||
       (
-        github.event.review.state == 'commented' ||
-        github.event.review.state == 'changes_requested' ||
-        github.event_name == 'pull_request_review_comment'
+        startsWith(github.event.pull_request.head.ref, 'feature/F-') &&
+        (
+          github.event.review.state == 'commented' ||
+          github.event.review.state == 'changes_requested' ||
+          github.event_name == 'pull_request_review_comment'
+        )
       )
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.ref }}
+          ref: ${{ github.event.inputs.branch_name || github.event.pull_request.head.ref }}
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -41,8 +54,8 @@ jobs:
       - name: Run PR review recipe
         id: goose
         run: |
-          PR_NUMBER="${{ github.event.pull_request.number }}"
-          BRANCH="${{ github.event.pull_request.head.ref }}"
+          PR_NUMBER="${{ github.event.inputs.pr_number || github.event.pull_request.number }}"
+          BRANCH="${{ github.event.inputs.branch_name || github.event.pull_request.head.ref }}"
           goose run \
             --recipe .goose/recipes/pr-review-session.yaml \
             --params pr_number=${PR_NUMBER} \
@@ -60,7 +73,7 @@ jobs:
       - name: Push fixes
         if: success()
         run: |
-          BRANCH="${{ github.event.pull_request.head.ref }}"
+          BRANCH="${{ github.event.inputs.branch_name || github.event.pull_request.head.ref }}"
           # Only push if there are new commits (i.e. code was changed, not just API replies)
           LOCAL=$(git rev-parse HEAD)
           REMOTE=$(git rev-parse origin/${BRANCH})
