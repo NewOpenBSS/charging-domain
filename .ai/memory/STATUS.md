@@ -72,7 +72,8 @@ _Last updated: 2026-03-20 (F-005)_
 
 ## Current Focus
 
-F-005 — SubscriberEventConsumer — **complete**, in review.
+F-006 — WholesaleContractConsumer — **in progress**.
+- Task 001 complete: Wholesaler SQL queries added and sqlc regenerated.
 
 ---
 
