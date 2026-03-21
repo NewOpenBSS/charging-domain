@@ -17,9 +17,7 @@ Content-Type: application/json
   "canRepayLoan": false,
   "canTransfer": true,
   "canConvert": false,
-  "counterSelectionKeys": [
-    { "key": "ratingGroup", "value": "10" }
-  ],
+  "counterSelectionKeys": ["Data.Prepaid.*.Standard"],
   "externalReference": "EXT-REF-0001",
   "reasonCode": "QUOTA_PROVISIONED"
 }
@@ -43,9 +41,7 @@ Content-Type: application/json
   "canRepayLoan": false,
   "canTransfer": false,
   "canConvert": false,
-  "counterSelectionKeys": [
-    { "key": "ratingGroup", "value": "10" }
-  ],
+  "counterSelectionKeys": ["Data.Prepaid.*.Standard"],
   "reasonCode": "QUOTA_PROVISIONED",
   "loanInfo": {
     "transactionFee": "5242880",
@@ -72,8 +68,6 @@ Content-Type: application/json
   "canRepayLoan": true,
   "canTransfer": true,
   "canConvert": false,
-  "counterSelectionKeys": [
-    { "key": "ratingGroup", "value": "10" }
-  ],
+  "counterSelectionKeys": ["Data.Prepaid.*.Standard"],
   "reasonCode": "TRANSFER_IN"
 }
