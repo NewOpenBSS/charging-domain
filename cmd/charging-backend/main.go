@@ -58,6 +58,12 @@ func main() {
 	defer appCtx.SubscriberConsumer.Stop()
 	appCtx.SubscriberConsumer.Start(consumerCtx)
 
+	// Start the wholesale contract consumer so the shadow wholesaler table stays in sync.
+	wholesaleCtx, wholesaleCancel := context.WithCancel(context.Background())
+	defer wholesaleCancel()
+	defer appCtx.WholesaleConsumer.Stop()
+	appCtx.WholesaleConsumer.Start(wholesaleCtx)
+
 	metricsSrv := appl.StartMetricsServer(&cfg.Base)
 	defer func() {
 		if metricsSrv != nil {

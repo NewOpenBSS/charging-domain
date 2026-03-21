@@ -37,3 +37,4 @@ kafka:
     quota-journal: "public.quota-journal"
     notification-event: "public.notification"
     subscriber-event: "public.subscriber-event"
+    wholesale-contract-event: "public.wholesale-contract-event"
