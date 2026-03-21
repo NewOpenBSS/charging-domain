@@ -39,6 +39,11 @@ type Counter struct {
 
 	CanConvert bool `json:"canConvert"`
 
+	// CanRepayLoan indicates whether newly provisioned balance on this counter is
+	// eligible to trigger clawback repayment of outstanding loans on other counters.
+	// Always false when the counter itself carries a Loan.
+	CanRepayLoan bool `json:"canRepayLoan"`
+
 	UnitPrice *decimal.Decimal `json:"UnitPrice"`
 
 	TaxRate *decimal.Decimal `json:"taxRate"`
@@ -224,6 +229,20 @@ func (q *Quota) FindCounters(rateKey charging.RateKey, unitType charging.UnitTyp
 		return list[i].Priority > list[j].Priority
 	})
 
+	return list
+}
+
+// FindCountersWithLoans returns all counters that have an outstanding loan balance,
+// in insertion order (oldest first). The caller must iterate oldest-first to honour
+// the loan clawback ordering guarantee.
+func (q *Quota) FindCountersWithLoans() []*Counter {
+	list := make([]*Counter, 0)
+	for i := range q.Counters {
+		c := &q.Counters[i]
+		if c.Loan != nil && c.Loan.LoanBalance.GreaterThan(decimal.Zero) {
+			list = append(list, c)
+		}
+	}
 	return list
 }
 

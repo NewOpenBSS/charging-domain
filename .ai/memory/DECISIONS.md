@@ -267,3 +267,30 @@ store adapter, wired via AppContext.
 **Decision:** Convert RateLimit float64 to pgtype.Numeric by routing through shopspring/decimal.NewFromFloat().String() and scanning the string into pgtype.Numeric.
 **Rationale:** Direct float64-to-Numeric conversion risks floating-point representation artefacts. The decimal string representation is exact for the values used (rate limits are whole numbers or simple decimals). This avoids importing additional conversion libraries and matches the project's existing decimal handling patterns.
 **Consequences:** floatToNumeric is a private helper in the consumer package. Any error from Scan (unreachable for valid finite float64 inputs) is propagated as a wrapped error from UpsertWholesaler.
+
+## ADR-018 — ProvisionCounter: QuotaManager method with QuotaProvisioner interface
+
+**Status:** Accepted
+**Area:** F-007 — QuotaProvisioningEventConsumer / quota package
+**Decision:** Implement provisioning business logic as a `ProvisionCounter` method on
+`*QuotaManager`, exposed to the consumer via a narrow `QuotaProvisioner` interface defined
+in the consumer package.
+**Rationale:** All quota business logic (load/save with optimistic retry, journal publishing,
+clawback) already lives in `internal/quota`. The provisioning operation uses the same
+`executeWithQuota` retry loop as Reserve, Debit, and Release. Keeping it in the quota package
+avoids leaking quota internals into the consumer layer. The narrow interface at the point of
+consumption follows the project's interface-at-consumer-side convention.
+**Consequences:** `QuotaManager` grows a new exported method. The `QuotaProvisioner` interface
+requires no changes to AppContext wiring beyond passing the existing `*QuotaManager`.
+
+## ADR-019 — RemoveExpiredEntries: nil Expiry treated as never-expires
+
+**Status:** Accepted
+**Area:** internal/quota — LoadedQuota
+**Decision:** Fix `RemoveExpiredEntries` to treat nil `Expiry` as "never expires" by
+changing the condition from `c.Expiry.After(now)` to `c.Expiry == nil || c.Expiry.After(now)`.
+**Rationale:** The provisioning event supports counters with no expiry date. The existing
+code panicked on nil Expiry. The fix is consistent with how `GetBalance` handles nil Expiry
+(uses the same `c.Expiry != nil && !c.Expiry.After(now)` guard).
+**Consequences:** Previously all test counters included an expiry; the fix is backward-
+compatible and enables non-expiring counters throughout the quota system.

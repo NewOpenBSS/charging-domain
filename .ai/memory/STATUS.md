@@ -73,7 +73,7 @@ _Last updated: 2026-03-20 (F-005)_
 
 ## Current Focus
 
-F-007 — QuotaProvisioningEventConsumer — **in progress** (task 001 of 4 complete).
+F-007 — QuotaProvisioningEventConsumer — **in progress** (task 002 of 4 complete).
 
 ---
 

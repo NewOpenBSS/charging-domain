@@ -20,8 +20,9 @@ func (l *LoadedQuota) RemoveExpiredEntries(now time.Time) {
 
 	counters := make([]Counter, 0)
 	for _, c := range l.Quota.Counters {
-		// Check if counter is expired and has zero balance
-		if c.Expiry.After(now) && !c.Balance.IsZero() {
+		// A nil Expiry means the counter never expires. Only retain counters whose
+		// expiry has not passed and whose balance is non-zero.
+		if (c.Expiry == nil || c.Expiry.After(now)) && !c.Balance.IsZero() {
 			reservations := make(map[uuid.UUID]Reservation)
 			for k, r := range c.Reservations {
 				if r.Expiry.After(now) {
