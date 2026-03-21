@@ -154,7 +154,7 @@ func (c *QuotaProvisioningConsumer) handleRecord(ctx context.Context, r *kgo.Rec
 
 	req := quota.ProvisionCounterRequest{
 		SubscriberID:         event.SubscriberID,
-		CounterID:            event.CounterID,
+		CounterID:            event.EventID, // derived from EventID — not on the wire
 		ProductID:            event.ProductID,
 		ProductName:          event.ProductName,
 		Description:          event.Description,

@@ -6,7 +6,6 @@ Content-Type: application/json
 {
   "eventId": "e0000001-0000-0000-0000-000000000001",
   "subscriberId": "5ub00001-0000-0000-0000-000000000001",
-  "counterId": "c0000001-0000-0000-0000-000000000001",
   "productId": "p0000001-0000-0000-0000-000000000001",
   "productName": "Prepaid Data Bundle 1GB",
   "description": "1GB data bundle — valid 30 days",
@@ -30,7 +29,6 @@ Content-Type: application/json
 {
   "eventId": "e0000002-0000-0000-0000-000000000002",
   "subscriberId": "5ub00001-0000-0000-0000-000000000001",
-  "counterId": "c0000002-0000-0000-0000-000000000002",
   "productId": "p0000002-0000-0000-0000-000000000002",
   "productName": "Emergency Loan 50MB",
   "description": "Emergency data loan — repaid on next recharge",
@@ -58,7 +56,6 @@ Content-Type: application/json
 {
   "eventId": "e0000003-0000-0000-0000-000000000003",
   "subscriberId": "5ub00001-0000-0000-0000-000000000001",
-  "counterId": "c0000003-0000-0000-0000-000000000003",
   "productId": "p0000001-0000-0000-0000-000000000001",
   "productName": "Transferred Balance",
   "description": "Balance transferred from previous counter",

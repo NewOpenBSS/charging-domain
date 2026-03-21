@@ -36,10 +36,9 @@ func (m *mockQuotaProvisioner) ProvisionCounter(ctx context.Context, req quota.P
 // ---------------------------------------------------------------------------
 
 var (
-	testProvEventID     = uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
+	testProvEventID      = uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
 	testProvSubscriberID = uuid.MustParse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")
-	testProvCounterID   = uuid.MustParse("cccccccc-cccc-cccc-cccc-cccccccccccc")
-	testProvProductID   = uuid.MustParse("dddddddd-dddd-dddd-dddd-dddddddddddd")
+	testProvProductID    = uuid.MustParse("dddddddd-dddd-dddd-dddd-dddddddddddd")
 )
 
 // newQuotaProvisioningRecord encodes v as JSON and wraps it in a *kgo.Record.
@@ -69,7 +68,6 @@ func baseProvisioningEvent() events.QuotaProvisioningEvent {
 	return events.QuotaProvisioningEvent{
 		EventID:              testProvEventID,
 		SubscriberID:         testProvSubscriberID,
-		CounterID:            testProvCounterID,
 		ProductID:            testProvProductID,
 		ProductName:          "Test Product",
 		Description:          "Test counter",
@@ -91,9 +89,9 @@ func TestQuotaProvisioningConsumer_HandleRecord_ValidEvent_CallsProvisionCounter
 	p := &mockQuotaProvisioner{}
 	event := baseProvisioningEvent()
 
-	// The consumer builds a ProvisionCounterRequest from the event — match on CounterID as a proxy.
+	// CounterID is derived from EventID in the consumer — verify the derivation.
 	p.On("ProvisionCounter", mock.Anything, mock.MatchedBy(func(req quota.ProvisionCounterRequest) bool {
-		return req.CounterID == testProvCounterID &&
+		return req.CounterID == testProvEventID &&
 			req.SubscriberID == testProvSubscriberID &&
 			req.ReasonCode == quota.ReasonQuotaProvisioned
 	})).Return(nil)

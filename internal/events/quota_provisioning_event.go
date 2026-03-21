@@ -42,16 +42,13 @@ type LoanInfo struct {
 // public.quota-provisioning topic by upstream billing or product systems.
 // Each event provisions a single counter onto the named subscriber's quota.
 type QuotaProvisioningEvent struct {
-	// EventID uniquely identifies this provisioning event and is used as the
-	// idempotency key — a counter with the same CounterID is skipped if already present.
+	// EventID uniquely identifies this provisioning event. Used by the consumer
+	// as the idempotency key for the counter — a counter derived from the same
+	// EventID is silently skipped if it already exists.
 	EventID uuid.UUID `json:"eventId"`
 
 	// SubscriberID is the subscriber whose quota receives the new counter.
 	SubscriberID uuid.UUID `json:"subscriberId"`
-
-	// CounterID is the deterministic identifier to assign to the new counter.
-	// If a counter with this ID already exists, the event is silently skipped.
-	CounterID uuid.UUID `json:"counterId"`
 
 	// ProductID is the product associated with this counter.
 	ProductID uuid.UUID `json:"productId"`
