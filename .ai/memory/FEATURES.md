@@ -208,6 +208,66 @@ The shadow `subscriber` table in the charging domain has no automated population
 
 ---
 
+## F-006 — WholesaleContractConsumer
+
+**Status:** Backlog
+**Priority:** High
+**Created:** 2026-03-21
+**Branch:** (filled in by scoping)
+
+### Implementation Approval Required
+- [ ] Yes — pause after AI Design for human review before implementation begins
+- [x] No — proceed to implementation automatically after AI Design
+
+### Feature Switch
+None — background Kafka consumer, no user-visible behaviour change
+
+### Goal
+A Kafka consumer in `charging-backend` that keeps the wholesaler shadow table in sync with the Wholesale CRM domain by processing three contract lifecycle events, including cascaded wholesaler cleanup when the last subscriber of an inactive wholesaler is removed.
+
+### Problem Statement
+The wholesaler shadow table in the charging domain has no automated population mechanism. The charging engine depends on wholesaler data — active status, hosts, NCHF URL, rate plan — for tenant resolution and rate lookups. Without this consumer, wholesaler records can never be created, updated, or removed automatically when the Wholesale CRM domain makes changes, leaving the charging engine with stale, missing, or incorrectly active wholesaler entries.
+
+### MVP
+`charging-backend` consumes three event types from the Wholesale CRM domain and applies the appropriate DB operation:
+- `WholesaleContractProvisionedEvent` → UPSERT wholesaler row
+- `WholesaleContractDeregisteringEvent` → DELETE if no subscribers; else mark `active = false`
+- `WholesaleContractSuspendEvent` → set `active = !suspend`
+
+Additionally, when a subscriber is deleted and their associated wholesaler is `active = false` with zero remaining subscribers, the wholesaler row is also deleted.
+
+### Acceptance Criteria
+- [ ] A `WholesaleContractProvisionedEvent` results in a wholesaler row being inserted (if new) or updated (if existing) with all DB-mapped fields from the event payload
+- [ ] A `WholesaleContractDeregisteringEvent` when subscriber count = 0 results in the wholesaler row being deleted
+- [ ] A `WholesaleContractDeregisteringEvent` when subscriber count > 0 results in the wholesaler being marked `active = false`
+- [ ] A `WholesaleContractSuspendEvent` with `suspend = true` sets `active = false`; with `suspend = false` sets `active = true`
+- [ ] When a subscriber is deleted, if the wholesaler is `active = false` and has zero remaining subscribers, the wholesaler row is also deleted
+- [ ] A malformed or unrecognisable event is logged and skipped — the consumer continues without crashing
+- [ ] When Kafka is disabled (`cfg.Enabled = false`), the consumer starts as a no-op and `Stop()` is safe to call
+
+### Constraints
+- Event schemas are fixed — `WholesaleContractProvisionedEvent`, `WholesaleContractDeregisteringEvent`, `WholesaleContractSuspendEvent` defined in the Wholesale CRM API
+- Only fields present in the `wholesaler` DB schema are persisted — extra fields in the provisioned event (registrationNumber, taxNumber, addressInfo, etc.) are ignored
+- Topic names are supplied via application configuration — same pattern as `SubscriberEventConsumer`
+- Implemented in `charging-backend` only; no changes to `charging-engine`
+- Follow the `SubscriberEventConsumer` pattern exactly: consumer struct, storer interface, store adapter, separate event file in `internal/events/`
+
+### Out of Scope
+- A GraphQL or REST resource for wholesaler management
+- Persisting `registrationNumber`, `taxNumber`, `addressInfo`, `contactInfo`, `invoiceMessage` (DB schema change)
+- Dead-letter queue or retry on consumer errors
+- Replay or backfill of historical wholesale events
+
+### Parking Lot
+- **Wholesaler GraphQL resource**: Admin UI needs — separate feature
+- **Additional wholesaler fields** (`registrationNumber`, `taxNumber`, `addressInfo`): Requires DB schema change — deferred
+- **Dead-letter queue**: Good practice for production hardening — deferred
+
+### Future Considerations
+- If wholesaler deregistration becomes reversible, the delete strategy may need revisiting in favour of soft-delete
+
+---
+
 ## F-004 — GraphQL API Test Files
 
 **Status:** Backlog

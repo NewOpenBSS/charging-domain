@@ -196,10 +196,10 @@ Add a Kafka consumer for subscriber events.
 
 ## R-007 — WholesaleContractConsumer
 
-**Status:** Deferred
-**Priority:** —
+**Status:** Scoped
+**Priority:** High
 **Created:** 2026-03-20
-**Features:** — (populated after scoping)
+**Features:** F-006
 
 ### The Idea
 Add a Kafka consumer for wholesale contract events.
