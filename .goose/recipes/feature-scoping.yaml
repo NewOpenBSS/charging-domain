@@ -81,12 +81,11 @@ instructions: |
   ### Artefact 7 — FEATURES.md Entry
   Synthesise all artefacts. Present for human approval before writing.
 
-  ## The Three-Question Checkpoint
+  ## The Two-Question Checkpoint
   1. "Can I implement this without inventing any requirements?"
   2. "Would you recognise the correct implementation when you see it in a PR?"
-  3. "Is there anything that would make you reject the PR regardless of quality?"
 
-  If yes, yes, no — proceed to write. Otherwise return to the failing artefact.
+  If the answers are yes to both — proceed to write. Otherwise return to the failing artefact.
 
 
   ## Writing to FEATURES.md and REQUIREMENTS.md
@@ -120,13 +119,7 @@ instructions: |
   git commit -m "scoping: create branch feature/F-NNN-<feature-name>"
   git push
 
-  Open a PR for human review:
-  gh pr create \
-    --title "scoping: F-NNN — [title]" \
-    --body "## Scoping Output\n\nRequirement: R-NNN\n\n### Feature Defined\n- F-NNN — [title]\n\n### Branch Created\n- feature/F-NNN-<feature-name>\n\nFeature Design will run automatically via GitHub Actions.\nReview the Feature definition in .ai/memory/FEATURES.md." \
-    --base main
-
-  Confirm to the human: "F-NNN defined, branch created, and PR opened.
+  Confirm to the human: "F-NNN defined and branch is created
   Feature Design will trigger automatically."
 
 prompt: |
