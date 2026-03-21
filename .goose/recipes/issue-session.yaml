@@ -119,10 +119,9 @@ instructions: |
     gh issue comment {{ issue_number }} --repo {{ repo }} \
       --body "<your detailed answer>"
 
-  #### 3d — Close the issue
-  Add the "answered" label and close:
+  #### 3d — Label the issue
+  Add the "answered" label but do NOT close — the human may want to follow up:
     gh issue edit {{ issue_number }} --repo {{ repo }} --add-label "answered"
-    gh issue close {{ issue_number }} --repo {{ repo }}
 
   Exit cleanly — no code changes, no branch, no PR needed.
 
