@@ -64,6 +64,12 @@ func main() {
 	defer appCtx.WholesaleConsumer.Stop()
 	appCtx.WholesaleConsumer.Start(wholesaleCtx)
 
+	// Start the quota provisioning consumer so subscriber balances are populated on provisioning events.
+	quotaProvisioningCtx, quotaProvisioningCancel := context.WithCancel(context.Background())
+	defer quotaProvisioningCancel()
+	defer appCtx.QuotaProvisioningConsumer.Stop()
+	appCtx.QuotaProvisioningConsumer.Start(quotaProvisioningCtx)
+
 	metricsSrv := appl.StartMetricsServer(&cfg.Base)
 	defer func() {
 		if metricsSrv != nil {
