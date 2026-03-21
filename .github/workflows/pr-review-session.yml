@@ -3,8 +3,6 @@ name: PR Review Session (Stage 4b)
 on:
   pull_request_review:
     types: [submitted]
-  pull_request_review_comment:
-    types: [created]
   workflow_dispatch:
     inputs:
       pr_number:
@@ -20,6 +18,9 @@ jobs:
   pr-review-session:
     name: Run PR Review Session
     runs-on: self-hosted
+    concurrency:
+      group: pr-review-${{ github.event.pull_request.number || github.event.inputs.pr_number }}
+      cancel-in-progress: false
     permissions:
       contents: write
       pull-requests: write
