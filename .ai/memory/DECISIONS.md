@@ -227,3 +227,43 @@ store adapter, wired via AppContext.
 **Decision:** Create GitHub organisation `NewOpenBSS` to house all delivery repos and a shared requirements repo.
 **Rationale:** Separates requirements/roadmap from code. A dedicated requirements repo under the org serves multiple delivery projects. Continues the OpenBSS brand (the Java organisation) while signalling the new Go platform.
 **Consequences:** Requirements and Features will migrate from REQUIREMENTS.md and FEATURES.md to GitHub Issues in a new `NewOpenBSS/requirements` repo. Recipes will be updated to use `gh issue` commands with `--repo NewOpenBSS/requirements`. go-ocs will eventually move to `NewOpenBSS/go-ocs`.
+
+---
+
+## ADR-014 — WholesaleContractConsumer: UpsertWholesaler with INSERT ON CONFLICT
+
+**Status:** Accepted
+**Area:** Kafka consumer / wholesaler shadow table
+**Decision:** Use INSERT … ON CONFLICT (id) DO UPDATE for all provisioned events rather than a separate insert-or-update flow at the application level.
+**Rationale:** Idempotent handling of re-provisioning events without explicit check-then-insert. Reduces round-trips and eliminates a race condition that could occur between a check and an insert under concurrent events.
+**Consequences:** Modified_on is always updated to NOW() on upsert, keeping the timestamp accurate for all write paths.
+
+---
+
+## ADR-015 — DeleteInactiveWholesalerIfEmpty: atomic single SQL statement
+
+**Status:** Accepted
+**Area:** Kafka consumer / wholesaler cascade delete
+**Decision:** Implement the "delete wholesaler if inactive and has no subscribers" check as a single SQL DELETE with embedded subquery rather than as two application-level statements (count then delete).
+**Rationale:** A two-step approach would have a race window between the count query and the delete where a concurrent subscriber insert could result in an orphaned wholesaler delete. The single-statement SQL eliminates this window entirely.
+**Consequences:** The cascade delete is always a no-op unless both conditions are satisfied simultaneously. Slightly more complex SQL but safer than any application-level alternative.
+
+---
+
+## ADR-016 — DeregisterWholesaler: count-then-act without transaction
+
+**Status:** Accepted
+**Area:** Kafka consumer / wholesaler deregistration
+**Decision:** The DeregisterWholesaler adapter method performs count then delete-or-deactivate as two sequential DB calls without a wrapping transaction.
+**Rationale:** Matches the Java reference implementation behaviour. A race between two simultaneous deregistering events for the same wholesaler is extremely low probability in the wholesale domain. The complexity of a transaction for this path is not warranted at this stage.
+**Consequences:** In the rare case of concurrent deregistering events, the wholesaler may be left in an intermediate state (active=false with zero subscribers). The DeleteInactiveWholesalerIfEmpty SQL path will eventually clean it up on next subscriber delete.
+
+---
+
+## ADR-017 — floatToNumeric: decimal string conversion for pgtype.Numeric
+
+**Status:** Accepted
+**Area:** Kafka consumer / type conversion
+**Decision:** Convert RateLimit float64 to pgtype.Numeric by routing through shopspring/decimal.NewFromFloat().String() and scanning the string into pgtype.Numeric.
+**Rationale:** Direct float64-to-Numeric conversion risks floating-point representation artefacts. The decimal string representation is exact for the values used (rate limits are whole numbers or simple decimals). This avoids importing additional conversion libraries and matches the project's existing decimal handling patterns.
+**Consequences:** floatToNumeric is a private helper in the consumer package. Any error from Scan (unreachable for valid finite float64 inputs) is propagated as a wrapped error from UpsertWholesaler.

@@ -23,8 +23,9 @@ type SubscriberStorer interface {
 	// MSISDN_SWAP, or SIM_SWAP event.
 	UpdateSubscriber(ctx context.Context, event *events.SubscriberEvent) error
 
-	// DeleteSubscriber hard-deletes a subscriber from a DELETED event.
-	DeleteSubscriber(ctx context.Context, subscriberID uuid.UUID) error
+	// DeleteSubscriber hard-deletes a subscriber from a DELETED event and
+	// cascades the delete to an inactive wholesaler if it has no remaining subscribers.
+	DeleteSubscriber(ctx context.Context, subscriberID uuid.UUID, wholesaleID uuid.UUID) error
 }
 
 // SubscriberEventConsumer consumes SubscriberEvent messages from a Kafka topic
@@ -132,7 +133,7 @@ func (c *SubscriberEventConsumer) handleRecord(ctx context.Context, r *kgo.Recor
 		return c.storer.UpdateSubscriber(ctx, &event)
 
 	case events.SubscriberEventDeleted:
-		return c.storer.DeleteSubscriber(ctx, event.SubscriberID)
+		return c.storer.DeleteSubscriber(ctx, event.SubscriberID, event.WholesaleID)
 
 	default:
 		logging.Warn("SubscriberEventConsumer: unknown event type skipped",

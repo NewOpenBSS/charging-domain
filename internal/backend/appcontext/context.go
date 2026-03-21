@@ -12,26 +12,28 @@ import (
 
 // AppContext is the dependency injection container for the charging-backend application.
 type AppContext struct {
-	Config             *BackendConfig
-	Metrics            *AppMetrics
-	Store              *store.Store
-	Auth               *keycloak.Client // nil when auth.enabled = false
-	KafkaManager       *events.KafkaManager
-	TenantResolver     *tenant.Resolver
-	SubscriberConsumer *consumer.SubscriberEventConsumer
-	CarrierSvc         *services.CarrierService
-	ClassificationSvc  *services.ClassificationService
-	NumberPlanSvc      *services.NumberPlanService
-	RatePlanSvc        *services.RatePlanService
-	QuotaSvc           *services.QuotaService
-	ChargingTraceSvc   *services.ChargingTraceService
+	Config              *BackendConfig
+	Metrics             *AppMetrics
+	Store               *store.Store
+	Auth                *keycloak.Client // nil when auth.enabled = false
+	KafkaManager        *events.KafkaManager
+	TenantResolver      *tenant.Resolver
+	SubscriberConsumer  *consumer.SubscriberEventConsumer
+	WholesaleConsumer   *consumer.WholesaleContractConsumer
+	CarrierSvc          *services.CarrierService
+	ClassificationSvc   *services.ClassificationService
+	NumberPlanSvc       *services.NumberPlanService
+	RatePlanSvc         *services.RatePlanService
+	QuotaSvc            *services.QuotaService
+	ChargingTraceSvc    *services.ChargingTraceService
 }
 
 // NewAppContext constructs a fully wired AppContext from the supplied config, store,
 // Kafka manager, and optional Keycloak client (nil disables authentication).
 func NewAppContext(cfg *BackendConfig, s *store.Store, kafka *events.KafkaManager, auth *keycloak.Client) *AppContext {
 	quotaManager := quota.NewQuotaManager(*s, 3, kafka)
-	storer := consumer.NewStoreSubscriberAdapter(s)
+	subscriberStorer := consumer.NewStoreSubscriberAdapter(s)
+	wholesaleStorer := consumer.NewStoreWholesaleAdapter(s)
 	return &AppContext{
 		Config:             cfg,
 		Metrics:            NewMetrics(),
@@ -39,7 +41,8 @@ func NewAppContext(cfg *BackendConfig, s *store.Store, kafka *events.KafkaManage
 		Auth:               auth,
 		KafkaManager:       kafka,
 		TenantResolver:     tenant.NewResolver(s, cfg.Server.TenantRefreshInterval),
-		SubscriberConsumer: consumer.NewSubscriberEventConsumer(cfg.Kafkaconfig, storer, subscriberEventTopic(cfg.Kafkaconfig)),
+		SubscriberConsumer: consumer.NewSubscriberEventConsumer(cfg.Kafkaconfig, subscriberStorer, subscriberEventTopic(cfg.Kafkaconfig)),
+		WholesaleConsumer:  consumer.NewWholesaleContractConsumer(cfg.Kafkaconfig, wholesaleStorer, wholesaleContractEventTopic(cfg.Kafkaconfig)),
 		CarrierSvc:         services.NewCarrierService(s),
 		ClassificationSvc:  services.NewClassificationService(s),
 		NumberPlanSvc:      services.NewNumberPlanService(s),
@@ -57,6 +60,19 @@ func subscriberEventTopic(cfg *events.KafkaConfig) string {
 		return defaultTopic
 	}
 	if t, ok := cfg.Topics["subscriber-event"]; ok {
+		return t
+	}
+	return defaultTopic
+}
+
+// wholesaleContractEventTopic resolves the wholesale-contract-event topic name from
+// the Kafka topics map, falling back to the canonical topic name if not configured.
+func wholesaleContractEventTopic(cfg *events.KafkaConfig) string {
+	const defaultTopic = "public.wholesale-contract-event"
+	if cfg == nil || cfg.Topics == nil {
+		return defaultTopic
+	}
+	if t, ok := cfg.Topics["wholesale-contract-event"]; ok {
 		return t
 	}
 	return defaultTopic

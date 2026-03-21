@@ -30,8 +30,8 @@ func (m *mockSubscriberStorer) UpdateSubscriber(ctx context.Context, event *even
 	return m.Called(ctx, event).Error(0)
 }
 
-func (m *mockSubscriberStorer) DeleteSubscriber(ctx context.Context, subscriberID uuid.UUID) error {
-	return m.Called(ctx, subscriberID).Error(0)
+func (m *mockSubscriberStorer) DeleteSubscriber(ctx context.Context, subscriberID uuid.UUID, wholesaleID uuid.UUID) error {
+	return m.Called(ctx, subscriberID, wholesaleID).Error(0)
 }
 
 // ---------------------------------------------------------------------------
@@ -138,13 +138,31 @@ func TestHandleRecord_Deleted_CallsDelete(t *testing.T) {
 	t.Parallel()
 	storer := &mockSubscriberStorer{}
 	event := newBaseEvent(events.SubscriberEventDeleted)
-	storer.On("DeleteSubscriber", mock.Anything, testSubID).Return(nil)
+	testWholesaleID := uuid.MustParse("dddddddd-dddd-dddd-dddd-dddddddddddd")
+	storer.On("DeleteSubscriber", mock.Anything, testSubID, testWholesaleID).Return(nil)
 
 	c := newConsumer(storer)
 	err := c.handleRecord(context.Background(), newRecord(t, event))
 
 	require.NoError(t, err)
 	storer.AssertExpectations(t)
+}
+
+func TestHandleRecord_Deleted_CascadesWholesalerDelete(t *testing.T) {
+	t.Parallel()
+	storer := &mockSubscriberStorer{}
+	event := newBaseEvent(events.SubscriberEventDeleted)
+	// WholesaleID is set on the base event to dddddddd-...
+	testWholesaleID := uuid.MustParse("dddddddd-dddd-dddd-dddd-dddddddddddd")
+	storer.On("DeleteSubscriber", mock.Anything, testSubID, testWholesaleID).Return(nil)
+
+	c := newConsumer(storer)
+	err := c.handleRecord(context.Background(), newRecord(t, event))
+
+	require.NoError(t, err)
+	// Verify that DeleteSubscriber was called with the correct wholesaleID so the
+	// adapter can cascade to DeleteInactiveWholesalerIfEmpty.
+	storer.AssertCalled(t, "DeleteSubscriber", mock.Anything, testSubID, testWholesaleID)
 }
 
 // ---------------------------------------------------------------------------
