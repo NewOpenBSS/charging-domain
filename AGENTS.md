@@ -117,6 +117,65 @@ Always ask a human before:
 - Changing public APIs
 - Modifying core business logic (charging, payments, financial calculations)
 - Introducing new dependencies
+- **Modifying any contract** — see Contract Rules below
+
+---
+
+## Contract Rules
+
+A **contract** is any structure or schema shared with an external system or process.
+Contracts must **never be modified without explicit human approval**, regardless of
+how minor the change appears.
+
+The meta-rule: **You can never know all consumers of a contract.** A field that
+appears unused may be read by a Java service, a database migration, a reporting
+tool, or a downstream event processor. Adding, removing, or renaming fields
+without approval is always a breaking change risk.
+
+### What counts as a contract
+
+**Kafka event schemas** — any struct that is serialised and published to a Kafka
+topic, or deserialised from a Kafka topic. These are consumed by other services
+(Java or otherwise) that you cannot see. The schema is defined by the upstream
+publisher — the consuming service must accept what it receives, not invent fields
+that the publisher does not send.
+
+Examples in this repo: `internal/events/`
+
+**Database-serialised structs** — any struct that is marshalled into a database
+column (e.g. as JSON or JSONB). The database is a shared resource — other
+applications (Java services, reporting tools, migrations) may read those columns
+directly. The column layout is a contract with every reader.
+
+Examples in this repo: quota structures stored as JSONB in the quota table.
+
+**GraphQL schema** — any type, field, query, mutation, or subscription exposed via
+the GraphQL API. External clients depend on these names and shapes.
+
+**Store query interfaces** — the `sqlc`-generated query interfaces in
+`internal/store/sqlc/`. These are generated from SQL — modify the SQL, not the Go.
+
+### Rules
+
+1. **Never add, remove, or rename fields** on a contract struct without explicit
+   human approval. Adding a field is not "safe" — it may break deserialisation in
+   consumers that use strict parsing.
+
+2. **Never invent fields** that the upstream publisher does not send. If a field
+   does not exist in the upstream schema, do not add it to the consuming struct.
+   The classic example: adding an internal ID (e.g. `counterId`) to a provisioning
+   event that originates from an external system. That system has no knowledge of
+   internal identifiers.
+
+3. **Internal IDs belong in internal structs**, not in contracts. If a domain
+   entity needs an ID for internal use, generate it inside the service layer after
+   consuming the event — do not add it to the event struct itself.
+
+4. **When in doubt, ask.** If a task requires changing a contract to proceed,
+   stop and raise it with the human before making any change.
+
+5. **Document the reason** for any approved contract change in DECISIONS.md with
+   an ADR, including which consumers were checked and what the migration plan is.
 
 ---
 

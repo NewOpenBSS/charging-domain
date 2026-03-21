@@ -172,6 +172,32 @@ e.g. `TestDebitQuota_InsufficientBalance_ReturnsOutOfFunds`
 
 ---
 
+## Contract Structures — Go-Specific Rules
+
+Contracts are defined in AGENTS.md. These are the Go-specific rules for
+identifying and handling them in this codebase.
+
+**Kafka event structs** live in `internal/events/`. They are identified by:
+- Structs with a field typed as `*EventType` (e.g. `WholesaleContractEventType`)
+- Structs referenced in consumer `handleRecord` switch statements
+- Any struct with JSON tags that is `json.Unmarshal`-ed from a Kafka record
+
+**Database-serialised structs** are identified by:
+- Structs stored via `json.Marshal` into a `pgtype.JSONB` or similar column
+- Fields of type `[]SomeStruct` or `*SomeStruct` on a store-persisted entity
+- Any struct referenced in a sqlc query as a JSON column type
+
+**Never add internal domain IDs to event structs.** If a consumer needs to assign
+an internal identifier (e.g. `counterId`, `subscriberId` in internal terms), that
+ID must be generated inside the service layer after consuming the event — not added
+to the event struct itself. The upstream publisher does not know internal IDs.
+
+**The `internal/events/` package is read-only** for AI agents unless the task
+explicitly states "modify the event schema" and a human has approved it. Any task
+that requires adding a field to an event struct must stop and ask first.
+
+---
+
 ## Sensitive Data
 
 - Subscriber identifiers, account balances, and transaction amounts must not
