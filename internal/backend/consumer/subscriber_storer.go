@@ -53,9 +53,15 @@ func (a *StoreSubscriberAdapter) UpdateSubscriber(ctx context.Context, event *ev
 	})
 }
 
-// DeleteSubscriber hard-deletes a subscriber by subscriber_id.
-func (a *StoreSubscriberAdapter) DeleteSubscriber(ctx context.Context, subscriberID uuid.UUID) error {
-	return a.s.Q.DeleteSubscriber(ctx, uuidToPgtype(subscriberID))
+// DeleteSubscriber hard-deletes a subscriber by subscriber_id, then attempts to
+// cascade-delete the associated wholesaler if it is inactive and has no remaining
+// subscribers. The cascade is atomic at the SQL level — it is a no-op when the
+// wholesaler is still active or still has other subscribers.
+func (a *StoreSubscriberAdapter) DeleteSubscriber(ctx context.Context, subscriberID uuid.UUID, wholesaleID uuid.UUID) error {
+	if err := a.s.Q.DeleteSubscriber(ctx, uuidToPgtype(subscriberID)); err != nil {
+		return err
+	}
+	return a.s.Q.DeleteInactiveWholesalerIfEmpty(ctx, uuidToPgtype(wholesaleID))
 }
 
 // uuidToPgtype converts a google/uuid.UUID to its pgtype.UUID equivalent.

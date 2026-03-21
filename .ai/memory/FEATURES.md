@@ -210,7 +210,7 @@ The shadow `subscriber` table in the charging domain has no automated population
 
 ## F-006 — WholesaleContractConsumer
 
-**Status:** Backlog
+**Status:** In Review
 **Priority:** High
 **Created:** 2026-03-21
 **Branch:** feature/F-006-wholesale-contract-consumer

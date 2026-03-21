@@ -41,3 +41,99 @@ func (q *Queries) AllWholesalers(ctx context.Context) ([]AllWholesalersRow, erro
 	}
 	return items, nil
 }
+
+const countSubscribersByWholesaler = `-- name: CountSubscribersByWholesaler :one
+SELECT COUNT(*) FROM subscriber WHERE wholesale_id = $1
+`
+
+// Counts the number of subscribers associated with a given wholesaler.
+func (q *Queries) CountSubscribersByWholesaler(ctx context.Context, wholesaleID pgtype.UUID) (int64, error) {
+	row := q.db.QueryRow(ctx, countSubscribersByWholesaler, wholesaleID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const deleteInactiveWholesalerIfEmpty = `-- name: DeleteInactiveWholesalerIfEmpty :exec
+DELETE FROM wholesaler
+WHERE id = $1
+  AND active = false
+  AND (SELECT COUNT(*) FROM subscriber WHERE wholesale_id = $1) = 0
+`
+
+// Atomically deletes a wholesaler only when it is inactive AND has no remaining subscribers.
+// This is a no-op when the wholesaler is still active or still has subscribers.
+func (q *Queries) DeleteInactiveWholesalerIfEmpty(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, deleteInactiveWholesalerIfEmpty, id)
+	return err
+}
+
+const deleteWholesaler = `-- name: DeleteWholesaler :exec
+DELETE FROM wholesaler
+WHERE id = $1
+`
+
+// Hard-deletes a wholesaler by id.
+func (q *Queries) DeleteWholesaler(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, deleteWholesaler, id)
+	return err
+}
+
+const setWholesalerActive = `-- name: SetWholesalerActive :exec
+UPDATE wholesaler
+SET active = $2, modified_on = NOW()
+WHERE id = $1
+`
+
+// Sets the active flag on a wholesaler. Used for deregistering and suspend events.
+func (q *Queries) SetWholesalerActive(ctx context.Context, iD pgtype.UUID, active bool) error {
+	_, err := q.db.Exec(ctx, setWholesalerActive, iD, active)
+	return err
+}
+
+const upsertWholesaler = `-- name: UpsertWholesaler :exec
+INSERT INTO wholesaler (id, modified_on, active, legal_name, display_name, realm, hosts, nchfUrl, rateLimit, contract_id, rateplan_id)
+VALUES ($1, NOW(), $2, $3, $4, $5, $6, $7, $8, $9, $10)
+ON CONFLICT (id) DO UPDATE
+    SET modified_on  = NOW(),
+        active       = EXCLUDED.active,
+        legal_name   = EXCLUDED.legal_name,
+        display_name = EXCLUDED.display_name,
+        realm        = EXCLUDED.realm,
+        hosts        = EXCLUDED.hosts,
+        nchfUrl      = EXCLUDED.nchfUrl,
+        rateLimit    = EXCLUDED.rateLimit,
+        contract_id  = EXCLUDED.contract_id,
+        rateplan_id  = EXCLUDED.rateplan_id
+`
+
+type UpsertWholesalerParams struct {
+	ID          pgtype.UUID
+	Active      bool
+	LegalName   string
+	DisplayName string
+	Realm       string
+	Hosts       []string
+	Nchfurl     string
+	Ratelimit   pgtype.Numeric
+	ContractID  pgtype.UUID
+	RateplanID  pgtype.UUID
+}
+
+// Inserts a new wholesaler row or updates all mutable fields when the id already exists.
+// modified_on is refreshed to NOW() on both insert and update.
+func (q *Queries) UpsertWholesaler(ctx context.Context, arg UpsertWholesalerParams) error {
+	_, err := q.db.Exec(ctx, upsertWholesaler,
+		arg.ID,
+		arg.Active,
+		arg.LegalName,
+		arg.DisplayName,
+		arg.Realm,
+		arg.Hosts,
+		arg.Nchfurl,
+		arg.Ratelimit,
+		arg.ContractID,
+		arg.RateplanID,
+	)
+	return err
+}
