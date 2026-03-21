@@ -73,7 +73,7 @@ _Last updated: 2026-03-20 (F-005)_
 
 ## Current Focus
 
-F-006 — WholesaleContractConsumer — **complete**, in review.
+F-007 — QuotaProvisioningEventConsumer — **in progress** (task 001 of 4 complete).
 
 ---
 
