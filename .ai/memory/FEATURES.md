@@ -270,7 +270,7 @@ Additionally, when a subscriber is deleted and their associated wholesaler is `a
 
 ## F-007 — QuotaProvisioningEventConsumer
 
-**Status:** Backlog
+**Status:** In Review
 **Priority:** High
 **Created:** 2026-03-21
 **Branch:** feature/F-007-quota-provisioning-event-consumer

@@ -20,9 +20,10 @@ _Last updated: 2026-03-20 (F-005)_
 | `internal/events` | ✅ Complete | Kafka producer via franz-go |
 | Subscriber store queries | ✅ Complete | InsertSubscriber, UpdateSubscriber, DeleteSubscriber (sqlc) |
 | `internal/events/subscriber_event.go` | ✅ Complete | SubscriberEvent struct + 5 event type constants |
-| `internal/backend/consumer` | ✅ Complete | SubscriberEventConsumer + WholesaleContractConsumer with dispatch logic, unit tests |
+| `internal/backend/consumer` | ✅ Complete | SubscriberEventConsumer + WholesaleContractConsumer + QuotaProvisioningConsumer with dispatch logic, unit tests |
 | F-005 wiring | ✅ Complete | Consumer wired into AppContext + main.go; subscriber-event topic in config |
 | F-006 wiring | ✅ Complete | WholesaleContractConsumer wired into AppContext + main.go; wholesale-contract-event topic in config |
+| F-007 wiring | ✅ Complete | QuotaProvisioningConsumer wired into AppContext + main.go; quota-provisioning topic in config |
 | `internal/auth` | ✅ Complete | Keycloak client, JWT middleware, claims extraction |
 
 ### charging-engine (`cmd/charging-engine`, port :8080)
@@ -73,7 +74,7 @@ _Last updated: 2026-03-20 (F-005)_
 
 ## Current Focus
 
-F-006 — WholesaleContractConsumer — **complete**, in review.
+F-007 — QuotaProvisioningEventConsumer — **complete**, in review.
 
 ---
 

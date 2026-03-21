@@ -227,6 +227,20 @@ func (q *Quota) FindCounters(rateKey charging.RateKey, unitType charging.UnitTyp
 	return list
 }
 
+// FindCountersWithLoans returns all counters that have an outstanding loan balance,
+// in insertion order (oldest first). The caller must iterate oldest-first to honour
+// the loan clawback ordering guarantee.
+func (q *Quota) FindCountersWithLoans() []*Counter {
+	list := make([]*Counter, 0)
+	for i := range q.Counters {
+		c := &q.Counters[i]
+		if c.Loan != nil && c.Loan.LoanBalance.GreaterThan(decimal.Zero) {
+			list = append(list, c)
+		}
+	}
+	return list
+}
+
 type Reservation struct {
 	Units *int64 `json:"units,omitempty"`
 
