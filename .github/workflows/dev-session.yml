@@ -62,6 +62,7 @@ jobs:
           FEATURE_ID=$(echo "${BRANCH}" | grep -oP 'F-\d+')
           FEATURE_TITLE=$(grep -A1 "## ${FEATURE_ID}" .ai/memory/FEATURES.md | tail -1 | sed 's/.*— //')
           gh pr create \
+            --repo ${{ github.repository }} \
             --title "feat: ${FEATURE_ID} — ${FEATURE_TITLE}" \
             --body "## Feature ${FEATURE_ID}\n\nAll tasks implemented and tested.\nReview against acceptance criteria in \`.ai/memory/FEATURES.md\`." \
             --base main \
