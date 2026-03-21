@@ -210,10 +210,10 @@ The shadow `subscriber` table in the charging domain has no automated population
 
 ## F-006 — WholesaleContractConsumer
 
-**Status:** Backlog
+**Status:** In Development
 **Priority:** High
 **Created:** 2026-03-21
-**Branch:** (filled in by scoping)
+**Branch:** feature/F-006-wholesale-contract-consumer
 
 ### Implementation Approval Required
 - [ ] Yes — pause after AI Design for human review before implementation begins
