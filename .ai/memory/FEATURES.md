@@ -16,6 +16,75 @@ Read by AI agents at the start of every design and development session.
 
 ## Active Features
 
+## F-008 — Counter Expiry Cleanup with Quota Journal
+
+**Status:** In Design
+**Priority:** High
+**Created:** 2026-03-22
+**Branch:** feature/F-008-counter-expiry-journal
+
+### Implementation Approval Required
+- [ ] Yes — pause after AI Design for human review before implementation begins
+- [x] No — proceed to implementation automatically after AI Design
+
+### Feature Switch
+None — enhancement to existing quota cleanup logic
+
+### Goal
+When a quota is opened, expired counters are detected, their remaining balance is journalled as `QUOTA_EXPIRY`, and the counter is removed (or zeroed) according to reservation and loan state — enabling downstream billing systems to recognise the expired value as income.
+
+### Problem Statement
+`RemoveExpiredEntries` already prunes expired reservations and removes expired counters, but does so silently with no journal event. Retail billing systems need a `QUOTA_EXPIRY` `QuotaJournalEvent` when a counter expires so they can recognise the unspent balance as income. Without it, expired quota value is invisible to downstream systems.
+
+### MVP
+When a quota is opened, any counter that has passed its expiry timestamp is evaluated. If eligible for removal, a `QUOTA_EXPIRY` journal event is published for the remaining balance before the counter is discarded. Counters with active reservations or outstanding loans are handled gracefully rather than silently dropped.
+
+### Acceptance Criteria
+
+**Counter expiry eligibility**
+- [ ] A counter with an expiry timestamp in the past is considered expired
+- [ ] An expired counter that still has at least one unexpired reservation is **not** removed and no journal event is published — upstream services may still report usage against those reservations
+
+**Counter removal — no outstanding loan**
+- [ ] An expired counter with no unexpired reservations and no outstanding loan balance is removed from the quota
+- [ ] If the counter's balance is greater than zero at removal, a `QUOTA_EXPIRY` `QuotaJournalEvent` is published
+- [ ] If the counter's balance is zero at removal, no journal event is published
+
+**Counter removal — outstanding loan present**
+- [ ] An expired counter with no unexpired reservations but with an outstanding loan (`Loan.LoanBalance > 0`) is **not** removed from the quota
+- [ ] Its balance is set to zero and a `QUOTA_EXPIRY` `QuotaJournalEvent` is published for the remaining balance
+- [ ] Once the loan balance reaches zero (repaid via normal clawback), the counter is removed on the next `RemoveExpiredEntries` pass (zero-balance, no-loan removal — no additional journal)
+
+**Zero-balance cleanup**
+- [ ] A counter with a zero balance and no outstanding loan is removed silently regardless of expiry state — no journal event is published
+
+**Journal event content**
+- [ ] `ReasonCode` is `QUOTA_EXPIRY`
+- [ ] `AdjustedUnits` is the counter's remaining balance at the point of expiry (the amount being written off)
+- [ ] `Balance` is zero (the counter balance after expiry)
+- [ ] `TaxAmount` and `ValueExTax` (ex-tax value) are calculated using `CalculateTax(balance, taxRate)` where `taxRate` is the counter's `TaxRate`
+- [ ] If the counter's `TaxRate` is `nil`, a tax rate of `1` is used as the default
+- [ ] One journal event is published per expiring counter — no consolidation across counters
+- [ ] All other `QuotaJournalEvent` fields (`CounterID`, `QuotaID`, `SubscriberID`, `ProductID`, `ProductName`, `UnitType`, `ExternalReference`, `Timestamp`) are populated from the counter and quota context
+
+### Constraints
+- `QuotaJournalEvent` schema is a contract — no fields may be added or removed
+- Loan clawback mechanics are unchanged — this feature only changes when a counter is eligible for removal
+- `RemoveExpiredEntries` is called before and after every quota operation in `executeWithQuota`; the journal publishing mechanism must not introduce a double-publish on the same counter
+
+### Out of Scope
+- Changes to the loan repayment / clawback logic
+- Notification events for counter expiry (separate concern from journal events)
+- Expiry of quotas themselves (only counters within a quota are in scope)
+
+### Parking Lot
+- **Expiry notification events**: A separate notification channel for counter expiry (e.g. notifying the subscriber) — deferred, not required for billing reconciliation
+
+### Future Considerations
+- If counter expiry becomes reversible (e.g. grace periods), the balance-zeroing step would need a corresponding credit event on reinstatement
+
+---
+
 ## F-001 — ChargingTraceResource
 
 **Status:** Done
