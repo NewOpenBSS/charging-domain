@@ -76,6 +76,7 @@ func (m *QuotaManager) executeWithQuota(
 			return err
 		}
 
+		var expiredBefore []ExpiredCounterEntry
 		if loaded == nil {
 			loaded, err = m.repo.Create(ctx, subscriberID)
 			if err != nil {
@@ -84,7 +85,7 @@ func (m *QuotaManager) executeWithQuota(
 			}
 		} else {
 			// Remove expired entries
-			_ = loaded.RemoveExpiredEntries(now)
+			expiredBefore = loaded.RemoveExpiredEntries(now)
 		}
 
 		if err := op(loaded.Quota); err != nil {
@@ -93,7 +94,7 @@ func (m *QuotaManager) executeWithQuota(
 		}
 
 		// Remove expired entries (again)
-		_ = loaded.RemoveExpiredEntries(now)
+		expiredAfter := loaded.RemoveExpiredEntries(now)
 
 		// Check for usage notifications
 		// this might result in a message being sent more than once (if the save fails)
@@ -102,6 +103,8 @@ func (m *QuotaManager) executeWithQuota(
 
 		err = m.repo.Save(ctx, loaded, now)
 		if err == nil {
+			publishExpiryJournals(m, subscriberID, expiredBefore, now)
+			publishExpiryJournals(m, subscriberID, expiredAfter, now)
 			return nil
 		}
 
@@ -147,4 +150,31 @@ func (m *QuotaManager) GetBalance(ctx context.Context, now time.Time, subscriber
 	}
 
 	return result, nil
+}
+
+// publishExpiryJournals publishes a QUOTA_EXPIRY QuotaJournalEvent for each expired counter
+// entry. Journal events are only published after a successful Save, so this must only be called
+// on the successful attempt inside executeWithQuota.
+func publishExpiryJournals(m *QuotaManager, subscriberID uuid.UUID, entries []ExpiredCounterEntry, now time.Time) {
+	for _, entry := range entries {
+		taxRate := decimal.NewFromInt(1)
+		if entry.Counter.TaxRate != nil {
+			taxRate = *entry.Counter.TaxRate
+		}
+		taxCalc := CalculateTax(entry.BalanceAtExpiry, taxRate)
+
+		PublishJournalEvent(
+			m,
+			entry.QuotaID,
+			"", // no natural transactionId for expiry events
+			&entry.Counter,
+			ReasonQuotaExpiry,
+			entry.BalanceAtExpiry,
+			entry.Counter.UnitType,
+			taxCalc,
+			subscriberID,
+			nil, // no CounterMetaData for expiry events
+			now,
+		)
+	}
 }
