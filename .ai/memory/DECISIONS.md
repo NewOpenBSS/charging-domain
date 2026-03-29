@@ -294,3 +294,16 @@ code panicked on nil Expiry. The fix is consistent with how `GetBalance` handles
 (uses the same `c.Expiry != nil && !c.Expiry.After(now)` guard).
 **Consequences:** Previously all test counters included an expiry; the fix is backward-
 compatible and enables non-expiring counters throughout the quota system.
+
+## ADR-020 — DestinationGroupResource: positional args for Create/Update (F-002)
+**Status:** Accepted
+**Area:** `internal/store/sqlc/destination_groups.sql.go`, `internal/backend/services/destination_group_service.go`
+**Decision:** sqlc generated positional-argument function signatures for `CreateDestinationGroup` and
+`UpdateDestinationGroup` (no params struct) because `carrier_destination_group` has only 2 columns,
+which is below the `query_parameter_limit: 4` configured in `sqlc.yaml`. The service calls these
+with two plain `string` arguments rather than a `CreateDestinationGroupParams` struct.
+**Rationale:** This is the behaviour specified by sqlc's `query_parameter_limit` setting — no change
+was needed; the task spec noted this was likely and required verification after generation.
+**Consequences:** If a third column is ever added to `carrier_destination_group`, `sqlc generate`
+will automatically switch to a struct arg. Callers in `destination_group_service.go` will need
+to be updated at that point.

@@ -1,0 +1,36 @@
+# DestinationGroup GraphQL types.
+
+# DestinationGroup represents a valid carrier destination group / region.
+# Maps directly to the carrier_destination_group database table.
+type DestinationGroup {
+  groupName: String!   # Primary key — the destination group name
+  region:    String!   # The full region name
+}
+
+# DestinationGroupInput is used for both createDestinationGroup and updateDestinationGroup mutations.
+input DestinationGroupInput {
+  groupName: String!
+  region:    String!
+}
+
+extend type Query {
+  # Returns a filtered, sorted, paginated list of destination groups.
+  destinationGroupList(page: PageRequest, filter: FilterRequest): [DestinationGroup!]!
+
+  # Returns the total count of destination groups matching the supplied filter.
+  countDestinationGroup(filter: FilterRequest): Int!
+
+  # Returns a single destination group by group name, or null if not found.
+  destinationGroupByGroupName(groupName: String!): DestinationGroup
+}
+
+extend type Mutation {
+  # Creates a new destination group and returns the persisted record.
+  createDestinationGroup(destinationGroup: DestinationGroupInput!): DestinationGroup!
+
+  # Updates an existing destination group by group name and returns the updated record.
+  updateDestinationGroup(groupName: String!, destinationGroup: DestinationGroupInput!): DestinationGroup!
+
+  # Deletes a destination group by group name. Returns true on success.
+  deleteDestinationGroup(groupName: String!): Boolean!
+}

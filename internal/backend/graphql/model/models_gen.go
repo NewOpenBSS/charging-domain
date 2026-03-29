@@ -119,6 +119,16 @@ type ClassificationServiceTypeInput struct {
 	ServiceCategoryMap     []*ServiceCategoryMapEntryInput `json:"serviceCategoryMap,omitempty"`
 }
 
+type DestinationGroup struct {
+	GroupName string `json:"groupName"`
+	Region    string `json:"region"`
+}
+
+type DestinationGroupInput struct {
+	GroupName string `json:"groupName"`
+	Region    string `json:"region"`
+}
+
 type FilterInput struct {
 	Key       string `json:"key"`
 	Operation string `json:"operation"`

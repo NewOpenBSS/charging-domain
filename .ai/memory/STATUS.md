@@ -1,7 +1,7 @@
 # Project Status
 
 _Updated by Claude Code at the end of every task. Source of truth for current implementation state._
-_Last updated: 2026-03-20 (F-005)_
+_Last updated: 2026-03-29 (F-002 complete)_
 
 ---
 
@@ -62,6 +62,7 @@ _Last updated: 2026-03-20 (F-005)_
 | **RatePlanResource** | ✅ Complete | CRUD + state machine (DRAFT→PENDING→ACTIVE) |
 | **QuotaResource** | ✅ Complete | Balance queries + reserve/debit/cancel mutations |
 | **Counter Expiry Journal** | ✅ Complete | QUOTA_EXPIRY events on counter expiry (F-008) |
+| **DestinationGroupResource** | ✅ Complete | Full CRUD via GraphQL — six operations (F-002) |
 
 ### Database
 
@@ -77,7 +78,7 @@ _Last updated: 2026-03-20 (F-005)_
 
 F-008 — Counter Expiry Cleanup with Quota Journal — **Done**, merged 2026-03-29.
 
-_No active task. Next: F-002 DestinationGroupResource (Backlog)._
+F-002 — DestinationGroupResource — **In Review**. All three tasks implemented. See FEATURES.md.
 
 ---
 
