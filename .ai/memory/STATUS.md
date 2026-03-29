@@ -61,6 +61,7 @@ _Last updated: 2026-03-20 (F-005)_
 | **NumberPlanResource** | ✅ Complete | CRUD via GraphQL |
 | **RatePlanResource** | ✅ Complete | CRUD + state machine (DRAFT→PENDING→ACTIVE) |
 | **QuotaResource** | ✅ Complete | Balance queries + reserve/debit/cancel mutations |
+| **Counter Expiry Journal** | ✅ Complete | QUOTA_EXPIRY events on counter expiry (F-008) |
 
 ### Database
 
@@ -74,7 +75,7 @@ _Last updated: 2026-03-20 (F-005)_
 
 ## Current Focus
 
-F-008 — Counter Expiry Cleanup with Quota Journal — **In Design**, awaiting task decomposition.
+F-008 — Counter Expiry Cleanup with Quota Journal — **complete**, in review.
 
 ---
 

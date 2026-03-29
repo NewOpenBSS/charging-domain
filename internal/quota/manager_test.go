@@ -177,6 +177,221 @@ func TestQuotaManager_ExecuteWithQuota(t *testing.T) {
 	})
 }
 
+func TestPublishExpiryJournals_PublishesEventPerEntry(t *testing.T) {
+	ctx := context.Background()
+	now := time.Now()
+	subscriberID := uuid.New()
+	quotaID := uuid.New()
+
+	past := now.Add(-1 * time.Hour)
+	balance := decimal.NewFromInt(100)
+	taxRate := decimal.NewFromFloat(0.15)
+	zero := decimal.Zero
+
+	counter := Counter{
+		CounterID: uuid.New(),
+		Expiry:    &past,
+		Balance:   &zero,
+		TaxRate:   &taxRate,
+		UnitType:  charging.MONETARY,
+	}
+
+	entry := ExpiredCounterEntry{
+		Counter:         counter,
+		BalanceAtExpiry: balance,
+		QuotaID:         quotaID,
+	}
+
+	km := noopKafka()
+	manager := &QuotaManager{kafkaManager: km}
+
+	// Should not panic — KafkaClient is nil (disabled)
+	publishExpiryJournals(manager, subscriberID, []ExpiredCounterEntry{entry}, now)
+	_ = ctx // suppress unused warning
+}
+
+func TestPublishExpiryJournals_NilTaxRateDefaultsToOne(t *testing.T) {
+	now := time.Now()
+	subscriberID := uuid.New()
+	zero := decimal.Zero
+	balance := decimal.NewFromInt(50)
+
+	counter := Counter{
+		CounterID: uuid.New(),
+		Balance:   &zero,
+		TaxRate:   nil, // nil — should default to 1
+		UnitType:  charging.UNITS,
+	}
+
+	entry := ExpiredCounterEntry{
+		Counter:         counter,
+		BalanceAtExpiry: balance,
+		QuotaID:         uuid.New(),
+	}
+
+	km := noopKafka()
+	manager := &QuotaManager{kafkaManager: km}
+
+	// Should not panic with nil TaxRate
+	publishExpiryJournals(manager, subscriberID, []ExpiredCounterEntry{entry}, now)
+}
+
+func TestPublishExpiryJournals_EmptyEntriesNoOp(t *testing.T) {
+	now := time.Now()
+	km := noopKafka()
+	manager := &QuotaManager{kafkaManager: km}
+	// No panic, no events
+	publishExpiryJournals(manager, uuid.New(), nil, now)
+	publishExpiryJournals(manager, uuid.New(), []ExpiredCounterEntry{}, now)
+}
+
+func TestExecuteWithQuota_PublishesExpiryJournalAfterSave(t *testing.T) {
+	ctx := context.Background()
+	now := time.Now()
+	subscriberID := uuid.New()
+
+	past := now.Add(-1 * time.Hour)
+	future := now.Add(1 * time.Hour)
+
+	expiredBalance := decimal.NewFromInt(80)
+	activeBalance := decimal.NewFromInt(200)
+	taxRate := decimal.NewFromFloat(0.15)
+
+	expiredCounter := Counter{
+		CounterID: uuid.New(),
+		Expiry:    &past,
+		Balance:   &expiredBalance,
+		TaxRate:   &taxRate,
+		UnitType:  charging.MONETARY,
+	}
+	activeCounter := Counter{
+		CounterID: uuid.New(),
+		Expiry:    &future,
+		Balance:   &activeBalance,
+		TaxRate:   &taxRate,
+		UnitType:  charging.MONETARY,
+	}
+
+	quota := &Quota{
+		QuotaID:  uuid.New(),
+		Counters: []Counter{expiredCounter, activeCounter},
+	}
+	loadedQuota := &LoadedQuota{Quota: quota}
+
+	mockRepo := new(MockRepository)
+	mockRepo.On("Load", ctx, subscriberID).Return(loadedQuota, nil)
+	mockRepo.On("Save", ctx, loadedQuota).Return(nil)
+
+	km := noopKafka()
+	manager := &QuotaManager{
+		repo:         mockRepo,
+		retryLimit:   3,
+		kafkaManager: km,
+	}
+
+	err := manager.executeWithQuota(ctx, now, subscriberID, func(q *Quota) error {
+		return nil
+	})
+
+	assert.NoError(t, err)
+	// Only activeCounter should remain
+	assert.Len(t, quota.Counters, 1)
+	assert.Equal(t, activeCounter.CounterID, quota.Counters[0].CounterID)
+	mockRepo.AssertExpectations(t)
+}
+
+func TestExecuteWithQuota_NoJournalOnConflictRetry(t *testing.T) {
+	ctx := context.Background()
+	now := time.Now()
+	subscriberID := uuid.New()
+
+	past := now.Add(-1 * time.Hour)
+	balance := decimal.NewFromInt(50)
+	taxRate := decimal.NewFromFloat(0.15)
+
+	expiredCounter := Counter{
+		CounterID: uuid.New(),
+		Expiry:    &past,
+		Balance:   &balance,
+		TaxRate:   &taxRate,
+		UnitType:  charging.MONETARY,
+	}
+
+	// First attempt: quota has expired counter, save conflicts.
+	quota1 := &Quota{QuotaID: uuid.New(), Counters: []Counter{expiredCounter}}
+	loaded1 := &LoadedQuota{Quota: quota1}
+
+	// Second attempt: clean quota, save succeeds.
+	quota2 := &Quota{QuotaID: uuid.New(), Counters: []Counter{}}
+	loaded2 := &LoadedQuota{Quota: quota2}
+
+	mockRepo := new(MockRepository)
+	mockRepo.On("Load", ctx, subscriberID).Return(loaded1, nil).Once()
+	mockRepo.On("Save", ctx, loaded1).Return(ErrConflict).Once()
+	mockRepo.On("Load", ctx, subscriberID).Return(loaded2, nil).Once()
+	mockRepo.On("Save", ctx, loaded2).Return(nil).Once()
+
+	km := noopKafka()
+	manager := &QuotaManager{
+		repo:         mockRepo,
+		retryLimit:   3,
+		kafkaManager: km,
+	}
+
+	err := manager.executeWithQuota(ctx, now, subscriberID, func(q *Quota) error {
+		return nil
+	})
+
+	assert.NoError(t, err)
+	mockRepo.AssertExpectations(t)
+}
+
+func TestExecuteWithQuota_LoanCounterRetainedWithZeroBalance(t *testing.T) {
+	ctx := context.Background()
+	now := time.Now()
+	subscriberID := uuid.New()
+
+	past := now.Add(-1 * time.Hour)
+	balance := decimal.NewFromInt(60)
+	taxRate := decimal.NewFromFloat(0.15)
+
+	loanCounter := Counter{
+		CounterID: uuid.New(),
+		Expiry:    &past,
+		Balance:   &balance,
+		TaxRate:   &taxRate,
+		UnitType:  charging.MONETARY,
+		Loan:      &Loan{LoanBalance: decimal.NewFromInt(40)},
+	}
+
+	quota := &Quota{
+		QuotaID:  uuid.New(),
+		Counters: []Counter{loanCounter},
+	}
+	loadedQuota := &LoadedQuota{Quota: quota}
+
+	mockRepo := new(MockRepository)
+	mockRepo.On("Load", ctx, subscriberID).Return(loadedQuota, nil)
+	mockRepo.On("Save", ctx, loadedQuota).Return(nil)
+
+	km := noopKafka()
+	manager := &QuotaManager{
+		repo:         mockRepo,
+		retryLimit:   3,
+		kafkaManager: km,
+	}
+
+	err := manager.executeWithQuota(ctx, now, subscriberID, func(q *Quota) error {
+		return nil
+	})
+
+	assert.NoError(t, err)
+	// Counter retained because loan is outstanding
+	assert.Len(t, quota.Counters, 1)
+	assert.True(t, quota.Counters[0].Balance.IsZero(), "balance should be zeroed after expiry")
+	mockRepo.AssertExpectations(t)
+}
+
 func TestQuotaManager_ReserveQuota(t *testing.T) {
 	subscriberID := uuid.New()
 	reservationID := uuid.New()

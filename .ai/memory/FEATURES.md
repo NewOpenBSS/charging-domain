@@ -18,7 +18,7 @@ Read by AI agents at the start of every design and development session.
 
 ## F-008 — Counter Expiry Cleanup with Quota Journal
 
-**Status:** In Design
+**Status:** In Review
 **Priority:** High
 **Created:** 2026-03-22
 **Branch:** feature/F-008-counter-expiry-journal
