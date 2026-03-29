@@ -1,7 +1,7 @@
 # Project Status
 
 _Updated by Claude Code at the end of every task. Source of truth for current implementation state._
-_Last updated: 2026-03-29 (F-002 task 001)_
+_Last updated: 2026-03-29 (F-002 task 002)_
 
 ---
 
@@ -78,7 +78,7 @@ _Last updated: 2026-03-29 (F-002 task 001)_
 
 F-008 — Counter Expiry Cleanup with Quota Journal — **Done**, merged 2026-03-29.
 
-F-002 — DestinationGroupResource — **In Progress** (task 001 complete, task 002 next).
+F-002 — DestinationGroupResource — **In Progress** (tasks 001-002 complete, task 003 next).
 
 ---
 

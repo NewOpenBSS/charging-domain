@@ -103,6 +103,11 @@ type ComplexityRoot struct {
 		UnitType               func(childComplexity int) int
 	}
 
+	DestinationGroup struct {
+		GroupName func(childComplexity int) int
+		Region    func(childComplexity int) int
+	}
+
 	LookupData struct {
 		Code func(childComplexity int) int
 		Name func(childComplexity int) int
@@ -116,6 +121,7 @@ type ComplexityRoot struct {
 		CloneRatePlan                   func(childComplexity int, planID string) int
 		CreateCarrier                   func(childComplexity int, carrier model.CarrierInput) int
 		CreateClassification            func(childComplexity int, classification model.ClassificationInput) int
+		CreateDestinationGroup          func(childComplexity int, destinationGroup model.DestinationGroupInput) int
 		CreateNumberPlan                func(childComplexity int, numberPlan model.NumberPlanInput) int
 		CreateRatePlan                  func(childComplexity int, ratePlan model.RatePlanInput) int
 		DebitQuota                      func(childComplexity int, subscriberID string, reservationID string, usedUnits int, unitType model.UnitType, reclaimUnusedUnits bool) int
@@ -123,6 +129,7 @@ type ComplexityRoot struct {
 		DeclineRatePlan                 func(childComplexity int, planID string) int
 		DeleteCarrier                   func(childComplexity int, plmn string) int
 		DeleteClassification            func(childComplexity int, classificationID string) int
+		DeleteDestinationGroup          func(childComplexity int, groupName string) int
 		DeleteNumberPlan                func(childComplexity int, numberID string) int
 		DeleteRatePlan                  func(childComplexity int, planID string) int
 		Empty                           func(childComplexity int) int
@@ -131,6 +138,7 @@ type ComplexityRoot struct {
 		SubmitRatePlanForApproval       func(childComplexity int, planID string) int
 		UpdateCarrier                   func(childComplexity int, plmn string, carrier model.CarrierInput) int
 		UpdateClassificationPlan        func(childComplexity int, classificationID string, classification model.ClassificationInput) int
+		UpdateDestinationGroup          func(childComplexity int, groupName string, destinationGroup model.DestinationGroupInput) int
 		UpdateNumberPlan                func(childComplexity int, numberID string, numberPlan model.NumberPlanInput) int
 		UpdateRatePlan                  func(childComplexity int, planID string, ratePlan model.RatePlanInput) int
 		UpdateRatePlanRules             func(childComplexity int, planID string, rateLines []*model.RateLineInput) int
@@ -146,26 +154,29 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		CarrierByPlmn        func(childComplexity int, plmn string) int
-		CarrierList          func(childComplexity int, page *model.PageRequest, filter *model.FilterRequest) int
-		ChargingTraceByID    func(childComplexity int, traceID string) int
-		ChargingTraceList    func(childComplexity int, page *model.PageRequest, filter *model.FilterRequest) int
-		Classification       func(childComplexity int, classificationID string) int
-		ClassificationList   func(childComplexity int, page *model.PageRequest, filter *model.FilterRequest) int
-		CountCarriers        func(childComplexity int, filter *model.FilterRequest) int
-		CountChargingTrace   func(childComplexity int, filter *model.FilterRequest) int
-		CountClassifications func(childComplexity int, filter *model.FilterRequest) int
-		CountNumberPlans     func(childComplexity int, filter *model.FilterRequest) int
-		CountRatePlans       func(childComplexity int, filter *model.FilterRequest) int
-		Empty                func(childComplexity int) int
-		LatestRatePlanList   func(childComplexity int, planType model.RatePlanType) int
-		NumberPlan           func(childComplexity int, numberID string) int
-		NumberPlanList       func(childComplexity int, page *model.PageRequest, filter *model.FilterRequest) int
-		QuotaBalance         func(childComplexity int, balanceEnquiryRequest model.QuotaBalanceRequestInput) int
-		QuotaBalances        func(childComplexity int, balanceEnquiryRequest model.QuotaBalanceRequestInput) int
-		RateKeyInput         func(childComplexity int) int
-		RatePlan             func(childComplexity int, planID string) int
-		RatePlanList         func(childComplexity int, page *model.PageRequest, filter *model.FilterRequest) int
+		CarrierByPlmn               func(childComplexity int, plmn string) int
+		CarrierList                 func(childComplexity int, page *model.PageRequest, filter *model.FilterRequest) int
+		ChargingTraceByID           func(childComplexity int, traceID string) int
+		ChargingTraceList           func(childComplexity int, page *model.PageRequest, filter *model.FilterRequest) int
+		Classification              func(childComplexity int, classificationID string) int
+		ClassificationList          func(childComplexity int, page *model.PageRequest, filter *model.FilterRequest) int
+		CountCarriers               func(childComplexity int, filter *model.FilterRequest) int
+		CountChargingTrace          func(childComplexity int, filter *model.FilterRequest) int
+		CountClassifications        func(childComplexity int, filter *model.FilterRequest) int
+		CountDestinationGroup       func(childComplexity int, filter *model.FilterRequest) int
+		CountNumberPlans            func(childComplexity int, filter *model.FilterRequest) int
+		CountRatePlans              func(childComplexity int, filter *model.FilterRequest) int
+		DestinationGroupByGroupName func(childComplexity int, groupName string) int
+		DestinationGroupList        func(childComplexity int, page *model.PageRequest, filter *model.FilterRequest) int
+		Empty                       func(childComplexity int) int
+		LatestRatePlanList          func(childComplexity int, planType model.RatePlanType) int
+		NumberPlan                  func(childComplexity int, numberID string) int
+		NumberPlanList              func(childComplexity int, page *model.PageRequest, filter *model.FilterRequest) int
+		QuotaBalance                func(childComplexity int, balanceEnquiryRequest model.QuotaBalanceRequestInput) int
+		QuotaBalances               func(childComplexity int, balanceEnquiryRequest model.QuotaBalanceRequestInput) int
+		RateKeyInput                func(childComplexity int) int
+		RatePlan                    func(childComplexity int, planID string) int
+		RatePlanList                func(childComplexity int, page *model.PageRequest, filter *model.FilterRequest) int
 	}
 
 	QuotaBalanceResponse struct {
@@ -256,6 +267,9 @@ type MutationResolver interface {
 	ApproveClassificationPlan(ctx context.Context, classificationID string) (*model.Classification, error)
 	DeclineClassificationPlan(ctx context.Context, classificationID string) (*model.Classification, error)
 	DeleteClassification(ctx context.Context, classificationID string) (bool, error)
+	CreateDestinationGroup(ctx context.Context, destinationGroup model.DestinationGroupInput) (*model.DestinationGroup, error)
+	UpdateDestinationGroup(ctx context.Context, groupName string, destinationGroup model.DestinationGroupInput) (*model.DestinationGroup, error)
+	DeleteDestinationGroup(ctx context.Context, groupName string) (bool, error)
 	CreateNumberPlan(ctx context.Context, numberPlan model.NumberPlanInput) (*model.NumberPlan, error)
 	UpdateNumberPlan(ctx context.Context, numberID string, numberPlan model.NumberPlanInput) (*model.NumberPlan, error)
 	DeleteNumberPlan(ctx context.Context, numberID string) (bool, error)
@@ -283,6 +297,9 @@ type QueryResolver interface {
 	CountClassifications(ctx context.Context, filter *model.FilterRequest) (int, error)
 	RateKeyInput(ctx context.Context) (*model.RateKeyInput, error)
 	Classification(ctx context.Context, classificationID string) (*model.Classification, error)
+	DestinationGroupList(ctx context.Context, page *model.PageRequest, filter *model.FilterRequest) ([]*model.DestinationGroup, error)
+	CountDestinationGroup(ctx context.Context, filter *model.FilterRequest) (int, error)
+	DestinationGroupByGroupName(ctx context.Context, groupName string) (*model.DestinationGroup, error)
 	NumberPlanList(ctx context.Context, page *model.PageRequest, filter *model.FilterRequest) ([]*model.NumberPlan, error)
 	CountNumberPlans(ctx context.Context, filter *model.FilterRequest) (int, error)
 	NumberPlan(ctx context.Context, numberID string) (*model.NumberPlan, error)
@@ -614,6 +631,19 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.ClassificationServiceType.UnitType(childComplexity), true
 
+	case "DestinationGroup.groupName":
+		if e.ComplexityRoot.DestinationGroup.GroupName == nil {
+			break
+		}
+
+		return e.ComplexityRoot.DestinationGroup.GroupName(childComplexity), true
+	case "DestinationGroup.region":
+		if e.ComplexityRoot.DestinationGroup.Region == nil {
+			break
+		}
+
+		return e.ComplexityRoot.DestinationGroup.Region(childComplexity), true
+
 	case "LookupData.code":
 		if e.ComplexityRoot.LookupData.Code == nil {
 			break
@@ -704,6 +734,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.CreateClassification(childComplexity, args["classification"].(model.ClassificationInput)), true
+	case "Mutation.createDestinationGroup":
+		if e.ComplexityRoot.Mutation.CreateDestinationGroup == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_createDestinationGroup_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.CreateDestinationGroup(childComplexity, args["destinationGroup"].(model.DestinationGroupInput)), true
 	case "Mutation.createNumberPlan":
 		if e.ComplexityRoot.Mutation.CreateNumberPlan == nil {
 			break
@@ -781,6 +822,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.DeleteClassification(childComplexity, args["classificationId"].(string)), true
+	case "Mutation.deleteDestinationGroup":
+		if e.ComplexityRoot.Mutation.DeleteDestinationGroup == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_deleteDestinationGroup_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.DeleteDestinationGroup(childComplexity, args["groupName"].(string)), true
 	case "Mutation.deleteNumberPlan":
 		if e.ComplexityRoot.Mutation.DeleteNumberPlan == nil {
 			break
@@ -864,6 +916,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.UpdateClassificationPlan(childComplexity, args["classificationId"].(string), args["classification"].(model.ClassificationInput)), true
+	case "Mutation.updateDestinationGroup":
+		if e.ComplexityRoot.Mutation.UpdateDestinationGroup == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateDestinationGroup_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.UpdateDestinationGroup(childComplexity, args["groupName"].(string), args["destinationGroup"].(model.DestinationGroupInput)), true
 	case "Mutation.updateNumberPlan":
 		if e.ComplexityRoot.Mutation.UpdateNumberPlan == nil {
 			break
@@ -1034,6 +1097,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.CountClassifications(childComplexity, args["filter"].(*model.FilterRequest)), true
+	case "Query.countDestinationGroup":
+		if e.ComplexityRoot.Query.CountDestinationGroup == nil {
+			break
+		}
+
+		args, err := ec.field_Query_countDestinationGroup_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.CountDestinationGroup(childComplexity, args["filter"].(*model.FilterRequest)), true
 	case "Query.countNumberPlans":
 		if e.ComplexityRoot.Query.CountNumberPlans == nil {
 			break
@@ -1056,6 +1130,28 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.CountRatePlans(childComplexity, args["filter"].(*model.FilterRequest)), true
+	case "Query.destinationGroupByGroupName":
+		if e.ComplexityRoot.Query.DestinationGroupByGroupName == nil {
+			break
+		}
+
+		args, err := ec.field_Query_destinationGroupByGroupName_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.DestinationGroupByGroupName(childComplexity, args["groupName"].(string)), true
+	case "Query.destinationGroupList":
+		if e.ComplexityRoot.Query.DestinationGroupList == nil {
+			break
+		}
+
+		args, err := ec.field_Query_destinationGroupList_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.DestinationGroupList(childComplexity, args["page"].(*model.PageRequest), args["filter"].(*model.FilterRequest)), true
 	case "Query._empty":
 		if e.ComplexityRoot.Query.Empty == nil {
 			break
@@ -1439,6 +1535,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputClassificationInput,
 		ec.unmarshalInputClassificationPlanInput,
 		ec.unmarshalInputClassificationServiceTypeInput,
+		ec.unmarshalInputDestinationGroupInput,
 		ec.unmarshalInputFilterInput,
 		ec.unmarshalInputFilterRequest,
 		ec.unmarshalInputNumberPlanInput,
@@ -1786,6 +1883,43 @@ extend type Mutation {
   # Permanently deletes a DRAFT classification. Returns true on success.
   # Returns an error if the classification is not in DRAFT status.
   deleteClassification(classificationId: ID!): Boolean!
+}
+`, BuiltIn: false},
+	{Name: "../../../../gql/schema/destination_group.graphql", Input: `# DestinationGroup GraphQL types.
+
+# DestinationGroup represents a valid carrier destination group / region.
+# Maps directly to the carrier_destination_group database table.
+type DestinationGroup {
+  groupName: String!   # Primary key — the destination group name
+  region:    String!   # The full region name
+}
+
+# DestinationGroupInput is used for both createDestinationGroup and updateDestinationGroup mutations.
+input DestinationGroupInput {
+  groupName: String!
+  region:    String!
+}
+
+extend type Query {
+  # Returns a filtered, sorted, paginated list of destination groups.
+  destinationGroupList(page: PageRequest, filter: FilterRequest): [DestinationGroup!]!
+
+  # Returns the total count of destination groups matching the supplied filter.
+  countDestinationGroup(filter: FilterRequest): Int!
+
+  # Returns a single destination group by group name, or null if not found.
+  destinationGroupByGroupName(groupName: String!): DestinationGroup
+}
+
+extend type Mutation {
+  # Creates a new destination group and returns the persisted record.
+  createDestinationGroup(destinationGroup: DestinationGroupInput!): DestinationGroup!
+
+  # Updates an existing destination group by group name and returns the updated record.
+  updateDestinationGroup(groupName: String!, destinationGroup: DestinationGroupInput!): DestinationGroup!
+
+  # Deletes a destination group by group name. Returns true on success.
+  deleteDestinationGroup(groupName: String!): Boolean!
 }
 `, BuiltIn: false},
 	{Name: "../../../../gql/schema/numberplan.graphql", Input: `# NumberPlan domain GraphQL types.
@@ -2259,6 +2393,17 @@ func (ec *executionContext) field_Mutation_createClassification_args(ctx context
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_createDestinationGroup_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "destinationGroup", ec.unmarshalNDestinationGroupInput2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐDestinationGroupInput)
+	if err != nil {
+		return nil, err
+	}
+	args["destinationGroup"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_createNumberPlan_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -2353,6 +2498,17 @@ func (ec *executionContext) field_Mutation_deleteClassification_args(ctx context
 		return nil, err
 	}
 	args["classificationId"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_deleteDestinationGroup_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "groupName", ec.unmarshalNString2string)
+	if err != nil {
+		return nil, err
+	}
+	args["groupName"] = arg0
 	return args, nil
 }
 
@@ -2480,6 +2636,22 @@ func (ec *executionContext) field_Mutation_updateClassificationPlan_args(ctx con
 		return nil, err
 	}
 	args["classification"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_updateDestinationGroup_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "groupName", ec.unmarshalNString2string)
+	if err != nil {
+		return nil, err
+	}
+	args["groupName"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "destinationGroup", ec.unmarshalNDestinationGroupInput2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐDestinationGroupInput)
+	if err != nil {
+		return nil, err
+	}
+	args["destinationGroup"] = arg1
 	return args, nil
 }
 
@@ -2656,6 +2828,17 @@ func (ec *executionContext) field_Query_countClassifications_args(ctx context.Co
 	return args, nil
 }
 
+func (ec *executionContext) field_Query_countDestinationGroup_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "filter", ec.unmarshalOFilterRequest2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐFilterRequest)
+	if err != nil {
+		return nil, err
+	}
+	args["filter"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Query_countNumberPlans_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -2675,6 +2858,33 @@ func (ec *executionContext) field_Query_countRatePlans_args(ctx context.Context,
 		return nil, err
 	}
 	args["filter"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_destinationGroupByGroupName_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "groupName", ec.unmarshalNString2string)
+	if err != nil {
+		return nil, err
+	}
+	args["groupName"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_destinationGroupList_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "page", ec.unmarshalOPageRequest2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐPageRequest)
+	if err != nil {
+		return nil, err
+	}
+	args["page"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "filter", ec.unmarshalOFilterRequest2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐFilterRequest)
+	if err != nil {
+		return nil, err
+	}
+	args["filter"] = arg1
 	return args, nil
 }
 
@@ -4323,6 +4533,64 @@ func (ec *executionContext) fieldContext_ClassificationServiceType_serviceCatego
 	return fc, nil
 }
 
+func (ec *executionContext) _DestinationGroup_groupName(ctx context.Context, field graphql.CollectedField, obj *model.DestinationGroup) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_DestinationGroup_groupName,
+		func(ctx context.Context) (any, error) {
+			return obj.GroupName, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_DestinationGroup_groupName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DestinationGroup",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DestinationGroup_region(ctx context.Context, field graphql.CollectedField, obj *model.DestinationGroup) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_DestinationGroup_region,
+		func(ctx context.Context) (any, error) {
+			return obj.Region, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_DestinationGroup_region(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DestinationGroup",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _LookupData_code(ctx context.Context, field graphql.CollectedField, obj *model.LookupData) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -4962,6 +5230,141 @@ func (ec *executionContext) fieldContext_Mutation_deleteClassification(ctx conte
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_deleteClassification_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_createDestinationGroup(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_createDestinationGroup,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().CreateDestinationGroup(ctx, fc.Args["destinationGroup"].(model.DestinationGroupInput))
+		},
+		nil,
+		ec.marshalNDestinationGroup2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐDestinationGroup,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_createDestinationGroup(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "groupName":
+				return ec.fieldContext_DestinationGroup_groupName(ctx, field)
+			case "region":
+				return ec.fieldContext_DestinationGroup_region(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type DestinationGroup", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_createDestinationGroup_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_updateDestinationGroup(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_updateDestinationGroup,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().UpdateDestinationGroup(ctx, fc.Args["groupName"].(string), fc.Args["destinationGroup"].(model.DestinationGroupInput))
+		},
+		nil,
+		ec.marshalNDestinationGroup2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐDestinationGroup,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateDestinationGroup(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "groupName":
+				return ec.fieldContext_DestinationGroup_groupName(ctx, field)
+			case "region":
+				return ec.fieldContext_DestinationGroup_region(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type DestinationGroup", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateDestinationGroup_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_deleteDestinationGroup(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_deleteDestinationGroup,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().DeleteDestinationGroup(ctx, fc.Args["groupName"].(string))
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_deleteDestinationGroup(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_deleteDestinationGroup_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -6461,6 +6864,141 @@ func (ec *executionContext) fieldContext_Query_classification(ctx context.Contex
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Query_classification_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_destinationGroupList(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_destinationGroupList,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().DestinationGroupList(ctx, fc.Args["page"].(*model.PageRequest), fc.Args["filter"].(*model.FilterRequest))
+		},
+		nil,
+		ec.marshalNDestinationGroup2ᚕᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐDestinationGroupᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_destinationGroupList(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "groupName":
+				return ec.fieldContext_DestinationGroup_groupName(ctx, field)
+			case "region":
+				return ec.fieldContext_DestinationGroup_region(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type DestinationGroup", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_destinationGroupList_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_countDestinationGroup(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_countDestinationGroup,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().CountDestinationGroup(ctx, fc.Args["filter"].(*model.FilterRequest))
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_countDestinationGroup(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_countDestinationGroup_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_destinationGroupByGroupName(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_destinationGroupByGroupName,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().DestinationGroupByGroupName(ctx, fc.Args["groupName"].(string))
+		},
+		nil,
+		ec.marshalODestinationGroup2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐDestinationGroup,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_destinationGroupByGroupName(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "groupName":
+				return ec.fieldContext_DestinationGroup_groupName(ctx, field)
+			case "region":
+				return ec.fieldContext_DestinationGroup_region(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type DestinationGroup", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_destinationGroupByGroupName_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -10169,6 +10707,43 @@ func (ec *executionContext) unmarshalInputClassificationServiceTypeInput(ctx con
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputDestinationGroupInput(ctx context.Context, obj any) (model.DestinationGroupInput, error) {
+	var it model.DestinationGroupInput
+	if obj == nil {
+		return it, nil
+	}
+
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"groupName", "region"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "groupName":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("groupName"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.GroupName = data
+		case "region":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("region"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Region = data
+		}
+	}
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputFilterInput(ctx context.Context, obj any) (model.FilterInput, error) {
 	var it model.FilterInput
 	if obj == nil {
@@ -11138,6 +11713,50 @@ func (ec *executionContext) _ClassificationServiceType(ctx context.Context, sel 
 	return out
 }
 
+var destinationGroupImplementors = []string{"DestinationGroup"}
+
+func (ec *executionContext) _DestinationGroup(ctx context.Context, sel ast.SelectionSet, obj *model.DestinationGroup) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, destinationGroupImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("DestinationGroup")
+		case "groupName":
+			out.Values[i] = ec._DestinationGroup_groupName(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "region":
+			out.Values[i] = ec._DestinationGroup_region(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var lookupDataImplementors = []string{"LookupData"}
 
 func (ec *executionContext) _LookupData(ctx context.Context, sel ast.SelectionSet, obj *model.LookupData) graphql.Marshaler {
@@ -11271,6 +11890,27 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "deleteClassification":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_deleteClassification(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "createDestinationGroup":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_createDestinationGroup(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "updateDestinationGroup":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateDestinationGroup(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "deleteDestinationGroup":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_deleteDestinationGroup(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -11697,6 +12337,69 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_classification(ctx, field)
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "destinationGroupList":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_destinationGroupList(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "countDestinationGroup":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_countDestinationGroup(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "destinationGroupByGroupName":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_destinationGroupByGroupName(ctx, field)
 				return res
 			}
 
@@ -13001,6 +13704,41 @@ func (ec *executionContext) marshalNDateTime2string(ctx context.Context, sel ast
 	return res
 }
 
+func (ec *executionContext) marshalNDestinationGroup2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐDestinationGroup(ctx context.Context, sel ast.SelectionSet, v model.DestinationGroup) graphql.Marshaler {
+	return ec._DestinationGroup(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNDestinationGroup2ᚕᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐDestinationGroupᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.DestinationGroup) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNDestinationGroup2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐDestinationGroup(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNDestinationGroup2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐDestinationGroup(ctx context.Context, sel ast.SelectionSet, v *model.DestinationGroup) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._DestinationGroup(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNDestinationGroupInput2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐDestinationGroupInput(ctx context.Context, v any) (model.DestinationGroupInput, error) {
+	res, err := ec.unmarshalInputDestinationGroupInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNFilterInput2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐFilterInput(ctx context.Context, v any) (*model.FilterInput, error) {
 	res, err := ec.unmarshalInputFilterInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
@@ -13641,6 +14379,13 @@ func (ec *executionContext) marshalODateTime2ᚖstring(ctx context.Context, sel 
 	_ = ctx
 	res := graphql.MarshalString(*v)
 	return res
+}
+
+func (ec *executionContext) marshalODestinationGroup2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐDestinationGroup(ctx context.Context, sel ast.SelectionSet, v *model.DestinationGroup) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._DestinationGroup(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOFilterInput2ᚕᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐFilterInputᚄ(ctx context.Context, v any) ([]*model.FilterInput, error) {
