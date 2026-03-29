@@ -38,12 +38,13 @@ func NewRouter(appCtx *appcontext.AppContext) http.Handler {
 	graphqlPath := appCtx.Config.Server.GraphqlPath
 
 	resolver := &resolvers.Resolver{
-		CarrierSvc:        appCtx.CarrierSvc,
-		ClassificationSvc: appCtx.ClassificationSvc,
-		NumberPlanSvc:     appCtx.NumberPlanSvc,
-		RatePlanSvc:       appCtx.RatePlanSvc,
-		QuotaSvc:          appCtx.QuotaSvc,
-		ChargingTraceSvc:  appCtx.ChargingTraceSvc,
+		CarrierSvc:          appCtx.CarrierSvc,
+		ClassificationSvc:   appCtx.ClassificationSvc,
+		NumberPlanSvc:       appCtx.NumberPlanSvc,
+		RatePlanSvc:         appCtx.RatePlanSvc,
+		QuotaSvc:            appCtx.QuotaSvc,
+		ChargingTraceSvc:    appCtx.ChargingTraceSvc,
+		DestinationGroupSvc: appCtx.DestinationGroupSvc,
 	}
 
 	srv := handler.New(generated.NewExecutableSchema(generated.Config{Resolvers: resolver}))

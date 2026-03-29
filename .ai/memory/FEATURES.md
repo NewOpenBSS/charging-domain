@@ -137,7 +137,7 @@ None
 
 ## F-002 — DestinationGroupResource
 
-**Status:** In Development
+**Status:** In Review
 **Priority:** High
 **Created:** 2026-03-20
 **Branches:** feature/F-002-destination-group-resource

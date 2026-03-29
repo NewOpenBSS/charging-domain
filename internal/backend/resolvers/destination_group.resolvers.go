@@ -7,36 +7,35 @@ package resolvers
 
 import (
 	"context"
-	"fmt"
 	"go-ocs/internal/backend/graphql/model"
 )
 
 // CreateDestinationGroup is the resolver for the createDestinationGroup field.
 func (r *mutationResolver) CreateDestinationGroup(ctx context.Context, destinationGroup model.DestinationGroupInput) (*model.DestinationGroup, error) {
-	panic(fmt.Errorf("not implemented: CreateDestinationGroup - createDestinationGroup"))
+	return r.DestinationGroupSvc.CreateDestinationGroup(ctx, destinationGroup)
 }
 
 // UpdateDestinationGroup is the resolver for the updateDestinationGroup field.
 func (r *mutationResolver) UpdateDestinationGroup(ctx context.Context, groupName string, destinationGroup model.DestinationGroupInput) (*model.DestinationGroup, error) {
-	panic(fmt.Errorf("not implemented: UpdateDestinationGroup - updateDestinationGroup"))
+	return r.DestinationGroupSvc.UpdateDestinationGroup(ctx, groupName, destinationGroup)
 }
 
 // DeleteDestinationGroup is the resolver for the deleteDestinationGroup field.
 func (r *mutationResolver) DeleteDestinationGroup(ctx context.Context, groupName string) (bool, error) {
-	panic(fmt.Errorf("not implemented: DeleteDestinationGroup - deleteDestinationGroup"))
+	return r.DestinationGroupSvc.DeleteDestinationGroup(ctx, groupName)
 }
 
 // DestinationGroupList is the resolver for the destinationGroupList field.
 func (r *queryResolver) DestinationGroupList(ctx context.Context, page *model.PageRequest, filter *model.FilterRequest) ([]*model.DestinationGroup, error) {
-	panic(fmt.Errorf("not implemented: DestinationGroupList - destinationGroupList"))
+	return r.DestinationGroupSvc.ListDestinationGroups(ctx, page, filter)
 }
 
 // CountDestinationGroup is the resolver for the countDestinationGroup field.
 func (r *queryResolver) CountDestinationGroup(ctx context.Context, filter *model.FilterRequest) (int, error) {
-	panic(fmt.Errorf("not implemented: CountDestinationGroup - countDestinationGroup"))
+	return r.DestinationGroupSvc.CountDestinationGroups(ctx, filter)
 }
 
 // DestinationGroupByGroupName is the resolver for the destinationGroupByGroupName field.
 func (r *queryResolver) DestinationGroupByGroupName(ctx context.Context, groupName string) (*model.DestinationGroup, error) {
-	panic(fmt.Errorf("not implemented: DestinationGroupByGroupName - destinationGroupByGroupName"))
+	return r.DestinationGroupSvc.DestinationGroupByGroupName(ctx, groupName)
 }
