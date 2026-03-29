@@ -229,7 +229,7 @@ None
 
 ## F-005 — SubscriberEventConsumer
 
-**Status:** In Review
+**Status:** Done
 **Priority:** High
 **Created:** 2026-03-20
 **Branch:** feature/F-005-subscriber-event-consumer
@@ -279,7 +279,7 @@ The shadow `subscriber` table in the charging domain has no automated population
 
 ## F-006 — WholesaleContractConsumer
 
-**Status:** In Review
+**Status:** Done
 **Priority:** High
 **Created:** 2026-03-21
 **Branch:** feature/F-006-wholesale-contract-consumer
@@ -339,7 +339,7 @@ Additionally, when a subscriber is deleted and their associated wholesaler is `a
 
 ## F-007 — QuotaProvisioningEventConsumer
 
-**Status:** In Review
+**Status:** Done
 **Priority:** High
 **Created:** 2026-03-21
 **Branch:** feature/F-007-quota-provisioning-event-consumer

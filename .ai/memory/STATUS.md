@@ -74,7 +74,7 @@ _Last updated: 2026-03-20 (F-005)_
 
 ## Current Focus
 
-F-007 — QuotaProvisioningEventConsumer — **complete**, in review.
+F-008 — Counter Expiry Cleanup with Quota Journal — **In Design**, awaiting task decomposition.
 
 ---
 
