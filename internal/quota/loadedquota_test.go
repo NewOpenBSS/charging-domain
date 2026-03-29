@@ -37,38 +37,49 @@ func TestLoadedQuota_RemoveExpiredEntries(t *testing.T) {
 			},
 		}
 
-		l.RemoveExpiredEntries(now)
+		entries := l.RemoveExpiredEntries(now)
 
+		assert.Empty(t, entries)
 		assert.Len(t, l.Quota.Counters, 1)
 		assert.Len(t, l.Quota.Counters[0].Reservations, 1)
 		assert.Contains(t, l.Quota.Counters[0].Reservations, resID1)
 		assert.NotContains(t, l.Quota.Counters[0].Reservations, resID2)
 	})
 
-	t.Run("should remove expired counters", func(t *testing.T) {
+	t.Run("should remove expired counters with no reservations or loan (Case C)", func(t *testing.T) {
 		balance := decimal.NewFromInt(100)
 		c1 := Counter{
 			Expiry:  &past,
 			Balance: &balance,
 		}
+		balance2 := decimal.NewFromInt(50)
 		c2 := Counter{
 			Expiry:  &future,
-			Balance: &balance,
+			Balance: &balance2,
 		}
 
+		quotaID := uuid.New()
 		l := &LoadedQuota{
 			Quota: &Quota{
+				QuotaID:  quotaID,
 				Counters: []Counter{c1, c2},
 			},
 		}
 
-		l.RemoveExpiredEntries(now)
+		entries := l.RemoveExpiredEntries(now)
 
+		// c1 removed; c2 kept
 		assert.Len(t, l.Quota.Counters, 1)
 		assert.Equal(t, &future, l.Quota.Counters[0].Expiry)
+
+		// One entry returned for c1
+		assert.Len(t, entries, 1)
+		assert.Equal(t, decimal.NewFromInt(100), entries[0].BalanceAtExpiry)
+		assert.True(t, entries[0].Counter.Balance.IsZero())
+		assert.Equal(t, quotaID, entries[0].QuotaID)
 	})
 
-	t.Run("should remove counters with zero balance", func(t *testing.T) {
+	t.Run("should remove counters with zero balance and no loan", func(t *testing.T) {
 		balance := decimal.Zero
 		c1 := Counter{
 			Expiry:  &future,
@@ -81,10 +92,178 @@ func TestLoadedQuota_RemoveExpiredEntries(t *testing.T) {
 			},
 		}
 
-		l.RemoveExpiredEntries(now)
+		entries := l.RemoveExpiredEntries(now)
 
 		assert.Len(t, l.Quota.Counters, 0)
+		assert.Empty(t, entries)
 	})
+}
+
+func TestLoadedQuota_RemoveExpiredEntries_CaseA_UnexpiredReservationsBlockExpiry(t *testing.T) {
+	now := time.Now()
+	past := now.Add(-1 * time.Hour)
+	future := now.Add(1 * time.Hour)
+
+	balance := decimal.NewFromInt(100)
+	resID := uuid.New()
+	c := Counter{
+		Expiry:  &past,
+		Balance: &balance,
+		Reservations: map[uuid.UUID]Reservation{
+			resID: {Expiry: future}, // unexpired reservation — blocks removal
+		},
+	}
+
+	l := &LoadedQuota{
+		Quota: &Quota{
+			Counters: []Counter{c},
+		},
+	}
+
+	entries := l.RemoveExpiredEntries(now)
+
+	// Counter kept, no entry returned
+	assert.Len(t, l.Quota.Counters, 1)
+	assert.Empty(t, entries)
+}
+
+func TestLoadedQuota_RemoveExpiredEntries_CaseB_OutstandingLoanZerosBalance(t *testing.T) {
+	now := time.Now()
+	past := now.Add(-1 * time.Hour)
+
+	balance := decimal.NewFromInt(75)
+	quotaID := uuid.New()
+	c := Counter{
+		CounterID: uuid.New(),
+		Expiry:    &past,
+		Balance:   &balance,
+		Loan:      &Loan{LoanBalance: decimal.NewFromInt(50)},
+	}
+
+	l := &LoadedQuota{
+		Quota: &Quota{
+			QuotaID:  quotaID,
+			Counters: []Counter{c},
+		},
+	}
+
+	entries := l.RemoveExpiredEntries(now)
+
+	// Counter kept (loan outstanding), balance zeroed
+	assert.Len(t, l.Quota.Counters, 1)
+	assert.True(t, l.Quota.Counters[0].Balance.IsZero(), "counter balance should be zeroed")
+
+	// One entry returned
+	assert.Len(t, entries, 1)
+	assert.Equal(t, decimal.NewFromInt(75), entries[0].BalanceAtExpiry)
+	assert.True(t, entries[0].Counter.Balance.IsZero())
+	assert.Equal(t, quotaID, entries[0].QuotaID)
+}
+
+func TestLoadedQuota_RemoveExpiredEntries_CaseC_NoLoanBalancePositive(t *testing.T) {
+	now := time.Now()
+	past := now.Add(-1 * time.Hour)
+
+	balance := decimal.NewFromInt(200)
+	quotaID := uuid.New()
+	counterID := uuid.New()
+	c := Counter{
+		CounterID: counterID,
+		Expiry:    &past,
+		Balance:   &balance,
+	}
+
+	l := &LoadedQuota{
+		Quota: &Quota{
+			QuotaID:  quotaID,
+			Counters: []Counter{c},
+		},
+	}
+
+	entries := l.RemoveExpiredEntries(now)
+
+	// Counter removed
+	assert.Len(t, l.Quota.Counters, 0)
+
+	// Entry returned with correct values
+	assert.Len(t, entries, 1)
+	assert.Equal(t, decimal.NewFromInt(200), entries[0].BalanceAtExpiry)
+	assert.True(t, entries[0].Counter.Balance.IsZero())
+	assert.Equal(t, counterID, entries[0].Counter.CounterID)
+	assert.Equal(t, quotaID, entries[0].QuotaID)
+}
+
+func TestLoadedQuota_RemoveExpiredEntries_CaseD_NoLoanZeroBalance(t *testing.T) {
+	now := time.Now()
+	past := now.Add(-1 * time.Hour)
+
+	balance := decimal.Zero
+	c := Counter{
+		Expiry:  &past,
+		Balance: &balance,
+	}
+
+	l := &LoadedQuota{
+		Quota: &Quota{
+			Counters: []Counter{c},
+		},
+	}
+
+	entries := l.RemoveExpiredEntries(now)
+
+	// Counter removed silently, no entry
+	assert.Len(t, l.Quota.Counters, 0)
+	assert.Empty(t, entries)
+}
+
+func TestLoadedQuota_RemoveExpiredEntries_ZeroBalanceNonExpiredWithLoanRetained(t *testing.T) {
+	now := time.Now()
+	future := now.Add(1 * time.Hour)
+
+	balance := decimal.Zero
+	c := Counter{
+		Expiry:  &future,
+		Balance: &balance,
+		Loan:    &Loan{LoanBalance: decimal.NewFromInt(30)},
+	}
+
+	l := &LoadedQuota{
+		Quota: &Quota{
+			Counters: []Counter{c},
+		},
+	}
+
+	entries := l.RemoveExpiredEntries(now)
+
+	// Counter retained (outstanding loan), no entry
+	assert.Len(t, l.Quota.Counters, 1)
+	assert.Empty(t, entries)
+}
+
+func TestLoadedQuota_RemoveExpiredEntries_EntryCopyDoesNotSharePointer(t *testing.T) {
+	now := time.Now()
+	past := now.Add(-1 * time.Hour)
+
+	balance := decimal.NewFromInt(50)
+	c := Counter{
+		Expiry:  &past,
+		Balance: &balance,
+	}
+
+	l := &LoadedQuota{
+		Quota: &Quota{
+			QuotaID:  uuid.New(),
+			Counters: []Counter{c},
+		},
+	}
+
+	entries := l.RemoveExpiredEntries(now)
+
+	assert.Len(t, entries, 1)
+	// The copy's Balance pointer must not point to the same location as the original
+	assert.True(t, entries[0].Counter.Balance.IsZero())
+	// BalanceAtExpiry is the original value
+	assert.Equal(t, decimal.NewFromInt(50), entries[0].BalanceAtExpiry)
 }
 
 func TestLoadedQuota_CheckForUsageNotifications(t *testing.T) {

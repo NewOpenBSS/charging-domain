@@ -84,7 +84,7 @@ func (m *QuotaManager) executeWithQuota(
 			}
 		} else {
 			// Remove expired entries
-			loaded.RemoveExpiredEntries(now)
+			_ = loaded.RemoveExpiredEntries(now)
 		}
 
 		if err := op(loaded.Quota); err != nil {
@@ -93,7 +93,7 @@ func (m *QuotaManager) executeWithQuota(
 		}
 
 		// Remove expired entries (again)
-		loaded.RemoveExpiredEntries(now)
+		_ = loaded.RemoveExpiredEntries(now)
 
 		// Check for usage notifications
 		// this might result in a message being sent more than once (if the save fails)
