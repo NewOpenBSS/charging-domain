@@ -25,6 +25,25 @@ Do not skip any file. Do not begin work until all five steps are complete.
 
 There are three distinct session types.
 
+### Preferred Execution Path
+
+**The GitHub Actions workflow is the preferred way to run Feature Design Sessions and Dev
+Sessions.** It runs in the background, does not require the human's laptop to stay on, and
+provides a full audit trail via the commit and PR history.
+
+**Never start a Feature Design Session or Dev Session in the foreground (interactive chat)
+without explicit human approval.** Before doing so, ask:
+
+> "This is a Feature Design / Dev Session. Should I run it here in the foreground, or trigger
+> it via the GitHub Actions workflow instead?"
+
+The only exceptions where running in the foreground is appropriate without asking:
+- The human has explicitly requested it ("do it here", "run it now", "go for it in this chat")
+- The workflow has failed (turned red) and the human is using the interactive session to
+  investigate or recover — see **Foreground Recovery** below
+
+---
+
 ### Feature Design Session
 
 Triggered automatically by GitHub Actions when a feature branch is pushed.
@@ -52,11 +71,25 @@ Runs on the feature branch. Processes the task queue to completion.
 
 ### Interactive Session
 
-Run manually by a human on a feature branch for investigation or manual work.
+Run manually by a human, typically to investigate or recover from a workflow failure,
+or for exploration and manual work outside the automated pipeline.
 
 1. Read context files (see Session Initialisation above)
 2. Confirm not on `main` before making any changes
 3. Follow the same build/test discipline as Dev Session
+
+### Foreground Recovery
+
+When the GitHub Actions workflow fails (build red, tests failing, conflict), the human
+will open an Interactive Session to diagnose and fix. The following rules apply:
+
+- Read the failing task spec from `.ai/tasks/queue/` before touching any code
+- Diagnose the root cause from the exact error output — do not guess
+- Fix only what is failing; do not expand scope or refactor surrounding code
+- After fixing: build, test, commit, and push — then re-trigger the workflow
+- Inform the human what was fixed and that the workflow has been re-triggered so they can monitor the run
+- If the automatic re-trigger (push) does not start the workflow, use `gh workflow run` to trigger it manually
+- If the fix requires a contract change or broad refactor, stop and raise it before proceeding
 
 ---
 
