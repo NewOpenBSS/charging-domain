@@ -108,22 +108,25 @@ Add a DestinationGroupResource to the charging-backend GraphQL API, following th
 
 ## R-004 — SourceGroupResource GraphQL Endpoint
 
-**Status:** Scoped
+**Status:** In Progress
 **Priority:** High
 **Created:** 2026-03-20
 **Features:** F-003
 
 ### The Idea
-Add a SourceGroupResource to the charging-backend GraphQL API, following the same pattern as the existing resources.
+Add a SourceGroupResource to the charging-backend GraphQL API, following the same pattern as the existing resources — specifically mirroring DestinationGroupResource exactly.
 
 ### The Problem
-— (needs clarification: what is a source group, what does an admin need to do with it?)
+Source groups classify the roaming origin of a carrier and drive the `sourceType` dimension of a `RateKey` in the charging engine. The `carrier_source_group` reference table exists and is seeded at DB init time, but there is no admin API to manage its entries. Admins cannot add new regions, rename existing ones, or remove obsolete entries without a database migration. The Java charging-backend exposed a full CRUD GraphQL resource for this; the Go port is missing it.
 
 ### Wishlist
-—
+An admin can create, read, update, and delete source group entries via the GraphQL API — exactly as they manage destination groups today. The API surface is indistinguishable from the Java original so that existing admin console clients require no changes.
 
 ### Notes
-- Needs clarification on: DB table/schema, what operations are required (CRUD? state machine?), relationship to other resources.
+- The `carrier_source_group` table has two columns: `group_name` (PK) and `region`.
+- Structure and operations are identical to DestinationGroup — plain CRUD, no state machine.
+- Operation naming follows the same convention: `sourceGroupList`, `countSourceGroup`, `sourceGroupByGroupName`, `createSourceGroup`, `updateSourceGroup`, `deleteSourceGroup`.
+- F-003 also delivers `SourceGroupGraphQL.http` in `api-tests/` (co-located with implementation).
 - Completes the set of 8 resources required for the charging-backend port (R-001).
 
 ---
