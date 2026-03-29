@@ -86,8 +86,9 @@ will open an Interactive Session to diagnose and fix. The following rules apply:
 - Read the failing task spec from `.ai/tasks/queue/` before touching any code
 - Diagnose the root cause from the exact error output — do not guess
 - Fix only what is failing; do not expand scope or refactor surrounding code
-- After fixing: build, test, commit, and push
-- Do not re-trigger the workflow from within the interactive session — the human does this
+- After fixing: build, test, commit, and push — then re-trigger the workflow
+- Inform the human what was fixed and that the workflow has been re-triggered so they can monitor the run
+- If the automatic re-trigger (push) does not start the workflow, use `gh workflow run` to trigger it manually
 - If the fix requires a contract change or broad refactor, stop and raise it before proceeding
 
 ---
