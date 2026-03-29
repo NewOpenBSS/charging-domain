@@ -75,7 +75,9 @@ _Last updated: 2026-03-20 (F-005)_
 
 ## Current Focus
 
-F-008 — Counter Expiry Cleanup with Quota Journal — **complete**, in review.
+F-008 — Counter Expiry Cleanup with Quota Journal — **Done**, merged 2026-03-29.
+
+_No active task. Next: F-002 DestinationGroupResource (Backlog)._
 
 ---
 
