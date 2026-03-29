@@ -183,10 +183,10 @@ None
 
 ## F-003 — SourceGroupResource
 
-**Status:** Backlog
+**Status:** Ready for AI Design
 **Priority:** High
 **Created:** 2026-03-20
-**Branches:** (filled in by AI during Stage 3)
+**Branch:** feature/F-003-source-group-resource
 
 ### Implementation Approval Required
 - [ ] Yes — pause after AI Design for human review before implementation begins
@@ -196,10 +196,10 @@ None
 None
 
 ### Goal
-Expose full CRUD for carrier source groups via GraphQL in the Go charging-backend, matching the Java API surface exactly.
+Expose full CRUD for carrier source groups via GraphQL in the Go charging-backend, matching the Java API surface exactly — mirroring the DestinationGroupResource implementation.
 
 ### Problem Statement
-Admins need to manage source groups — named groupings of originating sources by region used in the charging domain. The Go charging-backend currently has no way to create, read, update, or delete these records.
+Source groups classify the roaming origin of a carrier and drive the `sourceType` dimension of a `RateKey` in the charging engine. The `carrier_source_group` reference table exists and is seeded, but there is no admin API to manage its entries. Admins cannot add new regions, rename existing ones, or remove obsolete entries without a DB migration. The Java charging-backend exposed a full CRUD GraphQL resource for this; the Go port is missing it.
 
 ### MVP
 An admin can perform full CRUD on source groups via six GraphQL operations — list (paginated + filtered), count, fetch by name, create, update, and delete.
@@ -212,20 +212,24 @@ An admin can perform full CRUD on source groups via six GraphQL operations — l
 - [ ] An admin can update an existing source group
 - [ ] An admin can delete a source group by `groupName`
 - [ ] GraphQL operation names (`sourceGroupList`, `countSourceGroup`, `sourceGroupByGroupName`, `createSourceGroup`, `updateSourceGroup`, `deleteSourceGroup`) match the Java service exactly
+- [ ] A `SourceGroupGraphQL.http` file is present in `api-tests/` covering all six operations with realistic sample data
 
 ### Constraints
 - GraphQL operation names, field names, and behaviour must be identical to the Java service — external clients must work without modification
 - No state machine or approval workflow — plain CRUD only
+- Implementation must follow the DestinationGroupResource pattern exactly (same layering: sqlc queries → store → service → resolvers)
 
 ### Out of Scope
 - Approval workflows or state machines for source groups
 - Bulk import or export of source groups
+- Referential integrity enforcement on delete (no FK check against the carrier table — same as DestinationGroup)
 
 ### Parking Lot
 None
 
 ### Future Considerations
 - Cursor-based pagination (current OFFSET-based approach degrades on large datasets — acceptable for now)
+- Referential integrity: if a source group is deleted while carriers still reference it, those carriers will have a dangling `sourceGroup` value — could be addressed with a FK constraint or a validation check on delete
 
 ## F-005 — SubscriberEventConsumer
 
