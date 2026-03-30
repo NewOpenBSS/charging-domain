@@ -96,3 +96,36 @@ FROM rateplan
 WHERE plan_type = $1
   AND ($2::uuid IS NULL OR wholesale_id = $2)
 ORDER BY plan_id, effective_at DESC, id DESC;
+
+-- name: ListSupersededRatePlanVersions :many
+-- Returns ACTIVE rate plan versions that have been superseded by a newer ACTIVE version
+-- for the same plan_id, where the older version's effective_at is before the given
+-- threshold. Used by the housekeeping job to identify versions safe to delete.
+SELECT r1.id,
+       r1.plan_id,
+       r1.modified_at,
+       r1.plan_type,
+       r1.wholesale_id,
+       r1.plan_name,
+       r1.rateplan,
+       r1.plan_status,
+       r1.created_by,
+       r1.approved_by,
+       r1.effective_at
+FROM rateplan r1
+WHERE r1.plan_status = 'ACTIVE'
+  AND r1.effective_at < $1
+  AND EXISTS (SELECT 1
+              FROM rateplan r2
+              WHERE r2.plan_id = r1.plan_id
+                AND r2.plan_status = 'ACTIVE'
+                AND r2.effective_at > r1.effective_at)
+ORDER BY r1.plan_id, r1.effective_at ASC;
+
+-- name: DeleteRatePlanVersionById :exec
+-- Permanently deletes a specific superseded ACTIVE rate plan version by its primary key id.
+-- The plan_status = 'ACTIVE' guard ensures DRAFT and PENDING versions can never be deleted
+-- by this query, even if called with the wrong id by mistake.
+DELETE FROM rateplan
+WHERE id          = $1
+  AND plan_status = 'ACTIVE';

@@ -40,6 +40,21 @@ func (q *Queries) CreateChargingTrace(ctx context.Context, arg CreateChargingTra
 	return trace_id, err
 }
 
+const deleteOldChargingTrace = `-- name: DeleteOldChargingTrace :execrows
+DELETE FROM charging_trace
+WHERE created_at < $1
+`
+
+// Deletes all charging_trace rows whose created_at is before the given threshold.
+// Used by the housekeeping job to purge old audit trail records.
+func (q *Queries) DeleteOldChargingTrace(ctx context.Context, createdAt pgtype.Timestamptz) (int64, error) {
+	result, err := q.db.Exec(ctx, deleteOldChargingTrace, createdAt)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const findChargingTraceByIdSeqNr = `-- name: FindChargingTraceByIdSeqNr :one
 select trace_id,
        created_at,

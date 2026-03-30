@@ -1,7 +1,7 @@
 # Project Status
 
 _Updated by Claude Code at the end of every task. Source of truth for current implementation state._
-_Last updated: 2026-03-29 (F-002 complete)_
+_Last updated: 2026-03-31 (F-009 Task 001 complete)_
 
 ---
 
@@ -74,14 +74,26 @@ _Last updated: 2026-03-29 (F-002 complete)_
 
 ---
 
+### charging-housekeeping (`cmd/charging-housekeeping` — F-009)
+
+| Component | Status | Notes |
+|---|---|---|
+| Housekeeping SQL queries | ✅ Complete | 5 new sqlc queries: FindExpiredQuotaSubscribers, DeleteStaleChargingData, DeleteOldChargingTrace, ListSupersededRatePlanVersions, DeleteRatePlanVersionById |
+| QuotaManager.ProcessExpiredQuota | 🔲 Pending | Task 002 |
+| HousekeepingService | 🔲 Pending | Task 003 |
+| charging-housekeeping binary | 🔲 Pending | Task 004 |
+
+---
+
 ## Current Focus
 
-F-003 — SourceGroupResource — **Ready for AI Design**. Branch created, awaiting feature design session.
+F-009 — Charging Domain Housekeeping — **In Development**. Task 001 complete, processing task queue.
 
 ---
 
 ## Recently Completed
 
+- **F-009 Task 001** — SQL queries and sqlc regeneration for housekeeping operations. 5 new queries added. Completed 2026-03-31.
 - **F-008** — Counter Expiry Cleanup with Quota Journal. `QUOTA_EXPIRY` journal events on counter expiry. Merged 2026-03-29.
 - **F-002 Task 003** — DestinationGroupService, resolvers, and AppContext wiring. All six GraphQL operations functional. Completed 2026-03-29.
 - **F-001 Task 003** — Resolvers, AppContext, and GraphQL router wired for ChargingTrace. All three query methods functional end-to-end. Completed 2026-03-20.

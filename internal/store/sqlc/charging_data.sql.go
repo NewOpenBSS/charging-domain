@@ -7,6 +7,8 @@ package sqlc
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const createChargeData = `-- name: CreateChargeData :exec
@@ -28,6 +30,21 @@ where charging_id = $1
 func (q *Queries) DeleteChargeDate(ctx context.Context, chargingID string) error {
 	_, err := q.db.Exec(ctx, deleteChargeDate, chargingID)
 	return err
+}
+
+const deleteStaleChargingData = `-- name: DeleteStaleChargingData :execrows
+DELETE FROM charging_data
+WHERE modified_on < $1
+`
+
+// Deletes all charging_data rows whose modified_on is before the given threshold.
+// Used by the housekeeping job to remove orphaned sessions.
+func (q *Queries) DeleteStaleChargingData(ctx context.Context, modifiedOn pgtype.Timestamptz) (int64, error) {
+	result, err := q.db.Exec(ctx, deleteStaleChargingData, modifiedOn)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const getChargingDataByChargeId = `-- name: GetChargingDataByChargeId :one

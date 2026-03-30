@@ -23,5 +23,8 @@ delete
 from charging_data
 where charging_id = $1;
 
-
---
+-- name: DeleteStaleChargingData :execrows
+-- Deletes all charging_data rows whose modified_on is before the given threshold.
+-- Used by the housekeeping job to remove orphaned sessions.
+DELETE FROM charging_data
+WHERE modified_on < $1;
