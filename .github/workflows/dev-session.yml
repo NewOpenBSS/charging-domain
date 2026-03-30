@@ -35,9 +35,22 @@ jobs:
         id: goose
         run: |
           BRANCH="${{ github.event.inputs.branch_name || github.ref_name }}"
-          goose run \
-            --recipe .goose/recipes/dev-session.yaml \
-            --params branch_name=${BRANCH}
+          # Retry up to 3 times to handle transient Claude Code rate-limit calculation errors.
+          # Each retry picks up from the last committed task (done/ tasks are skipped).
+          for attempt in 1 2 3; do
+            echo "--- Dev session attempt ${attempt} ---"
+            goose run \
+              --recipe .goose/recipes/dev-session.yaml \
+              --params branch_name=${BRANCH} && break
+            EXIT_CODE=$?
+            if [ $attempt -lt 3 ]; then
+              echo "Attempt ${attempt} failed (exit ${EXIT_CODE}). Waiting 60s before retry..."
+              sleep 60
+            else
+              echo "All ${attempt} attempts failed."
+              exit $EXIT_CODE
+            fi
+          done
         env:
           GOOSE_PATH_ROOT: ${{ github.workspace }}/.goose
           GOOSE_PROVIDER: claude-code
