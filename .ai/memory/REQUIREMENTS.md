@@ -84,10 +84,10 @@ Beyond API compatibility, the implementation takes advantage of Go's strengths: 
 
 ## R-009 — Charging Domain Housekeeping
 
-**Status:** Ready for Scoping
+**Status:** Scoped
 **Priority:** High
 **Created:** 2026-03-30
-**Features:** — (populated after scoping)
+**Features:** F-009
 
 ### The Idea
 A housekeeping job that cleans up stale data across the charging domain — expired quota counters, orphaned sessions, old trace records, and superseded rate plan versions.
@@ -142,6 +142,7 @@ Add a ChargingTraceResource to the charging-backend GraphQL API, following the s
 ## R-003 — DestinationGroupResource GraphQL Endpoint
 
 **Status:** Done
+**Delivered:** 2026-03-29
 **Priority:** High
 **Created:** 2026-03-20
 **Features:** F-002
