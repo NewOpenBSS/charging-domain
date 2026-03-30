@@ -183,7 +183,7 @@ None
 
 ## F-003 — SourceGroupResource
 
-**Status:** In Development
+**Status:** In Review
 **Priority:** High
 **Created:** 2026-03-20
 **Branch:** feature/F-003-source-group-resource

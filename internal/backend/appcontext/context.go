@@ -28,6 +28,7 @@ type AppContext struct {
 	QuotaSvc                 *services.QuotaService
 	ChargingTraceSvc         *services.ChargingTraceService
 	DestinationGroupSvc      *services.DestinationGroupService
+	SourceGroupSvc           *services.SourceGroupService
 }
 
 // NewAppContext constructs a fully wired AppContext from the supplied config, store,
@@ -53,6 +54,7 @@ func NewAppContext(cfg *BackendConfig, s *store.Store, kafka *events.KafkaManage
 		QuotaSvc:                  services.NewQuotaService(quotaManager),
 		ChargingTraceSvc:          services.NewChargingTraceService(s),
 		DestinationGroupSvc:       services.NewDestinationGroupService(s),
+		SourceGroupSvc:            services.NewSourceGroupService(s),
 	}
 }
 

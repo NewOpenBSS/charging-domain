@@ -7,36 +7,35 @@ package resolvers
 
 import (
 	"context"
-	"fmt"
 	"go-ocs/internal/backend/graphql/model"
 )
 
 // CreateSourceGroup is the resolver for the createSourceGroup field.
 func (r *mutationResolver) CreateSourceGroup(ctx context.Context, sourceGroup model.SourceGroupInput) (*model.SourceGroup, error) {
-	panic(fmt.Errorf("not implemented: CreateSourceGroup - createSourceGroup"))
+	return r.SourceGroupSvc.CreateSourceGroup(ctx, sourceGroup)
 }
 
 // UpdateSourceGroup is the resolver for the updateSourceGroup field.
 func (r *mutationResolver) UpdateSourceGroup(ctx context.Context, groupName string, sourceGroup model.SourceGroupInput) (*model.SourceGroup, error) {
-	panic(fmt.Errorf("not implemented: UpdateSourceGroup - updateSourceGroup"))
+	return r.SourceGroupSvc.UpdateSourceGroup(ctx, groupName, sourceGroup)
 }
 
 // DeleteSourceGroup is the resolver for the deleteSourceGroup field.
 func (r *mutationResolver) DeleteSourceGroup(ctx context.Context, groupName string) (bool, error) {
-	panic(fmt.Errorf("not implemented: DeleteSourceGroup - deleteSourceGroup"))
+	return r.SourceGroupSvc.DeleteSourceGroup(ctx, groupName)
 }
 
 // SourceGroupList is the resolver for the sourceGroupList field.
 func (r *queryResolver) SourceGroupList(ctx context.Context, page *model.PageRequest, filter *model.FilterRequest) ([]*model.SourceGroup, error) {
-	panic(fmt.Errorf("not implemented: SourceGroupList - sourceGroupList"))
+	return r.SourceGroupSvc.ListSourceGroups(ctx, page, filter)
 }
 
 // CountSourceGroup is the resolver for the countSourceGroup field.
 func (r *queryResolver) CountSourceGroup(ctx context.Context, filter *model.FilterRequest) (int, error) {
-	panic(fmt.Errorf("not implemented: CountSourceGroup - countSourceGroup"))
+	return r.SourceGroupSvc.CountSourceGroups(ctx, filter)
 }
 
 // SourceGroupByGroupName is the resolver for the sourceGroupByGroupName field.
 func (r *queryResolver) SourceGroupByGroupName(ctx context.Context, groupName string) (*model.SourceGroup, error) {
-	panic(fmt.Errorf("not implemented: SourceGroupByGroupName - sourceGroupByGroupName"))
+	return r.SourceGroupSvc.SourceGroupByGroupName(ctx, groupName)
 }
