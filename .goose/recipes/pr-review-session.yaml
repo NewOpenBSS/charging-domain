@@ -41,12 +41,7 @@ instructions: |
     git checkout -b {{ branch_name }} origin/{{ branch_name }}
 
   ## Step 2 — Read Context
-  Read these files in order:
-  1. docs/PROJECT_BRIEF.md
-  2. docs/ARCHITECTURE.md
-  3. docs/PROJECT_STRUCTURE.md
-  4. .ai/memory/STATUS.md
-  5. All files in .ai/context/
+  Complete Session Initialisation as defined in AGENTS.md.
 
   ## Step 3 — Fetch All Review Comments
   Fetch the PR review state and all inline review comments:
@@ -104,11 +99,8 @@ instructions: |
   - Report a summary of what was answered and what was fixed
 
   ## Rules
-  - Never commit or push to main
-  - Never push — the workflow does this after you exit
   - Process ALL unresolved comments — do not skip any
   - For ambiguous comments, default to treating them as a change request
-  - Fix failing tests before exiting
   - If a fix is not straightforward, reply to the comment explaining the complexity
     and what information is needed from the human before proceeding
 

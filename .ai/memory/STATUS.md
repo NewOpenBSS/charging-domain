@@ -63,7 +63,6 @@ _Last updated: 2026-03-29 (F-002 complete)_
 | **QuotaResource** | ✅ Complete | Balance queries + reserve/debit/cancel mutations |
 | **Counter Expiry Journal** | ✅ Complete | QUOTA_EXPIRY events on counter expiry (F-008) |
 | **DestinationGroupResource** | ✅ Complete | Full CRUD via GraphQL — six operations (F-002) |
-| **SourceGroupResource** | ✅ Complete | Full CRUD via GraphQL — six operations (F-003) |
 
 ### Database
 
@@ -77,31 +76,15 @@ _Last updated: 2026-03-29 (F-002 complete)_
 
 ## Current Focus
 
-F-003 — SourceGroupResource — **In Review**. All three tasks implemented. See FEATURES.md.
-
-F-008 — Counter Expiry Cleanup with Quota Journal — **Done**, merged 2026-03-29.
-
-F-002 — DestinationGroupResource — **In Review**. All three tasks implemented. See FEATURES.md.
+F-003 — SourceGroupResource — **Ready for AI Design**. Branch created, awaiting feature design session.
 
 ---
 
 ## Recently Completed
 
-- **F-001 Task 003** — Resolvers, AppContext, and GraphQL router wired for ChargingTrace. All three query methods functional end-to-end. `go test -race ./...` passes. Completed 2026-03-20.
-- **F-001 Task 002** — `ChargingTraceService` implemented in `internal/backend/services/`. All three methods (list, count, by-ID) with UUID parsing, column map, and model mapper. Unit tests pass including race detector. `store.NewTestStore` helper added to enable service-level mocking. Completed 2026-03-20.
-- **F-001 Task 001** — `gql/schema/charging_trace.graphql` created; gqlgen regenerated `models_gen.go`, `generated.go`, and `charging_trace.resolvers.go` (stubs). Build clean. Completed 2026-03-20.
-- **ChargingTrace store layer** — ListChargingTraces, CountChargingTraces, FindChargingTraceByTraceId. Unit tests. Completed 2026-03-20.
-- **QuotaResource** — Balance queries + reserve/debit/cancel mutations. GraphQL schema + service + resolvers complete. Kafka wired to charging-backend. Completed 2026-03-20.
-- **QuotaManager.GetBalance** — `BalanceQuery`, `CounterBalance`, `GetBalance` added to `internal/quota`. Read-only domain primitive for balance inquiries. Committed 2026-03-19.
-- Reverse-engineered project state and created memory/DECISIONS.md and memory/STATUS.md
-- RatePlanResource — GraphQL CRUD + approval state machine
-- NumberPlanResource — GraphQL CRUD
-- ClassificationResource — GraphQL CRUD + approval state machine
-- CarrierResource — GraphQL CRUD + dynamic filter/pagination
-- charging-backend scaffold — auth, GraphQL handler, REST router
-- Model package refactor — moved to internal/model, Plan → ClassificationPlan rename
-- charging-engine — full NCHF charging pipeline
-- charging-dra — Diameter Ro interface
+- **F-008** — Counter Expiry Cleanup with Quota Journal. `QUOTA_EXPIRY` journal events on counter expiry. Merged 2026-03-29.
+- **F-002 Task 003** — DestinationGroupService, resolvers, and AppContext wiring. All six GraphQL operations functional. Completed 2026-03-29.
+- **F-001 Task 003** — Resolvers, AppContext, and GraphQL router wired for ChargingTrace. All three query methods functional end-to-end. Completed 2026-03-20.
 
 ---
 
