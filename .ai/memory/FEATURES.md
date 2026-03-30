@@ -74,7 +74,7 @@ None
 
 ## F-009 — Charging Domain Housekeeping
 
-**Status:** In Design
+**Status:** In Review
 **Priority:** High
 **Created:** 2026-03-30
 **Branch:** feature/F-009-charging-domain-housekeeping
