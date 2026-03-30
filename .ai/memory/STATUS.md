@@ -63,7 +63,7 @@ _Last updated: 2026-03-29 (F-002 complete)_
 | **QuotaResource** | ✅ Complete | Balance queries + reserve/debit/cancel mutations |
 | **Counter Expiry Journal** | ✅ Complete | QUOTA_EXPIRY events on counter expiry (F-008) |
 | **DestinationGroupResource** | ✅ Complete | Full CRUD via GraphQL — six operations (F-002) |
-| **SourceGroupResource** | 🔄 In Progress | Task 001 done: SQL queries, sqlc generated, store layer + tests (F-003) |
+| **SourceGroupResource** | 🔄 In Progress | Tasks 001–002 done: store layer, GraphQL schema, gqlgen, service + tests (F-003) |
 
 ### Database
 
