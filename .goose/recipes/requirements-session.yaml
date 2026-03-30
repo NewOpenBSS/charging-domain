@@ -24,7 +24,10 @@ instructions: |
   Before the conversation begins, read:
   1. docs/PROJECT_BRIEF.md — understand what this system is
   2. .ai/memory/REQUIREMENTS.md — understand what already exists
-  3. .ai/memory/FEATURES.md — understand what is already being built
+  3. .ai/memory/FEATURES.md — understand what is actively being built
+
+  An archive of completed features exists at `.ai/memory/archive/FEATURES.md`.
+  Do NOT read it unless the human explicitly asks to review historical features.
 
   ## Your Role in the Conversation
 
@@ -146,4 +149,3 @@ prompt: |
   What would you like to work on today? You can share a new idea,
   refine something already captured, or ask about what is currently
   in the register.
-

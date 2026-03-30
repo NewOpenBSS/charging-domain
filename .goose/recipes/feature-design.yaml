@@ -37,13 +37,8 @@ instructions: |
   This prevents spurious re-runs when the workflow push triggers a second invocation.
 
   ## Step 2 — Read Context
-  Read these files in order:
-  1. docs/PROJECT_BRIEF.md
-  2. docs/ARCHITECTURE.md
-  3. docs/PROJECT_STRUCTURE.md
-  4. .ai/memory/STATUS.md
-  5. All files in .ai/context/
-  6. .ai/memory/FEATURES.md
+  Complete Session Initialisation as defined in AGENTS.md.
+  Then read .ai/memory/FEATURES.md.
 
   ## Step 3 — Identify the Feature
   IF branch_name is provided (automated mode):
