@@ -1,0 +1,149 @@
+### SourceGroup GraphQL Operations
+### Uses seed data from db/migrations/000005_source_groups.up.sql
+
+### 1. sourceGroupList — default page (no filter)
+POST {{baseUrl}}/api/charging/graphql
+Content-Type: application/json
+Authorization: Bearer {{bearerToken}}
+
+{
+  "query": "query SourceGroupList($page: PageRequest, $filter: FilterRequest) { sourceGroupList(page: $page, filter: $filter) { groupName region } }",
+  "variables": {
+    "page": {
+      "pageIndex": 0,
+      "pageSize": 10,
+      "sort": {
+        "key": "groupName",
+        "order": "asc"
+      }
+    },
+    "filter": null
+  }
+}
+
+### 2. sourceGroupList — wildcard filter on groupName
+POST {{baseUrl}}/api/charging/graphql
+Content-Type: application/json
+Authorization: Bearer {{bearerToken}}
+
+{
+  "query": "query SourceGroupList($page: PageRequest, $filter: FilterRequest) { sourceGroupList(page: $page, filter: $filter) { groupName region } }",
+  "variables": {
+    "page": {
+      "pageIndex": 0,
+      "pageSize": 10
+    },
+    "filter": {
+      "wildcard": "AMERICA"
+    }
+  }
+}
+
+### 3. sourceGroupList — filter by region
+POST {{baseUrl}}/api/charging/graphql
+Content-Type: application/json
+Authorization: Bearer {{bearerToken}}
+
+{
+  "query": "query SourceGroupList($page: PageRequest, $filter: FilterRequest) { sourceGroupList(page: $page, filter: $filter) { groupName region } }",
+  "variables": {
+    "page": {
+      "pageIndex": 0,
+      "pageSize": 10
+    },
+    "filter": {
+      "filters": [
+        {
+          "key": "region",
+          "value": "Europe"
+        }
+      ]
+    }
+  }
+}
+
+### 4. countSourceGroup — no filter
+POST {{baseUrl}}/api/charging/graphql
+Content-Type: application/json
+Authorization: Bearer {{bearerToken}}
+
+{
+  "query": "query CountSourceGroup($filter: FilterRequest) { countSourceGroup(filter: $filter) }",
+  "variables": {
+    "filter": null
+  }
+}
+
+### 5. countSourceGroup — with filter
+POST {{baseUrl}}/api/charging/graphql
+Content-Type: application/json
+Authorization: Bearer {{bearerToken}}
+
+{
+  "query": "query CountSourceGroup($filter: FilterRequest) { countSourceGroup(filter: $filter) }",
+  "variables": {
+    "filter": {
+      "filters": [
+        {
+          "key": "region",
+          "value": "Africa"
+        }
+      ]
+    }
+  }
+}
+
+### 6. sourceGroupByGroupName — existing record (HOME from seed data)
+POST {{baseUrl}}/api/charging/graphql
+Content-Type: application/json
+Authorization: Bearer {{bearerToken}}
+
+{
+  "query": "query SourceGroupByGroupName($groupName: String!) { sourceGroupByGroupName(groupName: $groupName) { groupName region } }",
+  "variables": {
+    "groupName": "HOME"
+  }
+}
+
+### 7. createSourceGroup — new record
+POST {{baseUrl}}/api/charging/graphql
+Content-Type: application/json
+Authorization: Bearer {{bearerToken}}
+
+{
+  "query": "mutation CreateSourceGroup($sourceGroup: SourceGroupInput!) { createSourceGroup(sourceGroup: $sourceGroup) { groupName region } }",
+  "variables": {
+    "sourceGroup": {
+      "groupName": "ASIA-PAC",
+      "region": "Asia Pacific"
+    }
+  }
+}
+
+### 8. updateSourceGroup — update an existing record
+POST {{baseUrl}}/api/charging/graphql
+Content-Type: application/json
+Authorization: Bearer {{bearerToken}}
+
+{
+  "query": "mutation UpdateSourceGroup($groupName: String!, $sourceGroup: SourceGroupInput!) { updateSourceGroup(groupName: $groupName, sourceGroup: $sourceGroup) { groupName region } }",
+  "variables": {
+    "groupName": "ASIA-PAC",
+    "sourceGroup": {
+      "groupName": "ASIA-PAC",
+      "region": "Asia Pacific (Updated)"
+    }
+  }
+}
+
+### 9. deleteSourceGroup — delete by group name
+POST {{baseUrl}}/api/charging/graphql
+Content-Type: application/json
+Authorization: Bearer {{bearerToken}}
+
+{
+  "query": "mutation DeleteSourceGroup($groupName: String!) { deleteSourceGroup(groupName: $groupName) }",
+  "variables": {
+    "groupName": "ASIA-PAC"
+  }
+}

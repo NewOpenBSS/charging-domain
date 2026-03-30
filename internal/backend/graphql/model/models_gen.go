@@ -301,6 +301,16 @@ type SortInput struct {
 	Order string `json:"order"`
 }
 
+type SourceGroup struct {
+	GroupName string `json:"groupName"`
+	Region    string `json:"region"`
+}
+
+type SourceGroupInput struct {
+	GroupName string `json:"groupName"`
+	Region    string `json:"region"`
+}
+
 type BalanceType string
 
 const (

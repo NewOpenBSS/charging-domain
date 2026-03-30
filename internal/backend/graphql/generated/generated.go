@@ -124,6 +124,7 @@ type ComplexityRoot struct {
 		CreateDestinationGroup          func(childComplexity int, destinationGroup model.DestinationGroupInput) int
 		CreateNumberPlan                func(childComplexity int, numberPlan model.NumberPlanInput) int
 		CreateRatePlan                  func(childComplexity int, ratePlan model.RatePlanInput) int
+		CreateSourceGroup               func(childComplexity int, sourceGroup model.SourceGroupInput) int
 		DebitQuota                      func(childComplexity int, subscriberID string, reservationID string, usedUnits int, unitType model.UnitType, reclaimUnusedUnits bool) int
 		DeclineClassificationPlan       func(childComplexity int, classificationID string) int
 		DeclineRatePlan                 func(childComplexity int, planID string) int
@@ -132,6 +133,7 @@ type ComplexityRoot struct {
 		DeleteDestinationGroup          func(childComplexity int, groupName string) int
 		DeleteNumberPlan                func(childComplexity int, numberID string) int
 		DeleteRatePlan                  func(childComplexity int, planID string) int
+		DeleteSourceGroup               func(childComplexity int, groupName string) int
 		Empty                           func(childComplexity int) int
 		ReserveQuota                    func(childComplexity int, reservationID string, subscriberID string, reasonCode model.ReasonCode, rateKey model.QuotaRateKeyInput, unitType model.UnitType, requestedUnits int, unitPrice string, validitySeconds int, allowOOBCharging bool) int
 		SubmitClassificationForApproval func(childComplexity int, classificationID string) int
@@ -142,6 +144,7 @@ type ComplexityRoot struct {
 		UpdateNumberPlan                func(childComplexity int, numberID string, numberPlan model.NumberPlanInput) int
 		UpdateRatePlan                  func(childComplexity int, planID string, ratePlan model.RatePlanInput) int
 		UpdateRatePlanRules             func(childComplexity int, planID string, rateLines []*model.RateLineInput) int
+		UpdateSourceGroup               func(childComplexity int, groupName string, sourceGroup model.SourceGroupInput) int
 	}
 
 	NumberPlan struct {
@@ -166,6 +169,7 @@ type ComplexityRoot struct {
 		CountDestinationGroup       func(childComplexity int, filter *model.FilterRequest) int
 		CountNumberPlans            func(childComplexity int, filter *model.FilterRequest) int
 		CountRatePlans              func(childComplexity int, filter *model.FilterRequest) int
+		CountSourceGroup            func(childComplexity int, filter *model.FilterRequest) int
 		DestinationGroupByGroupName func(childComplexity int, groupName string) int
 		DestinationGroupList        func(childComplexity int, page *model.PageRequest, filter *model.FilterRequest) int
 		Empty                       func(childComplexity int) int
@@ -177,6 +181,8 @@ type ComplexityRoot struct {
 		RateKeyInput                func(childComplexity int) int
 		RatePlan                    func(childComplexity int, planID string) int
 		RatePlanList                func(childComplexity int, page *model.PageRequest, filter *model.FilterRequest) int
+		SourceGroupByGroupName      func(childComplexity int, groupName string) int
+		SourceGroupList             func(childComplexity int, page *model.PageRequest, filter *model.FilterRequest) int
 	}
 
 	QuotaBalanceResponse struct {
@@ -253,6 +259,11 @@ type ComplexityRoot struct {
 		Name      func(childComplexity int) int
 		StartTime func(childComplexity int) int
 	}
+
+	SourceGroup struct {
+		GroupName func(childComplexity int) int
+		Region    func(childComplexity int) int
+	}
 }
 
 type MutationResolver interface {
@@ -284,6 +295,9 @@ type MutationResolver interface {
 	ApproveRatePlan(ctx context.Context, planID string) (*model.RatePlan, error)
 	DeclineRatePlan(ctx context.Context, planID string) (*model.RatePlan, error)
 	DeleteRatePlan(ctx context.Context, planID string) (bool, error)
+	CreateSourceGroup(ctx context.Context, sourceGroup model.SourceGroupInput) (*model.SourceGroup, error)
+	UpdateSourceGroup(ctx context.Context, groupName string, sourceGroup model.SourceGroupInput) (*model.SourceGroup, error)
+	DeleteSourceGroup(ctx context.Context, groupName string) (bool, error)
 }
 type QueryResolver interface {
 	Empty(ctx context.Context) (*string, error)
@@ -309,6 +323,9 @@ type QueryResolver interface {
 	CountRatePlans(ctx context.Context, filter *model.FilterRequest) (int, error)
 	RatePlan(ctx context.Context, planID string) (*model.RatePlan, error)
 	LatestRatePlanList(ctx context.Context, planType model.RatePlanType) ([]*model.RatePlan, error)
+	SourceGroupList(ctx context.Context, page *model.PageRequest, filter *model.FilterRequest) ([]*model.SourceGroup, error)
+	CountSourceGroup(ctx context.Context, filter *model.FilterRequest) (int, error)
+	SourceGroupByGroupName(ctx context.Context, groupName string) (*model.SourceGroup, error)
 }
 
 type executableSchema graphql.ExecutableSchemaState[ResolverRoot, DirectiveRoot, ComplexityRoot]
@@ -767,6 +784,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.CreateRatePlan(childComplexity, args["ratePlan"].(model.RatePlanInput)), true
+	case "Mutation.createSourceGroup":
+		if e.ComplexityRoot.Mutation.CreateSourceGroup == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_createSourceGroup_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.CreateSourceGroup(childComplexity, args["sourceGroup"].(model.SourceGroupInput)), true
 	case "Mutation.debitQuota":
 		if e.ComplexityRoot.Mutation.DebitQuota == nil {
 			break
@@ -855,6 +883,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.DeleteRatePlan(childComplexity, args["planId"].(string)), true
+	case "Mutation.deleteSourceGroup":
+		if e.ComplexityRoot.Mutation.DeleteSourceGroup == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_deleteSourceGroup_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.DeleteSourceGroup(childComplexity, args["groupName"].(string)), true
 	case "Mutation._empty":
 		if e.ComplexityRoot.Mutation.Empty == nil {
 			break
@@ -960,6 +999,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.UpdateRatePlanRules(childComplexity, args["planId"].(string), args["rateLines"].([]*model.RateLineInput)), true
+	case "Mutation.updateSourceGroup":
+		if e.ComplexityRoot.Mutation.UpdateSourceGroup == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateSourceGroup_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.UpdateSourceGroup(childComplexity, args["groupName"].(string), args["sourceGroup"].(model.SourceGroupInput)), true
 
 	case "NumberPlan.modifiedOn":
 		if e.ComplexityRoot.NumberPlan.ModifiedOn == nil {
@@ -1130,6 +1180,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.CountRatePlans(childComplexity, args["filter"].(*model.FilterRequest)), true
+	case "Query.countSourceGroup":
+		if e.ComplexityRoot.Query.CountSourceGroup == nil {
+			break
+		}
+
+		args, err := ec.field_Query_countSourceGroup_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.CountSourceGroup(childComplexity, args["filter"].(*model.FilterRequest)), true
 	case "Query.destinationGroupByGroupName":
 		if e.ComplexityRoot.Query.DestinationGroupByGroupName == nil {
 			break
@@ -1242,6 +1303,28 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.RatePlanList(childComplexity, args["page"].(*model.PageRequest), args["filter"].(*model.FilterRequest)), true
+	case "Query.sourceGroupByGroupName":
+		if e.ComplexityRoot.Query.SourceGroupByGroupName == nil {
+			break
+		}
+
+		args, err := ec.field_Query_sourceGroupByGroupName_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.SourceGroupByGroupName(childComplexity, args["groupName"].(string)), true
+	case "Query.sourceGroupList":
+		if e.ComplexityRoot.Query.SourceGroupList == nil {
+			break
+		}
+
+		args, err := ec.field_Query_sourceGroupList_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.SourceGroupList(childComplexity, args["page"].(*model.PageRequest), args["filter"].(*model.FilterRequest)), true
 
 	case "QuotaBalanceResponse.availableBalance":
 		if e.ComplexityRoot.QuotaBalanceResponse.AvailableBalance == nil {
@@ -1523,6 +1606,19 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.ServiceWindowEntry.StartTime(childComplexity), true
 
+	case "SourceGroup.groupName":
+		if e.ComplexityRoot.SourceGroup.GroupName == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceGroup.GroupName(childComplexity), true
+	case "SourceGroup.region":
+		if e.ComplexityRoot.SourceGroup.Region == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceGroup.Region(childComplexity), true
+
 	}
 	return 0, false
 }
@@ -1547,6 +1643,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputServiceCategoryMapEntryInput,
 		ec.unmarshalInputServiceWindowEntryInput,
 		ec.unmarshalInputSortInput,
+		ec.unmarshalInputSourceGroupInput,
 	)
 	first := true
 
@@ -2304,6 +2401,43 @@ input FilterRequest {
   wildcard: String
 }
 `, BuiltIn: false},
+	{Name: "../../../../gql/schema/source_group.graphql", Input: `# SourceGroup GraphQL types.
+
+# SourceGroup represents a valid carrier source group / region.
+# Maps directly to the carrier_source_group database table.
+type SourceGroup {
+  groupName: String!   # Primary key — the source group name
+  region:    String!   # The full region name
+}
+
+# SourceGroupInput is used for both createSourceGroup and updateSourceGroup mutations.
+input SourceGroupInput {
+  groupName: String!
+  region:    String!
+}
+
+extend type Query {
+  # Returns a filtered, sorted, paginated list of source groups.
+  sourceGroupList(page: PageRequest, filter: FilterRequest): [SourceGroup!]!
+
+  # Returns the total count of source groups matching the supplied filter.
+  countSourceGroup(filter: FilterRequest): Int!
+
+  # Returns a single source group by group name, or null if not found.
+  sourceGroupByGroupName(groupName: String!): SourceGroup
+}
+
+extend type Mutation {
+  # Creates a new source group and returns the persisted record.
+  createSourceGroup(sourceGroup: SourceGroupInput!): SourceGroup!
+
+  # Updates an existing source group by group name and returns the updated record.
+  updateSourceGroup(groupName: String!, sourceGroup: SourceGroupInput!): SourceGroup!
+
+  # Deletes a source group by group name. Returns true on success.
+  deleteSourceGroup(groupName: String!): Boolean!
+}
+`, BuiltIn: false},
 }
 var parsedSchema = gqlparser.MustLoadSchema(sources...)
 
@@ -2426,6 +2560,17 @@ func (ec *executionContext) field_Mutation_createRatePlan_args(ctx context.Conte
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_createSourceGroup_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "sourceGroup", ec.unmarshalNSourceGroupInput2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐSourceGroupInput)
+	if err != nil {
+		return nil, err
+	}
+	args["sourceGroup"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_debitQuota_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -2531,6 +2676,17 @@ func (ec *executionContext) field_Mutation_deleteRatePlan_args(ctx context.Conte
 		return nil, err
 	}
 	args["planId"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_deleteSourceGroup_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "groupName", ec.unmarshalNString2string)
+	if err != nil {
+		return nil, err
+	}
+	args["groupName"] = arg0
 	return args, nil
 }
 
@@ -2703,6 +2859,22 @@ func (ec *executionContext) field_Mutation_updateRatePlan_args(ctx context.Conte
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_updateSourceGroup_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "groupName", ec.unmarshalNString2string)
+	if err != nil {
+		return nil, err
+	}
+	args["groupName"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "sourceGroup", ec.unmarshalNSourceGroupInput2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐSourceGroupInput)
+	if err != nil {
+		return nil, err
+	}
+	args["sourceGroup"] = arg1
+	return args, nil
+}
+
 func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -2861,6 +3033,17 @@ func (ec *executionContext) field_Query_countRatePlans_args(ctx context.Context,
 	return args, nil
 }
 
+func (ec *executionContext) field_Query_countSourceGroup_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "filter", ec.unmarshalOFilterRequest2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐFilterRequest)
+	if err != nil {
+		return nil, err
+	}
+	args["filter"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Query_destinationGroupByGroupName_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -2972,6 +3155,33 @@ func (ec *executionContext) field_Query_ratePlan_args(ctx context.Context, rawAr
 		return nil, err
 	}
 	args["planId"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_sourceGroupByGroupName_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "groupName", ec.unmarshalNString2string)
+	if err != nil {
+		return nil, err
+	}
+	args["groupName"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_sourceGroupList_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "page", ec.unmarshalOPageRequest2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐPageRequest)
+	if err != nil {
+		return nil, err
+	}
+	args["page"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "filter", ec.unmarshalOFilterRequest2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐFilterRequest)
+	if err != nil {
+		return nil, err
+	}
+	args["filter"] = arg1
 	return args, nil
 }
 
@@ -6145,6 +6355,141 @@ func (ec *executionContext) fieldContext_Mutation_deleteRatePlan(ctx context.Con
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_createSourceGroup(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_createSourceGroup,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().CreateSourceGroup(ctx, fc.Args["sourceGroup"].(model.SourceGroupInput))
+		},
+		nil,
+		ec.marshalNSourceGroup2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐSourceGroup,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_createSourceGroup(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "groupName":
+				return ec.fieldContext_SourceGroup_groupName(ctx, field)
+			case "region":
+				return ec.fieldContext_SourceGroup_region(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SourceGroup", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_createSourceGroup_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_updateSourceGroup(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_updateSourceGroup,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().UpdateSourceGroup(ctx, fc.Args["groupName"].(string), fc.Args["sourceGroup"].(model.SourceGroupInput))
+		},
+		nil,
+		ec.marshalNSourceGroup2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐSourceGroup,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateSourceGroup(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "groupName":
+				return ec.fieldContext_SourceGroup_groupName(ctx, field)
+			case "region":
+				return ec.fieldContext_SourceGroup_region(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SourceGroup", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateSourceGroup_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_deleteSourceGroup(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_deleteSourceGroup,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().DeleteSourceGroup(ctx, fc.Args["groupName"].(string))
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_deleteSourceGroup(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_deleteSourceGroup_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _NumberPlan_numberId(ctx context.Context, field graphql.CollectedField, obj *model.NumberPlan) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -7478,6 +7823,141 @@ func (ec *executionContext) fieldContext_Query_latestRatePlanList(ctx context.Co
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Query_latestRatePlanList_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_sourceGroupList(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_sourceGroupList,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().SourceGroupList(ctx, fc.Args["page"].(*model.PageRequest), fc.Args["filter"].(*model.FilterRequest))
+		},
+		nil,
+		ec.marshalNSourceGroup2ᚕᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐSourceGroupᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_sourceGroupList(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "groupName":
+				return ec.fieldContext_SourceGroup_groupName(ctx, field)
+			case "region":
+				return ec.fieldContext_SourceGroup_region(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SourceGroup", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_sourceGroupList_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_countSourceGroup(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_countSourceGroup,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().CountSourceGroup(ctx, fc.Args["filter"].(*model.FilterRequest))
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_countSourceGroup(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_countSourceGroup_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_sourceGroupByGroupName(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_sourceGroupByGroupName,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().SourceGroupByGroupName(ctx, fc.Args["groupName"].(string))
+		},
+		nil,
+		ec.marshalOSourceGroup2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐSourceGroup,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_sourceGroupByGroupName(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "groupName":
+				return ec.fieldContext_SourceGroup_groupName(ctx, field)
+			case "region":
+				return ec.fieldContext_SourceGroup_region(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SourceGroup", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_sourceGroupByGroupName_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -8949,6 +9429,64 @@ func (ec *executionContext) _ServiceWindowEntry_endTime(ctx context.Context, fie
 func (ec *executionContext) fieldContext_ServiceWindowEntry_endTime(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "ServiceWindowEntry",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceGroup_groupName(ctx context.Context, field graphql.CollectedField, obj *model.SourceGroup) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceGroup_groupName,
+		func(ctx context.Context) (any, error) {
+			return obj.GroupName, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceGroup_groupName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceGroup",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceGroup_region(ctx context.Context, field graphql.CollectedField, obj *model.SourceGroup) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceGroup_region,
+		func(ctx context.Context) (any, error) {
+			return obj.Region, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceGroup_region(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceGroup",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -11305,6 +11843,43 @@ func (ec *executionContext) unmarshalInputSortInput(ctx context.Context, obj any
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputSourceGroupInput(ctx context.Context, obj any) (model.SourceGroupInput, error) {
+	var it model.SourceGroupInput
+	if obj == nil {
+		return it, nil
+	}
+
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"groupName", "region"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "groupName":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("groupName"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.GroupName = data
+		case "region":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("region"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Region = data
+		}
+	}
+	return it, nil
+}
+
 // endregion **************************** input.gotpl *****************************
 
 // region    ************************** interface.gotpl ***************************
@@ -12013,6 +12588,27 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "createSourceGroup":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_createSourceGroup(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "updateSourceGroup":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateSourceGroup(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "deleteSourceGroup":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_deleteSourceGroup(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -12598,6 +13194,69 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "sourceGroupList":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_sourceGroupList(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "countSourceGroup":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_countSourceGroup(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "sourceGroupByGroupName":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_sourceGroupByGroupName(ctx, field)
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "__type":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Query___type(ctx, field)
@@ -13150,6 +13809,50 @@ func (ec *executionContext) _ServiceWindowEntry(ctx context.Context, sel ast.Sel
 			}
 		case "endTime":
 			out.Values[i] = ec._ServiceWindowEntry_endTime(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var sourceGroupImplementors = []string{"SourceGroup"}
+
+func (ec *executionContext) _SourceGroup(ctx context.Context, sel ast.SelectionSet, obj *model.SourceGroup) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, sourceGroupImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SourceGroup")
+		case "groupName":
+			out.Values[i] = ec._SourceGroup_groupName(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "region":
+			out.Values[i] = ec._SourceGroup_region(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -14096,6 +14799,41 @@ func (ec *executionContext) unmarshalNServiceWindowEntryInput2ᚖgoᚑocsᚋinte
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) marshalNSourceGroup2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐSourceGroup(ctx context.Context, sel ast.SelectionSet, v model.SourceGroup) graphql.Marshaler {
+	return ec._SourceGroup(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNSourceGroup2ᚕᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐSourceGroupᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.SourceGroup) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNSourceGroup2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐSourceGroup(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNSourceGroup2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐSourceGroup(ctx context.Context, sel ast.SelectionSet, v *model.SourceGroup) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._SourceGroup(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNSourceGroupInput2goᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐSourceGroupInput(ctx context.Context, v any) (model.SourceGroupInput, error) {
+	res, err := ec.unmarshalInputSourceGroupInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNString2string(ctx context.Context, v any) (string, error) {
 	res, err := graphql.UnmarshalString(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -14541,6 +15279,13 @@ func (ec *executionContext) unmarshalOSortInput2ᚖgoᚑocsᚋinternalᚋbackend
 	}
 	res, err := ec.unmarshalInputSortInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOSourceGroup2ᚖgoᚑocsᚋinternalᚋbackendᚋgraphqlᚋmodelᚐSourceGroup(ctx context.Context, sel ast.SelectionSet, v *model.SourceGroup) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._SourceGroup(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOString2ᚕstringᚄ(ctx context.Context, v any) ([]string, error) {

@@ -1,0 +1,36 @@
+# SourceGroup GraphQL types.
+
+# SourceGroup represents a valid carrier source group / region.
+# Maps directly to the carrier_source_group database table.
+type SourceGroup {
+  groupName: String!   # Primary key — the source group name
+  region:    String!   # The full region name
+}
+
+# SourceGroupInput is used for both createSourceGroup and updateSourceGroup mutations.
+input SourceGroupInput {
+  groupName: String!
+  region:    String!
+}
+
+extend type Query {
+  # Returns a filtered, sorted, paginated list of source groups.
+  sourceGroupList(page: PageRequest, filter: FilterRequest): [SourceGroup!]!
+
+  # Returns the total count of source groups matching the supplied filter.
+  countSourceGroup(filter: FilterRequest): Int!
+
+  # Returns a single source group by group name, or null if not found.
+  sourceGroupByGroupName(groupName: String!): SourceGroup
+}
+
+extend type Mutation {
+  # Creates a new source group and returns the persisted record.
+  createSourceGroup(sourceGroup: SourceGroupInput!): SourceGroup!
+
+  # Updates an existing source group by group name and returns the updated record.
+  updateSourceGroup(groupName: String!, sourceGroup: SourceGroupInput!): SourceGroup!
+
+  # Deletes a source group by group name. Returns true on success.
+  deleteSourceGroup(groupName: String!): Boolean!
+}
