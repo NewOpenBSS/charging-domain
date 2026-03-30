@@ -82,6 +82,31 @@ Beyond API compatibility, the implementation takes advantage of Go's strengths: 
 
 ---
 
+## R-009 — Charging Domain Housekeeping
+
+**Status:** Ready for Scoping
+**Priority:** High
+**Created:** 2026-03-30
+**Features:** — (populated after scoping)
+
+### The Idea
+A housekeeping job that cleans up stale data across the charging domain — expired quota counters, orphaned sessions, old trace records, and superseded rate plan versions.
+
+### The Problem
+Several tables accumulate stale data that is never cleaned up without active user traffic. Dormant subscribers cause quota counters to silently pass their expiry without being processed. The `charging_data` table can hold orphaned sessions that were never terminated cleanly. The `charging_trace` table grows unboundedly — every request and response is recorded with no TTL. Superseded rate plan versions linger indefinitely. Left unaddressed, this affects data correctness (quota state for dormant subscribers) and storage and performance over time.
+
+### Wishlist
+A standalone application runs as a Kubernetes CronJob. Kubernetes owns the schedule; the application runs all four checks top to bottom each time it is invoked. No scheduler embedded in the application. Each threshold is configurable, with sensible defaults so it works out of the box.
+
+### Notes
+Four housekeeping tasks:
+1. **Quota expiry** — Find quotas where `next_action_time` is in the past and open each one. The existing quota logic handles the expiry work; no new logic needed.
+2. **Stale sessions** — Remove rows from `charging_data` where `modified_on` is older than a configurable period (default: 24 hours). The table should naturally clean itself as sessions terminate; this catches anything that didn't.
+3. **Trace purge** — Remove rows from `charging_trace` older than a configurable period (default: 36 hours). CDR events already preserve the full detail, so nothing is lost.
+4. **Rate plan cleanup** — Delete superseded ACTIVE rate versions that have been replaced by a newer version for longer than a configurable period (default: 30 days). DRAFT and PENDING versions are never touched.
+
+---
+
 ## Deferred
 
 <!-- Requirements parked for future consideration -->
