@@ -77,7 +77,7 @@ None
 **Status:** Backlog
 **Priority:** High
 **Created:** 2026-03-30
-**Branch:** (filled in by scoping recipe)
+**Branch:** feature/F-009-charging-domain-housekeeping
 
 ### Implementation Approval Required
 - [ ] Yes — pause after AI Design for human review before implementation begins
