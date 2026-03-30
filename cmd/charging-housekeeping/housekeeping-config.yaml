@@ -1,0 +1,17 @@
+base:
+  appName: charging-housekeeping
+  database:
+    url: "postgres://ocs:ocs@localhost:5432/ocs?sslmode=disable"
+  logging:
+    level: "info"
+    format: "json"
+  metrics:
+    enabled: false
+    addr: ":9093"
+    path: "/metrics"
+
+kafka:
+  brokers:
+    - "localhost:9092"
+  topics:
+    quotaJournal: "quota-journal"

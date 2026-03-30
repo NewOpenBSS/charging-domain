@@ -320,3 +320,17 @@ was needed; the task spec noted this was likely and required verification after 
 **Consequences:** If a third column is ever added to `carrier_destination_group`, `sqlc generate`
 will automatically switch to a struct arg. Callers in `destination_group_service.go` will need
 to be updated at that point.
+
+## ADR-022 — Housekeeping thresholds via env vars (exception to ADR-008) (F-009)
+**Status:** Accepted
+**Area:** `cmd/charging-housekeeping/appcontext/config.go`
+**Decision:** The three operational thresholds (stale sessions, trace purge, rate plan cleanup) are read from environment variables with duration-string defaults, not from YAML config. This is a deliberate exception to ADR-008 (YAML-only configuration).
+**Rationale:** For a Kubernetes CronJob, environment variables are the standard Kubernetes-native configuration mechanism — injected via the CronJob spec without requiring a ConfigMap or volume mount for each threshold change. YAML config is used for structural/connection settings (DB URL, Kafka brokers, logging); per-environment operational thresholds are a better fit for env vars.
+**Consequences:** Operators tune thresholds by changing the CronJob env vars in the Helm chart or kubectl patch. Invalid values produce a warning log and fall back to safe defaults.
+
+## ADR-023 — Four-application architecture: charging-housekeeping added (F-009)
+**Status:** Accepted
+**Area:** System structure
+**Decision:** Add `cmd/charging-housekeeping` as a fourth application — a run-once binary designed for Kubernetes CronJob invocation. It connects to DB and Kafka, runs four housekeeping tasks sequentially (quota expiry, stale sessions, trace purge, rate plan cleanup), logs a summary, and exits.
+**Rationale:** Housekeeping operations (expired quota processing, stale data cleanup) must run on a schedule but do not belong in the long-running charging-engine or charging-backend. A separate binary keeps the operational profile clean and enables independent scaling/scheduling.
+**Consequences:** Extends ADR-002 from three to four applications. Shares the same `internal/` packages. Requires a Kubernetes CronJob manifest (deferred to a future feature).

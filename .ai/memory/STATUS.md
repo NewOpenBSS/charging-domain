@@ -1,7 +1,7 @@
 # Project Status
 
 _Updated by Claude Code at the end of every task. Source of truth for current implementation state._
-_Last updated: 2026-03-31 (F-009 Task 003 complete)_
+_Last updated: 2026-03-31 (F-009 Task 004 complete)_
 
 ---
 
@@ -81,13 +81,13 @@ _Last updated: 2026-03-31 (F-009 Task 003 complete)_
 | Housekeeping SQL queries | ✅ Complete | 5 new sqlc queries: FindExpiredQuotaSubscribers, DeleteStaleChargingData, DeleteOldChargingTrace, ListSupersededRatePlanVersions, DeleteRatePlanVersionById |
 | QuotaManager.ProcessExpiredQuota | ✅ Complete | Delegates to executeWithQuota with no-op; tested |
 | HousekeepingService | ✅ Complete | CleanStaleSessions, PurgeOldTraces, CleanupSupersededRatePlans; tested |
-| charging-housekeeping binary | 🔲 Pending | Task 004 |
+| charging-housekeeping binary | ✅ Complete | Run-once CronJob binary with 4 tasks; tested |
 
 ---
 
 ## Current Focus
 
-F-009 — Charging Domain Housekeeping — **In Development**. Task 001 complete, processing task queue.
+F-009 — Charging Domain Housekeeping — **In Review**. All 4 tasks complete.
 
 ---
 
