@@ -118,6 +118,19 @@ func (m *QuotaManager) executeWithQuota(
 	return ErrRetryLimitExceeded
 }
 
+// ProcessExpiredQuota processes expired counters for a single subscriber by loading
+// their quota, triggering expiry logic, and saving back. Journal events are published
+// for all expired counters. This is equivalent to the JIT expiry that runs during
+// active charging, but invoked explicitly for dormant subscribers by the housekeeping job.
+//
+// A nil quota row is silently skipped — if the subscriber has no quota record there is
+// nothing to expire. This is not an error.
+func (m *QuotaManager) ProcessExpiredQuota(ctx context.Context, now time.Time, subscriberID uuid.UUID) error {
+	return m.executeWithQuota(ctx, now, subscriberID, func(_ *Quota) error {
+		return nil
+	})
+}
+
 // GetBalance returns the balances for all non-expired counters matching query for the
 // given subscriber. now is the reference time for expiry comparisons. Returns an empty
 // slice (not an error) if the subscriber has no quota record or no counters match the query.

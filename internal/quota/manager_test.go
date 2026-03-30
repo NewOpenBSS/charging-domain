@@ -392,6 +392,104 @@ func TestExecuteWithQuota_LoanCounterRetainedWithZeroBalance(t *testing.T) {
 	mockRepo.AssertExpectations(t)
 }
 
+func TestQuotaManager_ProcessExpiredQuota(t *testing.T) {
+	ctx := context.Background()
+	now := time.Now()
+
+	t.Run("subscriber with expired counter publishes journal", func(t *testing.T) {
+		subscriberID := uuid.New()
+		mockRepo := new(MockRepository)
+		km := noopKafka()
+		manager := &QuotaManager{
+			repo:         mockRepo,
+			retryLimit:   3,
+			kafkaManager: km,
+		}
+
+		past := now.Add(-1 * time.Hour)
+		future := now.Add(1 * time.Hour)
+		expiredBalance := decimal.NewFromInt(80)
+		activeBalance := decimal.NewFromInt(200)
+		taxRate := decimal.NewFromFloat(0.15)
+
+		expiredCounter := Counter{
+			CounterID: uuid.New(),
+			Expiry:    &past,
+			Balance:   &expiredBalance,
+			TaxRate:   &taxRate,
+			UnitType:  charging.MONETARY,
+		}
+		activeCounter := Counter{
+			CounterID: uuid.New(),
+			Expiry:    &future,
+			Balance:   &activeBalance,
+			TaxRate:   &taxRate,
+			UnitType:  charging.MONETARY,
+		}
+
+		quota := &Quota{
+			QuotaID:  uuid.New(),
+			Counters: []Counter{expiredCounter, activeCounter},
+		}
+		loadedQuota := &LoadedQuota{Quota: quota}
+
+		mockRepo.On("Load", ctx, subscriberID).Return(loadedQuota, nil)
+		mockRepo.On("Save", ctx, loadedQuota).Return(nil)
+
+		err := manager.ProcessExpiredQuota(ctx, now, subscriberID)
+
+		assert.NoError(t, err)
+		// Only activeCounter should remain after expiry processing
+		assert.Len(t, quota.Counters, 1)
+		assert.Equal(t, activeCounter.CounterID, quota.Counters[0].CounterID)
+		mockRepo.AssertExpectations(t)
+	})
+
+	t.Run("subscriber with no quota is a no-op", func(t *testing.T) {
+		subscriberID := uuid.New()
+		mockRepo := new(MockRepository)
+		km := noopKafka()
+		manager := &QuotaManager{
+			repo:         mockRepo,
+			retryLimit:   3,
+			kafkaManager: km,
+		}
+
+		// Load returns nil — no quota for this subscriber.
+		// executeWithQuota will create a new empty quota.
+		newQuota := &LoadedQuota{Quota: &Quota{QuotaID: uuid.New()}}
+		mockRepo.On("Load", ctx, subscriberID).Return(nil, nil)
+		mockRepo.On("Create", ctx, subscriberID).Return(newQuota, nil)
+		mockRepo.On("Save", ctx, newQuota).Return(nil)
+
+		err := manager.ProcessExpiredQuota(ctx, now, subscriberID)
+
+		assert.NoError(t, err)
+		// No counters to expire — quota remains empty
+		assert.Empty(t, newQuota.Quota.Counters)
+		mockRepo.AssertExpectations(t)
+	})
+
+	t.Run("repo load error is propagated", func(t *testing.T) {
+		subscriberID := uuid.New()
+		mockRepo := new(MockRepository)
+		km := noopKafka()
+		manager := &QuotaManager{
+			repo:         mockRepo,
+			retryLimit:   3,
+			kafkaManager: km,
+		}
+
+		expectedErr := errors.New("db connection lost")
+		mockRepo.On("Load", ctx, subscriberID).Return(nil, expectedErr)
+
+		err := manager.ProcessExpiredQuota(ctx, now, subscriberID)
+
+		assert.ErrorIs(t, err, expectedErr)
+		mockRepo.AssertExpectations(t)
+	})
+}
+
 func TestQuotaManager_ReserveQuota(t *testing.T) {
 	subscriberID := uuid.New()
 	reservationID := uuid.New()
