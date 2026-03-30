@@ -20,6 +20,29 @@ Do not edit directly — use the requirements-session recipe.
 
 <!-- Requirements currently being worked on -->
 
+## R-004 — SourceGroupResource GraphQL Endpoint
+
+**Status:** In Progress
+**Priority:** High
+**Created:** 2026-03-20
+**Features:** F-003
+
+### The Idea
+Add a SourceGroupResource to the charging-backend GraphQL API, following the same pattern as the existing resources — specifically mirroring DestinationGroupResource exactly.
+
+### The Problem
+Source groups classify the roaming origin of a carrier and drive the `sourceType` dimension of a `RateKey` in the charging engine. The `carrier_source_group` reference table exists and is seeded at DB init time, but there is no admin API to manage its entries. Admins cannot add new regions, rename existing ones, or remove obsolete entries without a database migration. The Java charging-backend exposed a full CRUD GraphQL resource for this; the Go port is missing it.
+
+### Wishlist
+An admin can create, read, update, and delete source group entries via the GraphQL API — exactly as they manage destination groups today. The API surface is indistinguishable from the Java original so that existing admin console clients require no changes.
+
+### Notes
+- The `carrier_source_group` table has two columns: `group_name` (PK) and `region`.
+- Structure and operations are identical to DestinationGroup — plain CRUD, no state machine.
+- Operation naming follows the same convention: `sourceGroupList`, `countSourceGroup`, `sourceGroupByGroupName`, `createSourceGroup`, `updateSourceGroup`, `deleteSourceGroup`.
+- F-003 also delivers `SourceGroupGraphQL.http` in `api-tests/` (co-located with implementation).
+- Completes the set of 8 resources required for the charging-backend port (R-001).
+
 ---
 
 ## Backlog
@@ -53,19 +76,25 @@ Beyond API compatibility, the implementation takes advantage of Go's strengths: 
 
 ---
 
-## Backlog
-
-<!-- Requirements ready or nearly ready for scoping -->
-
----
-
 ## Draft
 
 <!-- Requirements captured but not yet refined -->
 
+---
+
+## Deferred
+
+<!-- Requirements parked for future consideration -->
+
+---
+
+## Done
+
+<!-- Completed requirements — kept for reference -->
+
 ## R-002 — ChargingTraceResource GraphQL Endpoint
 
-**Status:** Scoped
+**Status:** Done
 **Priority:** High
 **Created:** 2026-03-20
 **Features:** F-001
@@ -87,7 +116,7 @@ Add a ChargingTraceResource to the charging-backend GraphQL API, following the s
 
 ## R-003 — DestinationGroupResource GraphQL Endpoint
 
-**Status:** Scoped
+**Status:** Done
 **Priority:** High
 **Created:** 2026-03-20
 **Features:** F-002
@@ -106,56 +135,9 @@ Add a DestinationGroupResource to the charging-backend GraphQL API, following th
 
 ---
 
-## R-004 — SourceGroupResource GraphQL Endpoint
-
-**Status:** In Progress
-**Priority:** High
-**Created:** 2026-03-20
-**Features:** F-003
-
-### The Idea
-Add a SourceGroupResource to the charging-backend GraphQL API, following the same pattern as the existing resources — specifically mirroring DestinationGroupResource exactly.
-
-### The Problem
-Source groups classify the roaming origin of a carrier and drive the `sourceType` dimension of a `RateKey` in the charging engine. The `carrier_source_group` reference table exists and is seeded at DB init time, but there is no admin API to manage its entries. Admins cannot add new regions, rename existing ones, or remove obsolete entries without a database migration. The Java charging-backend exposed a full CRUD GraphQL resource for this; the Go port is missing it.
-
-### Wishlist
-An admin can create, read, update, and delete source group entries via the GraphQL API — exactly as they manage destination groups today. The API surface is indistinguishable from the Java original so that existing admin console clients require no changes.
-
-### Notes
-- The `carrier_source_group` table has two columns: `group_name` (PK) and `region`.
-- Structure and operations are identical to DestinationGroup — plain CRUD, no state machine.
-- Operation naming follows the same convention: `sourceGroupList`, `countSourceGroup`, `sourceGroupByGroupName`, `createSourceGroup`, `updateSourceGroup`, `deleteSourceGroup`.
-- F-003 also delivers `SourceGroupGraphQL.http` in `api-tests/` (co-located with implementation).
-- Completes the set of 8 resources required for the charging-backend port (R-001).
-
----
-
-## R-008 — API Test Files for New GraphQL Resources
-
-**Status:** Scoped
-**Priority:** High
-**Created:** 2026-03-20
-**Features:** F-004
-
-### The Idea
-Create `.http` API test files in `api-tests/` for each new GraphQL resource, following the pattern of the existing files.
-
-### The Problem
-Developers have no way to manually exercise the new GraphQL endpoints from their IDE. QuotaResource is also missing a test file despite being complete.
-
-### Wishlist
-One `.http` file per resource, covering every operation with realistic sample data.
-
-### Notes
-- Follows the pattern of `CarrierGraphQL.http`, `ClassficationGraphQL.http`, etc.
-- Covers: QuotaResource, ChargingTraceResource, DestinationGroupResource, SourceGroupResource.
-
----
-
 ## R-005 — QuotaEventConsumer
 
-**Status:** Scoped
+**Status:** Done
 **Priority:** High
 **Created:** 2026-03-20
 **Features:** F-007
@@ -177,7 +159,7 @@ Add a Kafka consumer for quota events.
 
 ## R-006 — SubscriberEventConsumer
 
-**Status:** Scoped
+**Status:** Done
 **Priority:** High
 **Created:** 2026-03-20
 **Features:** F-005
@@ -199,7 +181,7 @@ Add a Kafka consumer for subscriber events.
 
 ## R-007 — WholesaleContractConsumer
 
-**Status:** Scoped
+**Status:** Done
 **Priority:** High
 **Created:** 2026-03-20
 **Features:** F-006
@@ -219,17 +201,25 @@ Add a Kafka consumer for wholesale contract events.
 
 ---
 
----
+## R-008 — API Test Files for New GraphQL Resources
 
-## Deferred
+**Status:** Done
+**Priority:** High
+**Created:** 2026-03-20
+**Features:** F-004
 
-<!-- Requirements parked for future consideration -->
+### The Idea
+Create `.http` API test files in `api-tests/` for each new GraphQL resource, following the pattern of the existing files.
 
----
+### The Problem
+Developers have no way to manually exercise the new GraphQL endpoints from their IDE. QuotaResource is also missing a test file despite being complete.
 
-## Done
+### Wishlist
+One `.http` file per resource, covering every operation with realistic sample data.
 
-<!-- Completed requirements — kept for reference -->
+### Notes
+- Follows the pattern of `CarrierGraphQL.http`, `ClassficationGraphQL.http`, etc.
+- Covers: QuotaResource, ChargingTraceResource, DestinationGroupResource, SourceGroupResource.
 
 ---
 
