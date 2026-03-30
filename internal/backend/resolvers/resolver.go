@@ -16,4 +16,5 @@ type Resolver struct {
 	QuotaSvc             *services.QuotaService
 	ChargingTraceSvc     *services.ChargingTraceService
 	DestinationGroupSvc  *services.DestinationGroupService
+	SourceGroupSvc       *services.SourceGroupService
 }

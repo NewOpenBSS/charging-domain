@@ -20,7 +20,7 @@ Done features are archived to `.ai/memory/archive/FEATURES.md`.
 
 ## F-003 — SourceGroupResource
 
-**Status:** Ready for AI Design
+**Status:** In Review
 **Priority:** High
 **Created:** 2026-03-20
 **Branch:** feature/F-003-source-group-resource
