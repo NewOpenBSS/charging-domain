@@ -295,6 +295,19 @@ code panicked on nil Expiry. The fix is consistent with how `GetBalance` handles
 **Consequences:** Previously all test counters included an expiry; the fix is backward-
 compatible and enables non-expiring counters throughout the quota system.
 
+## ADR-021 — SourceGroupResource: mirrors DestinationGroupResource exactly (F-003)
+**Status:** Accepted
+**Area:** `internal/store/queries/source_groups.sql`, `internal/store/source_group_store.go`
+**Decision:** `carrier_source_group` has the same schema as `carrier_destination_group` (group_name, region).
+All store, service, schema, and resolver code is a mechanical rename of the DestinationGroup equivalents.
+No new migration is required — the table was created in `000001_init.up.sql`.
+sqlc generates positional-arg signatures (no params struct) for the same reason as DestinationGroup —
+only 2 columns, below the `query_parameter_limit: 4` threshold.
+**Rationale:** F-003 acceptance criteria explicitly require matching Java operation names and mirroring
+the DestinationGroupResource pattern. Mechanical mirroring minimises risk of divergence.
+**Consequences:** Any schema change to `carrier_source_group` that adds a third column will cause
+sqlc to switch to a params struct, requiring service-layer call-site updates.
+
 ## ADR-020 — DestinationGroupResource: positional args for Create/Update (F-002)
 **Status:** Accepted
 **Area:** `internal/store/sqlc/destination_groups.sql.go`, `internal/backend/services/destination_group_service.go`
