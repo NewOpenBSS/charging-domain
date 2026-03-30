@@ -28,6 +28,14 @@ instructions: |
   The repo is available in the current directory (actions/checkout ran, or local).
   Run: git fetch origin && git checkout main && git pull origin main
 
+  ## Step 1.5 — Guard: verify DESIGN sentinel exists on the feature branch
+  Before doing any work, check whether the DESIGN sentinel is present:
+    git checkout {{ branch_name }} 2>/dev/null || git checkout -b {{ branch_name }} origin/{{ branch_name }}
+    ls .ai/tasks/DESIGN 2>/dev/null || { echo "No .ai/tasks/DESIGN sentinel found — nothing to do. Exiting cleanly."; git checkout main; exit 0; }
+    git checkout main
+  If DESIGN does not exist, exit immediately with a success status.
+  This prevents spurious re-runs when the workflow push triggers a second invocation.
+
   ## Step 2 — Read Context
   Read these files in order:
   1. docs/PROJECT_BRIEF.md
@@ -82,13 +90,13 @@ instructions: |
      Tasks must be sequenced so each builds on working code from the previous.
      The smallest atomic unit that can be built, tested, and committed independently.
 
-  d) Remove the DESIGN sentinel, write READY, stage queue files, commit and push:
+  d) Remove the DESIGN sentinel, write READY, stage queue files, and commit (do NOT push — the workflow pushes):
      git rm .ai/tasks/DESIGN
      echo "Feature: F-NNN\nTasks: <count>\nCreated: $(date -u +%Y-%m-%d)" > .ai/tasks/READY
      git add .ai/tasks/queue/ .ai/tasks/READY
      git add .ai/memory/FEATURES.md
      git commit -m "design: F-NNN task queue ready ([count] tasks)"
-     git push
+     (do NOT run git push here — the GitHub Actions workflow pushes after this recipe exits)
 
   e) Return to main:
      git checkout main
