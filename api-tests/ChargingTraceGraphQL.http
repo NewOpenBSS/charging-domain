@@ -1,0 +1,110 @@
+### ChargingTrace GraphQL Operations
+### Read-only resource — list, count, and fetch by trace ID.
+### Traces are created automatically by the charging engine on each NCHF request.
+
+### 1. chargingTraceList — default page (most recent first)
+POST {{baseUrl}}/api/charging/graphql
+Content-Type: application/json
+Authorization: Bearer {{bearerToken}}
+
+{
+  "query": "query ChargingTraceList($page: PageRequest, $filter: FilterRequest) { chargingTraceList(page: $page, filter: $filter) { traceId createdAt chargingId sequenceNr msisdn executionTime } }",
+  "variables": {
+    "page": {
+      "pageIndex": 0,
+      "pageSize": 10,
+      "sort": {
+        "key": "createdAt",
+        "order": "desc"
+      }
+    },
+    "filter": null
+  }
+}
+
+### 2. chargingTraceList — filter by MSISDN
+POST {{baseUrl}}/api/charging/graphql
+Content-Type: application/json
+Authorization: Bearer {{bearerToken}}
+
+{
+  "query": "query ChargingTraceList($page: PageRequest, $filter: FilterRequest) { chargingTraceList(page: $page, filter: $filter) { traceId createdAt chargingId sequenceNr msisdn executionTime } }",
+  "variables": {
+    "page": {
+      "pageIndex": 0,
+      "pageSize": 20
+    },
+    "filter": {
+      "filters": [
+        {
+          "key": "msisdn",
+          "operation": "=",
+          "value": "0272587305"
+        }
+      ]
+    }
+  }
+}
+
+### 3. chargingTraceList — wildcard search across all fields
+POST {{baseUrl}}/api/charging/graphql
+Content-Type: application/json
+Authorization: Bearer {{bearerToken}}
+
+{
+  "query": "query ChargingTraceList($page: PageRequest, $filter: FilterRequest) { chargingTraceList(page: $page, filter: $filter) { traceId createdAt chargingId sequenceNr msisdn executionTime } }",
+  "variables": {
+    "page": {
+      "pageIndex": 0,
+      "pageSize": 10
+    },
+    "filter": {
+      "wildcard": "0272587305"
+    }
+  }
+}
+
+### 4. countChargingTrace — total count (no filter)
+POST {{baseUrl}}/api/charging/graphql
+Content-Type: application/json
+Authorization: Bearer {{bearerToken}}
+
+{
+  "query": "query CountChargingTrace($filter: FilterRequest) { countChargingTrace(filter: $filter) }",
+  "variables": {
+    "filter": null
+  }
+}
+
+### 5. countChargingTrace — count for a specific MSISDN
+POST {{baseUrl}}/api/charging/graphql
+Content-Type: application/json
+Authorization: Bearer {{bearerToken}}
+
+{
+  "query": "query CountChargingTrace($filter: FilterRequest) { countChargingTrace(filter: $filter) }",
+  "variables": {
+    "filter": {
+      "filters": [
+        {
+          "key": "msisdn",
+          "operation": "=",
+          "value": "0272587305"
+        }
+      ]
+    }
+  }
+}
+
+### 6. chargingTraceById — fetch full trace including request/response payloads
+### Replace the traceId with a real UUID from your charging_trace table
+POST {{baseUrl}}/api/charging/graphql
+Content-Type: application/json
+Authorization: Bearer {{bearerToken}}
+
+{
+  "query": "query ChargingTraceById($traceId: String!) { chargingTraceById(traceId: $traceId) { traceId createdAt chargingId sequenceNr msisdn executionTime request response } }",
+  "variables": {
+    "traceId": "00000000-0000-0000-0000-000000000000"
+  }
+}

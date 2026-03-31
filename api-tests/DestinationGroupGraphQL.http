@@ -1,0 +1,149 @@
+### DestinationGroup GraphQL Operations
+### Uses seed data from db/migrations/000004__destination_groups.up.sql
+
+### 1. destinationGroupList — default page (no filter)
+POST {{baseUrl}}/api/charging/graphql
+Content-Type: application/json
+Authorization: Bearer {{bearerToken}}
+
+{
+  "query": "query DestinationGroupList($page: PageRequest, $filter: FilterRequest) { destinationGroupList(page: $page, filter: $filter) { groupName region } }",
+  "variables": {
+    "page": {
+      "pageIndex": 0,
+      "pageSize": 10,
+      "sort": {
+        "key": "groupName",
+        "order": "asc"
+      }
+    },
+    "filter": null
+  }
+}
+
+### 2. destinationGroupList — wildcard filter on groupName
+POST {{baseUrl}}/api/charging/graphql
+Content-Type: application/json
+Authorization: Bearer {{bearerToken}}
+
+{
+  "query": "query DestinationGroupList($page: PageRequest, $filter: FilterRequest) { destinationGroupList(page: $page, filter: $filter) { groupName region } }",
+  "variables": {
+    "page": {
+      "pageIndex": 0,
+      "pageSize": 10
+    },
+    "filter": {
+      "wildcard": "AMERICA"
+    }
+  }
+}
+
+### 3. destinationGroupList — filter by region
+POST {{baseUrl}}/api/charging/graphql
+Content-Type: application/json
+Authorization: Bearer {{bearerToken}}
+
+{
+  "query": "query DestinationGroupList($page: PageRequest, $filter: FilterRequest) { destinationGroupList(page: $page, filter: $filter) { groupName region } }",
+  "variables": {
+    "page": {
+      "pageIndex": 0,
+      "pageSize": 10
+    },
+    "filter": {
+      "filters": [
+        {
+          "key": "region",
+          "value": "Africa"
+        }
+      ]
+    }
+  }
+}
+
+### 4. countDestinationGroup — no filter
+POST {{baseUrl}}/api/charging/graphql
+Content-Type: application/json
+Authorization: Bearer {{bearerToken}}
+
+{
+  "query": "query CountDestinationGroup($filter: FilterRequest) { countDestinationGroup(filter: $filter) }",
+  "variables": {
+    "filter": null
+  }
+}
+
+### 5. countDestinationGroup — with filter
+POST {{baseUrl}}/api/charging/graphql
+Content-Type: application/json
+Authorization: Bearer {{bearerToken}}
+
+{
+  "query": "query CountDestinationGroup($filter: FilterRequest) { countDestinationGroup(filter: $filter) }",
+  "variables": {
+    "filter": {
+      "filters": [
+        {
+          "key": "region",
+          "value": "Europe"
+        }
+      ]
+    }
+  }
+}
+
+### 6. destinationGroupByGroupName — existing record (WORLD from seed data)
+POST {{baseUrl}}/api/charging/graphql
+Content-Type: application/json
+Authorization: Bearer {{bearerToken}}
+
+{
+  "query": "query DestinationGroupByGroupName($groupName: String!) { destinationGroupByGroupName(groupName: $groupName) { groupName region } }",
+  "variables": {
+    "groupName": "WORLD"
+  }
+}
+
+### 7. createDestinationGroup — new record
+POST {{baseUrl}}/api/charging/graphql
+Content-Type: application/json
+Authorization: Bearer {{bearerToken}}
+
+{
+  "query": "mutation CreateDestinationGroup($destinationGroup: DestinationGroupInput!) { createDestinationGroup(destinationGroup: $destinationGroup) { groupName region } }",
+  "variables": {
+    "destinationGroup": {
+      "groupName": "ASIA-PAC",
+      "region": "Asia Pacific"
+    }
+  }
+}
+
+### 8. updateDestinationGroup — update an existing record
+POST {{baseUrl}}/api/charging/graphql
+Content-Type: application/json
+Authorization: Bearer {{bearerToken}}
+
+{
+  "query": "mutation UpdateDestinationGroup($groupName: String!, $destinationGroup: DestinationGroupInput!) { updateDestinationGroup(groupName: $groupName, destinationGroup: $destinationGroup) { groupName region } }",
+  "variables": {
+    "groupName": "ASIA-PAC",
+    "destinationGroup": {
+      "groupName": "ASIA-PAC",
+      "region": "Asia Pacific (Updated)"
+    }
+  }
+}
+
+### 9. deleteDestinationGroup — delete by group name
+POST {{baseUrl}}/api/charging/graphql
+Content-Type: application/json
+Authorization: Bearer {{bearerToken}}
+
+{
+  "query": "mutation DeleteDestinationGroup($groupName: String!) { deleteDestinationGroup(groupName: $groupName) }",
+  "variables": {
+    "groupName": "ASIA-PAC"
+  }
+}

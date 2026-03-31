@@ -1,0 +1,122 @@
+### Quota GraphQL Operations
+### Uses test subscriber IDs from db/seeds/000001_test_data.up.sql
+### Active subscribers:
+###   cb2fec7d-1035-40f1-8d62-d3fbddfb6dc2  MSISDN: 0272587305
+###   e439cec6-a092-465e-89b7-d986a536ea90  MSISDN: 0271234567
+
+### 1. quotaBalance — balance for a specific subscriber and unit type
+POST {{baseUrl}}/api/charging/graphql
+Content-Type: application/json
+Authorization: Bearer {{bearerToken}}
+
+{
+  "query": "query QuotaBalance($req: QuotaBalanceRequestInput!) { quotaBalance(balanceEnquiryRequest: $req) { unitType totalValue availableBalance } }",
+  "variables": {
+    "req": {
+      "subscriberId": "cb2fec7d-1035-40f1-8d62-d3fbddfb6dc2",
+      "unitType": "OCTETS",
+      "balanceType": "AVAILABLE_BALANCE"
+    }
+  }
+}
+
+### 2. quotaBalance — monetary balance
+POST {{baseUrl}}/api/charging/graphql
+Content-Type: application/json
+Authorization: Bearer {{bearerToken}}
+
+{
+  "query": "query QuotaBalance($req: QuotaBalanceRequestInput!) { quotaBalance(balanceEnquiryRequest: $req) { unitType totalValue availableBalance } }",
+  "variables": {
+    "req": {
+      "subscriberId": "cb2fec7d-1035-40f1-8d62-d3fbddfb6dc2",
+      "unitType": "MONETARY",
+      "balanceType": "AVAILABLE_BALANCE"
+    }
+  }
+}
+
+### 3. quotaBalances — all unit type balances for a subscriber
+POST {{baseUrl}}/api/charging/graphql
+Content-Type: application/json
+Authorization: Bearer {{bearerToken}}
+
+{
+  "query": "query QuotaBalances($req: QuotaBalanceRequestInput!) { quotaBalances(balanceEnquiryRequest: $req) { unitType totalValue availableBalance } }",
+  "variables": {
+    "req": {
+      "subscriberId": "cb2fec7d-1035-40f1-8d62-d3fbddfb6dc2",
+      "balanceType": "AVAILABLE_BALANCE"
+    }
+  }
+}
+
+### 4. quotaBalances — transferable balance only
+POST {{baseUrl}}/api/charging/graphql
+Content-Type: application/json
+Authorization: Bearer {{bearerToken}}
+
+{
+  "query": "query QuotaBalances($req: QuotaBalanceRequestInput!) { quotaBalances(balanceEnquiryRequest: $req) { unitType totalValue availableBalance } }",
+  "variables": {
+    "req": {
+      "subscriberId": "cb2fec7d-1035-40f1-8d62-d3fbddfb6dc2",
+      "balanceType": "TRANSFERABLE_BALANCE"
+    }
+  }
+}
+
+### 5. reserveQuota — reserve data (OCTETS) from a subscriber's quota
+POST {{baseUrl}}/api/charging/graphql
+Content-Type: application/json
+Authorization: Bearer {{bearerToken}}
+
+{
+  "query": "mutation ReserveQuota($reservationId: ID!, $subscriberId: ID!, $reasonCode: ReasonCode!, $rateKey: QuotaRateKeyInput!, $unitType: UnitType!, $requestedUnits: Int!, $unitPrice: String!, $validitySeconds: Int!, $allowOOBCharging: Boolean!) { reserveQuota(reservationId: $reservationId, subscriberId: $subscriberId, reasonCode: $reasonCode, rateKey: $rateKey, unitType: $unitType, requestedUnits: $requestedUnits, unitPrice: $unitPrice, validitySeconds: $validitySeconds, allowOOBCharging: $allowOOBCharging) { grantedUnits } }",
+  "variables": {
+    "reservationId": "11111111-1111-1111-1111-111111111111",
+    "subscriberId": "cb2fec7d-1035-40f1-8d62-d3fbddfb6dc2",
+    "reasonCode": "SERVICE_USAGE",
+    "rateKey": {
+      "serviceType": "DATA",
+      "sourceType": "HOME",
+      "serviceDirection": "MO",
+      "serviceCategory": "INTERNET",
+      "serviceWindow": "PEAK"
+    },
+    "unitType": "OCTETS",
+    "requestedUnits": 1048576,
+    "unitPrice": "0.25",
+    "validitySeconds": 3600,
+    "allowOOBCharging": false
+  }
+}
+
+### 6. debitQuota — debit previously reserved units
+POST {{baseUrl}}/api/charging/graphql
+Content-Type: application/json
+Authorization: Bearer {{bearerToken}}
+
+{
+  "query": "mutation DebitQuota($subscriberId: ID!, $reservationId: ID!, $usedUnits: Int!, $unitType: UnitType!, $reclaimUnusedUnits: Boolean!) { debitQuota(subscriberId: $subscriberId, reservationId: $reservationId, usedUnits: $usedUnits, unitType: $unitType, reclaimUnusedUnits: $reclaimUnusedUnits) { unitsDebited unitsValue valueUnits unaccountedUnits } }",
+  "variables": {
+    "subscriberId": "cb2fec7d-1035-40f1-8d62-d3fbddfb6dc2",
+    "reservationId": "11111111-1111-1111-1111-111111111111",
+    "usedUnits": 524288,
+    "unitType": "OCTETS",
+    "reclaimUnusedUnits": true
+  }
+}
+
+### 7. cancelQuotaReservations — cancel all reservations for a reservation ID
+POST {{baseUrl}}/api/charging/graphql
+Content-Type: application/json
+Authorization: Bearer {{bearerToken}}
+
+{
+  "query": "mutation CancelQuotaReservations($reservationId: ID!, $subscriberId: ID!) { cancelQuotaReservations(reservationId: $reservationId, subscriberId: $subscriberId) { success } }",
+  "variables": {
+    "reservationId": "11111111-1111-1111-1111-111111111111",
+    "subscriberId": "cb2fec7d-1035-40f1-8d62-d3fbddfb6dc2"
+  }
+}
