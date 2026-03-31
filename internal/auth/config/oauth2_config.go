@@ -3,11 +3,10 @@ package config
 import "time"
 
 // KeycloakConfig holds all settings required to connect to and authenticate with a Keycloak server.
+// JWKS-based validation is used — no client secret is required.
 type KeycloakConfig struct {
 	Enabled       bool           `yaml:"enabled"`
 	IssuerURL     string         `yaml:"issuerUrl"`
-	ClientID      string         `yaml:"clientId"`
-	ClientSecret  string         `yaml:"clientSecret"`
 	Audience      string         `yaml:"audience"`
 	SkipTLSVerify bool           `yaml:"skipTLSVerify"`
 	JWKSExpiry    *time.Duration `yaml:"jwksExpiry"`

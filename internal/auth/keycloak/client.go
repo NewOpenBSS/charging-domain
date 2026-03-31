@@ -3,20 +3,23 @@ package keycloak
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"go-ocs/internal/auth/config"
 	"go-ocs/internal/logging"
 
-	"github.com/Nerzal/gocloak/v13"
+	"github.com/MicahParks/keyfunc/v2"
+	"github.com/golang-jwt/jwt/v5"
 )
 
-// Client wraps gocloak and provides token validation and user attribute lookup.
+// Client validates JWTs locally using the Keycloak JWKS endpoint.
+// No client secret is required — works with public and confidential clients alike.
 type Client struct {
-	gocloak *gocloak.GoCloak
-	config  config.KeycloakConfig
-	realm   string
+	jwks   *keyfunc.JWKS
+	config config.KeycloakConfig
 }
 
-// NewClient initialises the gocloak client using the provided KeycloakConfig.
+// NewClient initialises the JWKS-backed JWT validator.
 // Returns nil without error when auth is disabled.
 func NewClient(cfg config.KeycloakConfig) (*Client, error) {
 	if !cfg.Enabled {
@@ -24,44 +27,48 @@ func NewClient(cfg config.KeycloakConfig) (*Client, error) {
 		return nil, nil
 	}
 
-	gc := gocloak.NewClient(cfg.IssuerURL)
-	realm := extractRealm(cfg.IssuerURL)
+	jwksURL := cfg.IssuerURL + "/protocol/openid-connect/certs"
 
-	logging.Info("Keycloak client initialised", "issuer", cfg.IssuerURL, "realm", realm, "clientId", cfg.ClientID)
+	options := keyfunc.Options{
+		RefreshInterval:   time.Hour,
+		RefreshRateLimit:  5 * time.Minute,
+		RefreshTimeout:    10 * time.Second,
+		RefreshUnknownKID: true,
+	}
+
+	jwks, err := keyfunc.Get(jwksURL, options)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch JWKS from %s: %w", jwksURL, err)
+	}
+
+	logging.Info("Keycloak client initialised", "issuer", cfg.IssuerURL, "jwks", jwksURL)
 
 	return &Client{
-		gocloak: gc,
-		config:  cfg,
-		realm:   realm,
+		jwks:   jwks,
+		config: cfg,
 	}, nil
 }
 
-// ValidateToken introspects the token via Keycloak and returns extracted claims.
-func (c *Client) ValidateToken(ctx context.Context, rawToken string) (*KeycloakClaims, error) {
-	result, err := c.gocloak.RetrospectToken(ctx, rawToken, c.config.ClientID, c.config.ClientSecret, c.realm)
+// ValidateToken verifies the JWT signature using the JWKS public keys and returns extracted claims.
+func (c *Client) ValidateToken(_ context.Context, rawToken string) (*KeycloakClaims, error) {
+	claims := &KeycloakClaims{}
+
+	token, err := jwt.ParseWithClaims(rawToken, claims, c.jwks.Keyfunc)
 	if err != nil {
-		return nil, fmt.Errorf("token introspection failed: %w", err)
+		return nil, fmt.Errorf("token validation failed: %w", err)
 	}
 
-	if result.Active == nil || !*result.Active {
-		return nil, fmt.Errorf("token is not active")
-	}
-
-	claims, err := decodeKeycloakClaims(rawToken)
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode claims: %w", err)
+	if !token.Valid {
+		return nil, fmt.Errorf("token is not valid")
 	}
 
 	return claims, nil
 }
 
-// extractRealm parses the realm name from a Keycloak issuer URL.
-// e.g. https://keycloak.example.com/realms/charging-realm -> "charging-realm"
-func extractRealm(issuerURL string) string {
-	for i := len(issuerURL) - 1; i >= 0; i-- {
-		if issuerURL[i] == '/' {
-			return issuerURL[i+1:]
-		}
+// Stop releases the background JWKS refresh goroutine.
+// Call this during application shutdown.
+func (c *Client) Stop() {
+	if c.jwks != nil {
+		c.jwks.EndBackground()
 	}
-	return issuerURL
 }

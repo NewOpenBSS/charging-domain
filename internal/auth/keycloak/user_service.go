@@ -26,6 +26,17 @@ func NewUserService(cfg config.KeycloakConfig) *UserService {
 	}
 }
 
+// extractRealm parses the realm name from a Keycloak issuer URL.
+// e.g. https://keycloak.example.com/realms/charging-realm -> "charging-realm"
+func extractRealm(issuerURL string) string {
+	for i := len(issuerURL) - 1; i >= 0; i-- {
+		if issuerURL[i] == '/' {
+			return issuerURL[i+1:]
+		}
+	}
+	return issuerURL
+}
+
 // GetUserAttributes fetches the attributes map for a given Keycloak user ID.
 func (s *UserService) GetUserAttributes(ctx context.Context, adminToken, userID string) (map[string][]string, error) {
 	user, err := s.gocloak.GetUserByID(ctx, adminToken, s.realm, userID)

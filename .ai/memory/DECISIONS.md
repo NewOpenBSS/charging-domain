@@ -334,3 +334,12 @@ to be updated at that point.
 **Decision:** Add `cmd/charging-housekeeping` as a fourth application — a run-once binary designed for Kubernetes CronJob invocation. It connects to DB and Kafka, runs four housekeeping tasks sequentially (quota expiry, stale sessions, trace purge, rate plan cleanup), logs a summary, and exits.
 **Rationale:** Housekeeping operations (expired quota processing, stale data cleanup) must run on a schedule but do not belong in the long-running charging-engine or charging-backend. A separate binary keeps the operational profile clean and enables independent scaling/scheduling.
 **Consequences:** Extends ADR-002 from three to four applications. Shares the same `internal/` packages. Requires a Kubernetes CronJob manifest (deferred to a future feature).
+
+---
+
+## ADR-024 — JWT validation via JWKS instead of token introspection (F-010)
+**Status:** Accepted
+**Area:** `internal/auth/keycloak`
+**Decision:** Replace Keycloak token introspection (`RetrospectToken` via `gocloak`) with local JWT signature verification using Keycloak's JWKS endpoint (`/protocol/openid-connect/certs`) via `github.com/MicahParks/keyfunc/v2`.
+**Rationale:** Token introspection requires the calling client to be confidential and have introspection permissions granted in Keycloak. The `portal` client is a public OAuth2 client with no secret, making introspection impossible. JWKS-based validation works for both public and confidential clients, requires no client secret, and is lower latency (local verification vs. a network round-trip to Keycloak per request). Keys are cached and refreshed automatically in the background.
+**Consequences:** `clientId` and `clientSecret` removed from `KeycloakConfig` — no credentials needed for token validation. `gocloak` is retained only for `UserService` (admin API calls). The `keyfunc/v2` dependency is added. Token expiry and signature are enforced by `golang-jwt/jwt/v5` during local parse.

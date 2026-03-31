@@ -1,8 +1,6 @@
 package keycloak
 
 import (
-	"fmt"
-
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -62,15 +60,3 @@ func (c *KeycloakClaims) HasClientRole(clientID, role string) bool {
 	return false
 }
 
-// decodeKeycloakClaims parses the raw JWT without signature verification and
-// extracts KeycloakClaims. This is safe to call after the token has already
-// been validated via Keycloak introspection.
-func decodeKeycloakClaims(rawToken string) (*KeycloakClaims, error) {
-	claims := &KeycloakClaims{}
-	parser := jwt.NewParser()
-	_, _, err := parser.ParseUnverified(rawToken, claims)
-	if err != nil {
-		return nil, fmt.Errorf("decode token claims: %w", err)
-	}
-	return claims, nil
-}

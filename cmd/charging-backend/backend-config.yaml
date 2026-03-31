@@ -22,9 +22,8 @@ server:
   tenantRefreshInterval: "10m"
 
 auth:
-  enabled: false
-  issuerUrl: "https://keycloak.example.com/realms/charging-realm"
-  clientId: "charging-backend-client"
+  enabled: true
+  issuerUrl: "https://id.gobss.io:8443/realms/gonz"
   audience: "charging-api"
   skipTLSVerify: false
 
