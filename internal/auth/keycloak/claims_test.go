@@ -33,8 +33,8 @@ func TestKeycloakClaims_HasClientRole(t *testing.T) {
 	assert.False(t, claims.HasClientRole("", "manager"))
 }
 
-func TestDecodeKeycloakClaims(t *testing.T) {
-	// Build a test token using jwt/v5 with no signature (unsigned).
+func TestKeycloakClaims_Decode(t *testing.T) {
+	// Build an unsigned token and verify KeycloakClaims can be populated via ParseWithClaims.
 	sourceClaims := &KeycloakClaims{
 		RealmAccess: RealmAccess{Roles: []string{"admin"}},
 		ResourceAccess: map[string]ResourceAccess{
@@ -48,16 +48,14 @@ func TestDecodeKeycloakClaims(t *testing.T) {
 	tokenString, err := token.SignedString(jwt.UnsafeAllowNoneSignatureType)
 	require.NoError(t, err)
 
-	decoded, err := decodeKeycloakClaims(tokenString)
+	decoded := &KeycloakClaims{}
+	_, err = jwt.ParseWithClaims(tokenString, decoded, func(_ *jwt.Token) (interface{}, error) {
+		return jwt.UnsafeAllowNoneSignatureType, nil
+	})
 	require.NoError(t, err)
 
 	assert.Equal(t, "testuser", decoded.PreferredUsername)
 	assert.Equal(t, "test@example.com", decoded.Email)
 	assert.True(t, decoded.HasRealmRole("admin"))
 	assert.True(t, decoded.HasClientRole("test-client", "viewer"))
-}
-
-func TestDecodeKeycloakClaims_InvalidToken(t *testing.T) {
-	_, err := decodeKeycloakClaims("not.a.valid.jwt")
-	assert.Error(t, err)
 }

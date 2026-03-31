@@ -44,6 +44,9 @@ func main() {
 	if err != nil {
 		logging.Fatal("Failed to initialise Keycloak client", "err", err)
 	}
+	if authClient != nil {
+		defer authClient.Stop()
+	}
 
 	appCtx := appcontext.NewAppContext(cfg, db, kafkaManager, authClient)
 

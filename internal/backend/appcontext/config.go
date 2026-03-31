@@ -50,9 +50,6 @@ func NewConfig(configFilename string) *BackendConfig {
 		if cfg.Auth.IssuerURL == "" {
 			logging.Fatal("auth.issuerUrl is required when auth is enabled")
 		}
-		if cfg.Auth.ClientID == "" {
-			logging.Fatal("auth.clientId is required when auth is enabled")
-		}
 	}
 
 	return cfg

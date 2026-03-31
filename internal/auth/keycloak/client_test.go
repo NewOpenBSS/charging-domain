@@ -1,6 +1,9 @@
 package keycloak
 
 import (
+	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	authconfig "go-ocs/internal/auth/config"
@@ -51,16 +54,21 @@ func TestNewClient_AuthDisabled(t *testing.T) {
 }
 
 func TestNewClient_AuthEnabled(t *testing.T) {
+	// Serve a minimal JWKS document from a local test HTTP server.
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprintln(w, `{"keys":[]}`)
+	}))
+	defer srv.Close()
+
 	cfg := authconfig.KeycloakConfig{
-		Enabled:      true,
-		IssuerURL:    "https://keycloak.example.com/realms/test-realm",
-		ClientID:     "test-client",
-		ClientSecret: "test-secret",
+		Enabled:   true,
+		IssuerURL: srv.URL + "/realms/test-realm",
 	}
 
 	client, err := NewClient(cfg)
 	require.NoError(t, err)
 	require.NotNil(t, client)
-	assert.Equal(t, "test-realm", client.realm)
 	assert.Equal(t, cfg, client.config)
+	client.Stop()
 }
