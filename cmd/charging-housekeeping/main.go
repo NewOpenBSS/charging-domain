@@ -5,9 +5,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgtype"
-
 	figure "github.com/common-nighthawk/go-figure"
 
 	"go-ocs/cmd/charging-housekeeping/appcontext"
@@ -40,17 +37,17 @@ func main() {
 	defer kafkaManager.StopKafka()
 
 	quotaManager := quota.NewQuotaManager(*s, 3, kafkaManager)
-	housekeepingSvc := housekeeping.NewHousekeepingService(s)
+	housekeepingSvc := housekeeping.NewHousekeepingService(s, quotaManager)
 
 	now := time.Now().UTC()
-	exitCode := run(context.Background(), now, cfg, s, quotaManager, housekeepingSvc)
+	exitCode := run(context.Background(), now, cfg, housekeepingSvc)
 	os.Exit(exitCode)
 }
 
 // run executes all four housekeeping tasks sequentially and returns an exit code.
 // Extracted from main() for testability — os.Exit is only called in main().
-func run(ctx context.Context, now time.Time, cfg *appcontext.Config, s *store.Store,
-	quotaManager *quota.QuotaManager, housekeepingSvc *housekeeping.HousekeepingService) int {
+func run(ctx context.Context, now time.Time, cfg *appcontext.Config,
+	housekeepingSvc *housekeeping.HousekeepingService) int {
 
 	var (
 		quotaCount    int
@@ -61,21 +58,10 @@ func run(ctx context.Context, now time.Time, cfg *appcontext.Config, s *store.St
 	)
 
 	// Task 1: Quota expiry
-	subscribers, err := s.Q.FindExpiredQuotaSubscribers(ctx, pgtype.Timestamptz{Time: now, Valid: true})
+	quotaCount, err := housekeepingSvc.ExpireQuotas(ctx, now)
 	if err != nil {
-		logging.Error("Quota expiry: failed to find expired subscribers", "err", err)
+		logging.Error("Quota expiry: failed", "err", err)
 		runErr = err
-	} else {
-		for _, pgID := range subscribers {
-			subscriberID := uuid.UUID(pgID.Bytes)
-			if err := quotaManager.ProcessExpiredQuota(ctx, now, subscriberID); err != nil {
-				logging.Error("Quota expiry: failed to process subscriber", "err", err)
-				runErr = err
-				// continue — process remaining subscribers
-			} else {
-				quotaCount++
-			}
-		}
 	}
 
 	// Task 2: Stale sessions

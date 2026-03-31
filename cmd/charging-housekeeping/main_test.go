@@ -115,7 +115,7 @@ func TestRun_AllTasksSucceed_ExitZero(t *testing.T) {
 	s := store.NewTestStore(mockDB, mockDB)
 	km := noopKafka()
 	qm := quota.NewQuotaManager(*s, 3, km)
-	svc := housekeeping.NewHousekeepingService(s)
+	svc := housekeeping.NewHousekeepingService(s, qm)
 	cfg := defaultConfig()
 	now := time.Date(2026, 3, 31, 12, 0, 0, 0, time.UTC)
 
@@ -139,7 +139,7 @@ func TestRun_AllTasksSucceed_ExitZero(t *testing.T) {
 		return contains(sql, "rateplan")
 	}), mock.Anything).Return(pgx.Rows(newMockRows(nil)), nil).Once()
 
-	exitCode := run(context.Background(), now, cfg, s, qm, svc)
+	exitCode := run(context.Background(), now, cfg, svc)
 
 	assert.Equal(t, 0, exitCode)
 	mockDB.AssertExpectations(t)
@@ -150,7 +150,7 @@ func TestRun_QuotaExpiryError_ExitOne_OtherTasksStillRun(t *testing.T) {
 	s := store.NewTestStore(mockDB, mockDB)
 	km := noopKafka()
 	qm := quota.NewQuotaManager(*s, 3, km)
-	svc := housekeeping.NewHousekeepingService(s)
+	svc := housekeeping.NewHousekeepingService(s, qm)
 	cfg := defaultConfig()
 	now := time.Date(2026, 3, 31, 12, 0, 0, 0, time.UTC)
 
@@ -175,7 +175,7 @@ func TestRun_QuotaExpiryError_ExitOne_OtherTasksStillRun(t *testing.T) {
 		return contains(sql, "rateplan")
 	}), mock.Anything).Return(pgx.Rows(newMockRows(nil)), nil).Once()
 
-	exitCode := run(context.Background(), now, cfg, s, qm, svc)
+	exitCode := run(context.Background(), now, cfg, svc)
 
 	assert.Equal(t, 1, exitCode)
 	mockDB.AssertExpectations(t)
@@ -186,7 +186,7 @@ func TestRun_CleanupError_ExitOne(t *testing.T) {
 	s := store.NewTestStore(mockDB, mockDB)
 	km := noopKafka()
 	qm := quota.NewQuotaManager(*s, 3, km)
-	svc := housekeeping.NewHousekeepingService(s)
+	svc := housekeeping.NewHousekeepingService(s, qm)
 	cfg := defaultConfig()
 	now := time.Date(2026, 3, 31, 12, 0, 0, 0, time.UTC)
 
@@ -210,7 +210,7 @@ func TestRun_CleanupError_ExitOne(t *testing.T) {
 		return contains(sql, "rateplan")
 	}), mock.Anything).Return(pgx.Rows(newMockRows(nil)), nil).Once()
 
-	exitCode := run(context.Background(), now, cfg, s, qm, svc)
+	exitCode := run(context.Background(), now, cfg, svc)
 
 	assert.Equal(t, 1, exitCode)
 	mockDB.AssertExpectations(t)
