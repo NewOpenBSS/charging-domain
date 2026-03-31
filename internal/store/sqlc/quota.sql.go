@@ -30,6 +30,35 @@ func (q *Queries) CreateQuota(ctx context.Context, quotaID pgtype.UUID, subscrib
 	return i, err
 }
 
+const findExpiredQuotaSubscribers = `-- name: FindExpiredQuotaSubscribers :many
+SELECT subscriber_id
+FROM quota
+WHERE next_action_time < $1
+`
+
+// Returns the subscriber_id for every quota row whose next_action_time is in the past
+// relative to the given reference time. Used by the housekeeping job to find dormant
+// subscribers with expired counters.
+func (q *Queries) FindExpiredQuotaSubscribers(ctx context.Context, nextActionTime pgtype.Timestamptz) ([]pgtype.UUID, error) {
+	rows, err := q.db.Query(ctx, findExpiredQuotaSubscribers, nextActionTime)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []pgtype.UUID
+	for rows.Next() {
+		var subscriber_id pgtype.UUID
+		if err := rows.Scan(&subscriber_id); err != nil {
+			return nil, err
+		}
+		items = append(items, subscriber_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const findQuota = `-- name: FindQuota :one
 select quota_id, last_modified, subscriber_id, next_action_time, quota
 from quota

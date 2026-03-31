@@ -29,3 +29,9 @@ SELECT trace_id,
        msisdn
 FROM charging_trace
 WHERE trace_id = $1;
+
+-- name: DeleteOldChargingTrace :execrows
+-- Deletes all charging_trace rows whose created_at is before the given threshold.
+-- Used by the housekeeping job to purge old audit trail records.
+DELETE FROM charging_trace
+WHERE created_at < $1;
