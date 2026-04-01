@@ -87,7 +87,7 @@ _Last updated: 2026-03-31 (F-009 Task 004 complete)_
 
 ## Current Focus
 
-F-009 — Charging Domain Housekeeping — **In Review**. All 4 tasks complete.
+No active feature. F-003 and F-009 both merged. Next up: F-004 (GraphQL API Test Files) or a new feature.
 
 ---
 
