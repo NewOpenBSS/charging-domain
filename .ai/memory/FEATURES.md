@@ -1,7 +1,7 @@
 # Features
 
 This is the single source of truth for all active feature work.
-Updated by humans after each PR is merged.
+Updated automatically to **Done** by the `feature-complete.yml` workflow when a feature PR is merged to main. Updated manually for all other status transitions.
 Read by AI agents at the start of every design and development session.
 
 Done features are archived to `.ai/memory/archive/FEATURES.md`.
