@@ -16,7 +16,7 @@ Done features are archived to `.ai/memory/archive/FEATURES.md`.
 
 ---
 
-## Ready for AI Design
+## Done
 
 ## F-003 — SourceGroupResource
 
@@ -69,8 +69,6 @@ None
 - Referential integrity: if a source group is deleted while carriers still reference it, those carriers will have a dangling `sourceGroup` value
 
 ---
-
-## Backlog
 
 ## F-009 — Charging Domain Housekeeping
 
@@ -125,9 +123,29 @@ All four housekeeping tasks run top to bottom in a single binary invocation:
 
 ---
 
+## F-010 — JWKS-Based JWT Validation
+
+**Status:** Done
+**Priority:** High
+**Created:** 2026-03-31
+**Branch:** feature/F-010-jwks-auth
+
+### Goal
+Replace Keycloak token introspection with local JWKS-based JWT signature verification, removing the dependency on a confidential client and eliminating per-request network round-trips to Keycloak.
+
+### Problem Statement
+The `portal` Keycloak client is a public OAuth2 client with no client secret. Token introspection requires a confidential client with introspection permissions, making it incompatible. A stateless JWKS-based approach works for all client types.
+
+### Outcome
+- `clientId` and `clientSecret` removed from `KeycloakConfig` — only `issuerUrl` required
+- JWKS keys fetched at startup and auto-refreshed in the background
+- All auth unit tests updated and passing
+
+---
+
 ## F-004 — GraphQL API Test Files
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** High
 **Created:** 2026-03-20
 
@@ -167,6 +185,8 @@ None
 - Automated API test execution in CI pipeline
 
 ---
+
+## Backlog
 
 ## F-011 — Permission Enforcement Framework
 
