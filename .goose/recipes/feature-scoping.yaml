@@ -39,11 +39,27 @@ instructions: |
   Present them as a numbered list. If none — tell the human and stop.
   Wait for the human to select a requirement before proceeding.
 
-  ## Before Starting — Validate the Requirement
+  ## Before Starting — Load All Existing Context
 
   Read the selected requirement from .ai/memory/REQUIREMENTS.md.
   If it lacks enough detail — tell the human what is missing, reset status
   to "Draft", and stop.
+
+  Read .ai/memory/FEATURES.md in full.
+  Check whether a Feature entry already exists that corresponds to this
+  requirement (match by Feature ID in the requirement's "Features:" field,
+  or by title/topic if no ID is linked yet).
+
+  If a matching Feature entry exists:
+  - Treat every field already present (Goal, Problem Statement, Security Model,
+    Constraints, Acceptance Criteria, etc.) as established context.
+  - Do NOT ask the human to re-explain anything already documented there.
+  - In each artefact step below, present what is already known and only ask
+    about genuine gaps or items that need confirmation or refinement.
+  - Tell the human upfront: "I can see F-NNN is already partially defined.
+    I'll use that as context and only ask about what's missing or unclear."
+
+  If no matching Feature entry exists — proceed through all artefacts normally.
 
   ## The Seven Artefacts (work through these in order)
 
