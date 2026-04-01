@@ -1,0 +1,78 @@
+name: Feature Complete (Stage 5)
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+
+jobs:
+  feature-complete:
+    name: Mark Feature Done
+    runs-on: self-hosted
+    # Only run when a feature branch PR is merged (not just closed)
+    if: |
+      github.event.pull_request.merged == true &&
+      startsWith(github.event.pull_request.head.ref, 'feature/F-')
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          token: ${{ secrets.GOOSE_AGENT_PAT }}
+
+      - name: Configure environment
+        run: |
+          git config user.name "goose-agent"
+          git config user.email "270002424+goose-agent@users.noreply.github.com"
+
+      - name: Extract Feature ID
+        id: feature
+        run: |
+          BRANCH="${{ github.event.pull_request.head.ref }}"
+          FEATURE_ID=$(echo "${BRANCH}" | sed 's/.*\(F-[0-9]*\).*/\1/')
+          echo "id=${FEATURE_ID}" >> $GITHUB_OUTPUT
+
+      - name: Update FEATURES.md status to Done
+        run: |
+          FEATURE_ID="${{ steps.feature.outputs.id }}"
+          FILE=".ai/memory/FEATURES.md"
+
+          # Find the line number of the feature heading
+          HEADING_LINE=$(grep -n "^## ${FEATURE_ID} —" "${FILE}" | head -1 | cut -d: -f1)
+          if [ -z "${HEADING_LINE}" ]; then
+            echo "Feature ${FEATURE_ID} not found in ${FILE} — nothing to update"
+            exit 0
+          fi
+
+          # Find the Status: line within the next 10 lines after the heading
+          STATUS_LINE=$(tail -n +"${HEADING_LINE}" "${FILE}" | head -10 | grep -n "^\*\*Status:\*\*" | head -1 | cut -d: -f1)
+          if [ -z "${STATUS_LINE}" ]; then
+            echo "Status line not found for ${FEATURE_ID} — nothing to update"
+            exit 0
+          fi
+
+          ABSOLUTE_LINE=$(( HEADING_LINE + STATUS_LINE - 1 ))
+          CURRENT=$(sed -n "${ABSOLUTE_LINE}p" "${FILE}")
+          echo "Current: ${CURRENT}"
+
+          # Replace whatever status is there with Done
+          sed -i "${ABSOLUTE_LINE}s/\*\*Status:\*\* .*/\*\*Status:\*\* Done/" "${FILE}"
+          echo "Updated line ${ABSOLUTE_LINE} to Done"
+
+      - name: Commit and push if changed
+        run: |
+          FEATURE_ID="${{ steps.feature.outputs.id }}"
+          if git diff --quiet .ai/memory/FEATURES.md; then
+            echo "No change — status was already Done or feature not found"
+            exit 0
+          fi
+          git add .ai/memory/FEATURES.md
+          git commit -m "chore: mark ${FEATURE_ID} as Done after PR merge"
+          git push origin main
+        env:
+          GH_TOKEN: ${{ secrets.GOOSE_AGENT_PAT }}
