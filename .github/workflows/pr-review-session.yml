@@ -14,6 +14,10 @@ on:
         required: true
         type: string
 
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
   pr-review-session:
     name: Run PR Review Session
@@ -21,21 +25,10 @@ jobs:
     concurrency:
       group: pr-review-${{ github.event.pull_request.number || github.event.inputs.pr_number }}
       cancel-in-progress: false
-    permissions:
-      contents: write
-      pull-requests: write
 
     # Only run on feature branches, and only when review state is
     # COMMENTED or CHANGES_REQUESTED (not APPROVED)
-    if: |
-      github.event_name == 'workflow_dispatch' ||
-      (
-        startsWith(github.event.pull_request.head.ref, 'feature/F-') &&
-        (
-          github.event.review.state == 'commented' ||
-          github.event.review.state == 'changes_requested'
-        )
-      )
+    if: github.event_name == 'workflow_dispatch' || (startsWith(github.event.pull_request.head.ref, 'feature/') && (github.event.review.state == 'commented' || github.event.review.state == 'changes_requested'))
 
     steps:
       - name: Checkout
@@ -53,15 +46,9 @@ jobs:
 
       - name: Run PR review recipe
         id: goose
-        run: |
-          PR_NUMBER="${{ github.event.inputs.pr_number || github.event.pull_request.number }}"
-          BRANCH="${{ github.event.inputs.branch_name || github.event.pull_request.head.ref }}"
-          goose run \
-            --recipe .goose/recipes/pr-review-session.yaml \
-            --params pr_number=${PR_NUMBER} \
-            --params branch_name=${BRANCH} \
-            --params repo=${{ github.repository }}
         env:
+          PR_NUMBER: ${{ github.event.inputs.pr_number || github.event.pull_request.number }}
+          BRANCH: ${{ github.event.inputs.branch_name || github.event.pull_request.head.ref }}
           GOOSE_PATH_ROOT: ${{ github.workspace }}/.goose
           GOOSE_PROVIDER: claude-code
           GOOSE_MODEL: default
@@ -69,11 +56,19 @@ jobs:
           GOOSE_DISABLE_SESSION_NAMING: "true"
           GH_TOKEN: ${{ secrets.GOOSE_AGENT_PAT }}
           HOME: /home/eddiecarpenter
+        run: |
+          goose run \
+            --recipe .goose/recipes/pr-review-session.yaml \
+            --params pr_number=${PR_NUMBER} \
+            --params branch_name=${BRANCH} \
+            --params repo=${{ github.repository }}
 
       - name: Push fixes
         if: success()
+        env:
+          GH_TOKEN: ${{ secrets.GOOSE_AGENT_PAT }}
+          BRANCH: ${{ github.event.inputs.branch_name || github.event.pull_request.head.ref }}
         run: |
-          BRANCH="${{ github.event.inputs.branch_name || github.event.pull_request.head.ref }}"
           LOCAL=$(git rev-parse HEAD)
           REMOTE=$(git rev-parse origin/${BRANCH})
           if [ "$LOCAL" != "$REMOTE" ]; then
@@ -81,5 +76,3 @@ jobs:
           else
             echo "No code changes — only review replies posted, no push needed"
           fi
-        env:
-          GH_TOKEN: ${{ secrets.GOOSE_AGENT_PAT }}
