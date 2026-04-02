@@ -13,6 +13,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/vektah/gqlparser/v2/ast"
 
+	"go-ocs/internal/auth"
 	"go-ocs/internal/auth/keycloak"
 	"go-ocs/internal/auth/tenant"
 	"go-ocs/internal/backend/appcontext"
@@ -48,12 +49,19 @@ func NewRouter(appCtx *appcontext.AppContext) http.Handler {
 		SourceGroupSvc:      appCtx.SourceGroupSvc,
 	}
 
-	srv := handler.New(generated.NewExecutableSchema(generated.Config{Resolvers: resolver}))
+	authEnabled := appCtx.Auth != nil
+	cfg := generated.Config{
+		Resolvers:  resolver,
+		Directives: auth.NewGraphQLDirectiveConfig(authEnabled),
+	}
+
+	srv := handler.New(generated.NewExecutableSchema(cfg))
 	srv.AddTransport(transport.Options{})
 	srv.AddTransport(transport.GET{})
 	srv.AddTransport(transport.POST{})
 	srv.SetQueryCache(lru.New[*ast.QueryDocument](1000))
 	srv.Use(extension.Introspection{})
+	srv.AroundFields(auth.DenyByDefaultFieldMiddleware(authEnabled))
 
 	r.Handle("/", srv)
 	r.Get("/playground", playground.Handler("Charging Admin", graphqlPath))

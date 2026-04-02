@@ -15,22 +15,22 @@ input SourceGroupInput {
 
 extend type Query {
   # Returns a filtered, sorted, paginated list of source groups.
-  sourceGroupList(page: PageRequest, filter: FilterRequest): [SourceGroup!]!
+  sourceGroupList(page: PageRequest, filter: FilterRequest): [SourceGroup!]! @auth(permissions: ["read"])
 
   # Returns the total count of source groups matching the supplied filter.
-  countSourceGroup(filter: FilterRequest): Int!
+  countSourceGroup(filter: FilterRequest): Int! @auth(permissions: ["read"])
 
   # Returns a single source group by group name, or null if not found.
-  sourceGroupByGroupName(groupName: String!): SourceGroup
+  sourceGroupByGroupName(groupName: String!): SourceGroup @auth(permissions: ["read"])
 }
 
 extend type Mutation {
   # Creates a new source group and returns the persisted record.
-  createSourceGroup(sourceGroup: SourceGroupInput!): SourceGroup!
+  createSourceGroup(sourceGroup: SourceGroupInput!): SourceGroup! @auth(permissions: ["write"])
 
   # Updates an existing source group by group name and returns the updated record.
-  updateSourceGroup(groupName: String!, sourceGroup: SourceGroupInput!): SourceGroup!
+  updateSourceGroup(groupName: String!, sourceGroup: SourceGroupInput!): SourceGroup! @auth(permissions: ["write"])
 
   # Deletes a source group by group name. Returns true on success.
-  deleteSourceGroup(groupName: String!): Boolean!
+  deleteSourceGroup(groupName: String!): Boolean! @auth(permissions: ["write"])
 }

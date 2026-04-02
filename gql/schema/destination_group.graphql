@@ -15,22 +15,22 @@ input DestinationGroupInput {
 
 extend type Query {
   # Returns a filtered, sorted, paginated list of destination groups.
-  destinationGroupList(page: PageRequest, filter: FilterRequest): [DestinationGroup!]!
+  destinationGroupList(page: PageRequest, filter: FilterRequest): [DestinationGroup!]! @auth(permissions: ["read"])
 
   # Returns the total count of destination groups matching the supplied filter.
-  countDestinationGroup(filter: FilterRequest): Int!
+  countDestinationGroup(filter: FilterRequest): Int! @auth(permissions: ["read"])
 
   # Returns a single destination group by group name, or null if not found.
-  destinationGroupByGroupName(groupName: String!): DestinationGroup
+  destinationGroupByGroupName(groupName: String!): DestinationGroup @auth(permissions: ["read"])
 }
 
 extend type Mutation {
   # Creates a new destination group and returns the persisted record.
-  createDestinationGroup(destinationGroup: DestinationGroupInput!): DestinationGroup!
+  createDestinationGroup(destinationGroup: DestinationGroupInput!): DestinationGroup! @auth(permissions: ["write"])
 
   # Updates an existing destination group by group name and returns the updated record.
-  updateDestinationGroup(groupName: String!, destinationGroup: DestinationGroupInput!): DestinationGroup!
+  updateDestinationGroup(groupName: String!, destinationGroup: DestinationGroupInput!): DestinationGroup! @auth(permissions: ["write"])
 
   # Deletes a destination group by group name. Returns true on success.
-  deleteDestinationGroup(groupName: String!): Boolean!
+  deleteDestinationGroup(groupName: String!): Boolean! @auth(permissions: ["write"])
 }

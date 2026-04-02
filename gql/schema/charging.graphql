@@ -30,22 +30,22 @@ input CarrierInput {
 
 extend type Query {
   # Returns a filtered, sorted, paginated list of carriers.
-  carrierList(page: PageRequest, filter: FilterRequest): [Carrier!]!
+  carrierList(page: PageRequest, filter: FilterRequest): [Carrier!]! @auth(permissions: ["read"])
 
   # Returns a single carrier by PLMN, or null if not found.
-  carrierByPlmn(plmn: String!): Carrier
+  carrierByPlmn(plmn: String!): Carrier @auth(permissions: ["read"])
 
   # Returns the total count of carriers matching the supplied filter.
-  countCarriers(filter: FilterRequest): Int!
+  countCarriers(filter: FilterRequest): Int! @auth(permissions: ["read"])
 }
 
 extend type Mutation {
   # Creates a new carrier and returns the persisted record (including modifiedOn).
-  createCarrier(carrier: CarrierInput!): Carrier!
+  createCarrier(carrier: CarrierInput!): Carrier! @auth(permissions: ["write"])
 
   # Updates an existing carrier by PLMN and returns the updated record.
-  updateCarrier(plmn: String!, carrier: CarrierInput!): Carrier!
+  updateCarrier(plmn: String!, carrier: CarrierInput!): Carrier! @auth(permissions: ["write"])
 
   # Deletes a carrier by PLMN. Returns true on success.
-  deleteCarrier(plmn: String!): Boolean!
+  deleteCarrier(plmn: String!): Boolean! @auth(permissions: ["write"])
 }
