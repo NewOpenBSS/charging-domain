@@ -12,6 +12,22 @@ import (
 //
 // Use Public() to obtain a nil permission slice for endpoints that do not
 // require authentication (e.g. /health).
+//
+// Example — registering a protected route:
+//
+//	sr := auth.NewSecureRouter(r, authEnabled)
+//	sr.Get("/api/charging/resources", []auth.Permission{"read"}, listHandler)
+//	sr.Post("/api/charging/resources", []auth.Permission{"write"}, createHandler)
+//
+// Example — registering a public route (no authentication required):
+//
+//	sr.Get("/api/charging/health", auth.Public(), healthHandler)
+//
+// Example — requiring any one of several permissions (OR logic):
+//
+//	sr.Delete("/api/charging/resources/{id}", []auth.Permission{"write", "admin"}, deleteHandler)
+//
+// See PERMISSIONS.md in this package for the full developer guide.
 type SecureRouter struct {
 	router      chi.Router
 	authEnabled bool
