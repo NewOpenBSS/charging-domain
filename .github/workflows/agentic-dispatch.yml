@@ -1,44 +1,9 @@
-name: Agentic Session Dispatch
-
-# Template thin caller workflow for domain repos.
-# Copy this file into the domain repo at .github/workflows/agentic-dispatch.yml
-# and replace NewOpenBSS/agentic with your organisation's agentic repo.
-#
-# Listens for label changes on feature issues and dispatches to the
-# appropriate reusable session workflow in the agentic repo.
-
+name: Cross-Repo Test
 on:
   issues:
     types: [labeled]
-
 jobs:
-
-  # ─── Feature Design Session ────────────────────────────────────────────────
-  # Triggered when a feature issue is labelled in-design.
-  # Reads the feature spec, creates task sub-issues, creates the branch,
-  # then applies in-development to trigger the dev session.
-
-  feature-design:
-    name: Feature Design Session
-    if: contains(github.event.issue.labels.*.name, 'feature') && github.event.label.name == 'in-design'
-    uses: NewOpenBSS/agentic/.github/workflows/feature-design-session.yml@main
+  call-test:
+    uses: NewOpenBSS/agentic/.github/workflows/test-reusable.yml@main
     with:
-      issue_number: ${{ github.event.issue.number }}
-      repository: ${{ github.repository }}
-    secrets:
-      GOOSE_AGENT_PAT: ${{ secrets.GOOSE_AGENT_PAT }}
-
-  # ─── Dev Session ───────────────────────────────────────────────────────────
-  # Triggered when a feature issue is labelled in-development.
-  # Resolves the linked branch, implements all open task sub-issues,
-  # pushes commits, and opens a PR.
-
-  dev-session:
-    name: Dev Session
-    if: contains(github.event.issue.labels.*.name, 'feature') && github.event.label.name == 'in-development'
-    uses: NewOpenBSS/agentic/.github/workflows/dev-session.yml@main
-    with:
-      issue_number: ${{ github.event.issue.number }}
-      repository: ${{ github.repository }}
-    secrets:
-      GOOSE_AGENT_PAT: ${{ secrets.GOOSE_AGENT_PAT }}
+      message: "triggered by label=${{ github.event.label.name }}"
