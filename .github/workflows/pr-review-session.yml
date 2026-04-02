@@ -28,7 +28,7 @@ jobs:
 
     # Only run on feature branches, and only when review state is
     # COMMENTED or CHANGES_REQUESTED (not APPROVED)
-    if: github.event_name == 'workflow_dispatch' || (startsWith(github.event.pull_request.head.ref, 'feature/') && (github.event.review.state == 'commented' || github.event.review.state == 'changes_requested'))
+    if: github.event_name == 'workflow_dispatch' || (github.event.review.user.login != 'goose-agent' && startsWith(github.event.pull_request.head.ref, 'feature/') && (github.event.review.state == 'commented' || github.event.review.state == 'changes_requested'))
 
     steps:
       - name: Checkout
