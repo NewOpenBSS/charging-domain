@@ -14,11 +14,11 @@ type ChargingTrace {
 
 extend type Query {
   # Returns a filtered, sorted, paginated list of charging traces.
-  chargingTraceList(page: PageRequest, filter: FilterRequest): [ChargingTrace!]!
+  chargingTraceList(page: PageRequest, filter: FilterRequest): [ChargingTrace!]! @auth
 
   # Returns the total count of charging traces matching the supplied filter.
-  countChargingTrace(filter: FilterRequest): Int!
+  countChargingTrace(filter: FilterRequest): Int! @auth
 
   # Returns a single charging trace by its UUID, or null if not found.
-  chargingTraceById(traceId: String!): ChargingTrace
+  chargingTraceById(traceId: String!): ChargingTrace @auth
 }

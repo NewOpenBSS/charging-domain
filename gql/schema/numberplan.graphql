@@ -34,13 +34,13 @@ input NumberPlanInput {
 
 extend type Query {
   # Returns a filtered, sorted, paginated list of number plan rows.
-  numberPlanList(page: PageRequest, filter: FilterRequest): [NumberPlan!]!
+  numberPlanList(page: PageRequest, filter: FilterRequest): [NumberPlan!]! @auth
 
   # Returns the total count of number plan rows matching the filter.
-  countNumberPlans(filter: FilterRequest): Int!
+  countNumberPlans(filter: FilterRequest): Int! @auth
 
   # Returns a single number plan by its primary-key ID, or null if not found.
-  numberPlan(numberId: ID!): NumberPlan
+  numberPlan(numberId: ID!): NumberPlan @auth
 }
 
 # ---------------------------------------------------------------------------
@@ -49,11 +49,11 @@ extend type Query {
 
 extend type Mutation {
   # Creates a new number plan row.
-  createNumberPlan(numberPlan: NumberPlanInput!): NumberPlan!
+  createNumberPlan(numberPlan: NumberPlanInput!): NumberPlan! @auth
 
   # Updates all mutable fields of an existing number plan row.
-  updateNumberPlan(numberId: ID!, numberPlan: NumberPlanInput!): NumberPlan!
+  updateNumberPlan(numberId: ID!, numberPlan: NumberPlanInput!): NumberPlan! @auth
 
   # Permanently deletes a number plan row. Returns true on success.
-  deleteNumberPlan(numberId: ID!): Boolean!
+  deleteNumberPlan(numberId: ID!): Boolean! @auth
 }

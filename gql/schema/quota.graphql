@@ -82,16 +82,16 @@ extend type Query {
   # Returns the aggregated balance for a specific subscriber and unitType.
   # Both subscriberId and unitType are required.
   # Returns null if no matching non-expired counters exist.
-  quotaBalance(balanceEnquiryRequest: QuotaBalanceRequestInput!): QuotaBalanceResponse
+  quotaBalance(balanceEnquiryRequest: QuotaBalanceRequestInput!): QuotaBalanceResponse @auth
 
   # Returns aggregated balances for all unit types held by the subscriber.
   # subscriberId is required; unitType is optional (filters to one unit type if supplied).
-  quotaBalances(balanceEnquiryRequest: QuotaBalanceRequestInput!): [QuotaBalanceResponse!]!
+  quotaBalances(balanceEnquiryRequest: QuotaBalanceRequestInput!): [QuotaBalanceResponse!]! @auth
 }
 
 extend type Mutation {
   # Cancels all quota reservations for a given reservation ID on a subscriber's quota.
-  cancelQuotaReservations(reservationId: ID!, subscriberId: ID!): QuotaOperationResponse!
+  cancelQuotaReservations(reservationId: ID!, subscriberId: ID!): QuotaOperationResponse! @auth
 
   # Reserves units from a subscriber's quota.
   # unitPrice and validitySeconds determine the size and lifetime of the reservation.
@@ -107,7 +107,7 @@ extend type Mutation {
     # Reservation validity duration in seconds.
     validitySeconds:  Int!
     allowOOBCharging: Boolean!
-  ): QuotaReserveResponse!
+  ): QuotaReserveResponse! @auth
 
   # Debits previously reserved units from a subscriber's quota.
   debitQuota(
@@ -116,5 +116,5 @@ extend type Mutation {
     usedUnits:          Int!
     unitType:           UnitType!
     reclaimUnusedUnits: Boolean!
-  ): QuotaDebitResponse!
+  ): QuotaDebitResponse! @auth
 }
