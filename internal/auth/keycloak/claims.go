@@ -22,6 +22,9 @@ type KeycloakClaims struct {
 	GivenName         string `json:"given_name"`
 	FamilyName        string `json:"family_name"`
 
+	// Permissions holds the permissions assigned to the token subject via Keycloak authorisation.
+	Permissions []string `json:"permissions"`
+
 	// Groups contains custom user/group attributes populated via Keycloak token mappers.
 	Groups []string `json:"groups"`
 }
