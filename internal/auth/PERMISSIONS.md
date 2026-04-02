@@ -1,31 +1,41 @@
 # Permission Enforcement Framework
 
-This document explains how the permission enforcement system works across both
-the REST API and the GraphQL API. It is the single reference for developers adding
-new endpoints or modifying existing permission checks.
+This document explains how the authentication and permission enforcement system
+works across both the REST API and the GraphQL API. It is the single reference
+for developers adding new endpoints or modifying existing security checks.
 
 ---
 
 ## Overview
 
 The framework enforces a **default-deny** security model. Every endpoint — REST or
-GraphQL — must explicitly declare the permissions it requires. Endpoints that omit
-a permission declaration are rejected at runtime (GraphQL) or fail to compile (REST).
+GraphQL — must explicitly declare its security requirements. Endpoints that omit
+a security declaration are rejected at runtime (GraphQL) or fail to compile (REST).
+
+### Current State
+
+- **REST API**: Full permission enforcement — each route declares the specific
+  permissions required (e.g. `"read"`, `"write"`).
+- **GraphQL API**: Authentication enforcement only — each field is annotated with
+  `@auth` to require a valid JWT token. **Permission checks (read/write/admin) will
+  be added to GraphQL in a future iteration.**
+
+### Permission Strings
 
 Permissions are simple strings (e.g. `"read"`, `"write"`, `"admin"`) carried in the
 JWT token issued by Keycloak. The `Permissions` field in the JWT claims contains a
 flat list of permission strings assigned to the authenticated user.
 
-When multiple permissions are declared on a single endpoint, **OR logic** applies:
+When multiple permissions are declared on a REST endpoint, **OR logic** applies:
 the caller needs at least one of the listed permissions to proceed.
 
-When authentication is disabled (`auth.enabled: false` in config), all permission
-checks are bypassed — every request is allowed through. This is intended for local
-development only.
+When authentication is disabled (`auth.enabled: false` in config), all checks are
+bypassed — every request is allowed through. This is intended for local development
+only.
 
 ---
 
-## How Permissions Flow
+## How Security Flows
 
 ```
 HTTP Request
@@ -34,11 +44,11 @@ HTTP Request
 keycloak.Middleware          ← extracts Bearer token, validates JWT, injects claims into context
   │
   ▼
-Permission Check             ← REST: Require() middleware  /  GraphQL: @auth directive
+Security Check               ← REST: Require() middleware  /  GraphQL: @auth directive
   │
   ├─ No claims → 401 Unauthorized / UNAUTHENTICATED
-  ├─ Claims present, no matching permission → 403 Forbidden / FORBIDDEN
-  └─ Permission matched → proceed to handler / resolver
+  ├─ (REST only) Claims present, no matching permission → 403 Forbidden
+  └─ Authenticated → proceed to handler / resolver
 ```
 
 ---
@@ -155,32 +165,31 @@ func NewRouter(appCtx *appcontext.AppContext) http.Handler {
 
 ---
 
-## Part 2: GraphQL API Permissions
+## Part 2: GraphQL API Authentication
 
 ### The @auth Directive
 
-GraphQL endpoints use a schema-level `@auth` directive to declare permissions.
+GraphQL endpoints use a schema-level `@auth` directive to require authentication.
 The directive is defined in `gql/schema/schema.graphql`:
 
 ```graphql
-directive @auth(permissions: [String!]!) on FIELD_DEFINITION
+directive @auth on FIELD_DEFINITION
 ```
+
+> **Note:** The `@auth` directive currently enforces **authentication only** — it
+> verifies that a valid JWT token is present. It does **not** check specific
+> permissions (read/write/admin). Permission-level enforcement for GraphQL will be
+> added in a future iteration.
 
 #### Annotating Query Fields
 
-Add `@auth(permissions: [...])` to every Query and Mutation field:
+Add `@auth` to every Query and Mutation field that requires authentication:
 
 ```graphql
 extend type Query {
-  # Read operations require "read" permission
-  carrierList(page: PageRequest, filter: FilterRequest): [Carrier!]!
-    @auth(permissions: ["read"])
-
-  carrierByPlmn(plmn: String!): Carrier
-    @auth(permissions: ["read"])
-
-  countCarriers(filter: FilterRequest): Int!
-    @auth(permissions: ["read"])
+  carrierList(page: PageRequest, filter: FilterRequest): [Carrier!]! @auth
+  carrierByPlmn(plmn: String!): Carrier @auth
+  countCarriers(filter: FilterRequest): Int! @auth
 }
 ```
 
@@ -188,26 +197,9 @@ extend type Query {
 
 ```graphql
 extend type Mutation {
-  createCarrier(carrier: CarrierInput!): Carrier!
-    @auth(permissions: ["write"])
-
-  updateCarrier(plmn: String!, carrier: CarrierInput!): Carrier!
-    @auth(permissions: ["write"])
-
-  deleteCarrier(plmn: String!): Boolean!
-    @auth(permissions: ["write"])
-}
-```
-
-#### Multiple Permissions (OR Logic)
-
-Same as REST — the caller needs at least one of the listed permissions:
-
-```graphql
-extend type Mutation {
-  # Caller needs either "write" or "admin"
-  deleteCarrier(plmn: String!): Boolean!
-    @auth(permissions: ["write", "admin"])
+  createCarrier(carrier: CarrierInput!): Carrier! @auth
+  updateCarrier(plmn: String!, carrier: CarrierInput!): Carrier! @auth
+  deleteCarrier(plmn: String!): Boolean! @auth
 }
 ```
 
@@ -230,7 +222,7 @@ This means:
 
 ### How It Works Internally
 
-The GraphQL permission enforcement has two layers:
+The GraphQL authentication enforcement has two layers:
 
 **Layer 1 — DenyByDefaultFieldMiddleware:**
 1. Runs on every field resolution
@@ -242,13 +234,11 @@ The GraphQL permission enforcement has two layers:
 1. Runs when gqlgen encounters a field annotated with `@auth`
 2. Extracts `KeycloakClaims` from the request context
 3. If no claims are found, returns `UNAUTHENTICATED` error
-4. Checks if any of the declared permissions match the caller's claims
-5. If no match, returns `FORBIDDEN` error
-6. If a match is found, proceeds to the resolver
+4. If claims are present, proceeds to the resolver
 
 ### GraphQL Error Responses
 
-When permission checks fail, the GraphQL API returns structured errors:
+When authentication checks fail, the GraphQL API returns structured errors:
 
 **Unauthenticated (no valid token):**
 ```json
@@ -256,16 +246,6 @@ When permission checks fail, the GraphQL API returns structured errors:
   "errors": [{
     "message": "unauthenticated",
     "extensions": { "code": "UNAUTHENTICATED" }
-  }]
-}
-```
-
-**Forbidden (valid token, insufficient permissions):**
-```json
-{
-  "errors": [{
-    "message": "forbidden: insufficient permissions",
-    "extensions": { "code": "FORBIDDEN" }
   }]
 }
 ```
@@ -296,25 +276,15 @@ input MyResourceInput {
 }
 
 extend type Query {
-  myResourceList(page: PageRequest, filter: FilterRequest): [MyResource!]!
-    @auth(permissions: ["read"])
-
-  myResourceById(id: ID!): MyResource
-    @auth(permissions: ["read"])
-
-  countMyResources(filter: FilterRequest): Int!
-    @auth(permissions: ["read"])
+  myResourceList(page: PageRequest, filter: FilterRequest): [MyResource!]! @auth
+  myResourceById(id: ID!): MyResource @auth
+  countMyResources(filter: FilterRequest): Int! @auth
 }
 
 extend type Mutation {
-  createMyResource(input: MyResourceInput!): MyResource!
-    @auth(permissions: ["write"])
-
-  updateMyResource(id: ID!, input: MyResourceInput!): MyResource!
-    @auth(permissions: ["write"])
-
-  deleteMyResource(id: ID!): Boolean!
-    @auth(permissions: ["write"])
+  createMyResource(input: MyResourceInput!): MyResource! @auth
+  updateMyResource(id: ID!, input: MyResourceInput!): MyResource! @auth
+  deleteMyResource(id: ID!): Boolean! @auth
 }
 ```
 
@@ -367,10 +337,10 @@ type Permission string
 ```
 
 Permission constants are **not** defined centrally in the auth package. Each domain
-package or schema file defines the permission strings it uses. Currently the
-codebase uses:
-- `"read"` — for query/list operations
-- `"write"` — for create/update/delete mutations
+package or router defines the permission strings it uses. Currently the codebase
+uses:
+- `"read"` — for query/list operations (REST only, for now)
+- `"write"` — for create/update/delete operations (REST only, for now)
 
 ### Checking Permissions Programmatically
 
@@ -404,12 +374,12 @@ func myServiceMethod(ctx context.Context) error {
 
 | Task | REST | GraphQL |
 |---|---|---|
-| Declare a protected endpoint | `sr.Get(path, []auth.Permission{"read"}, handler)` | `@auth(permissions: ["read"])` |
+| Declare a protected endpoint | `sr.Get(path, []auth.Permission{"read"}, handler)` | `@auth` on field |
 | Declare a public endpoint | `sr.Get(path, auth.Public(), handler)` | N/A (use `_empty` or introspection) |
-| Require one of many permissions | `[]auth.Permission{"write", "admin"}` | `@auth(permissions: ["write", "admin"])` |
+| Require one of many permissions | `[]auth.Permission{"write", "admin"}` | Not yet supported |
 | Check permission in code | `auth.HasPermission(claims, "admin")` | `auth.HasPermission(claims, "admin")` |
 | Unauthenticated response | HTTP 401 | `UNAUTHENTICATED` error |
-| Forbidden response | HTTP 403 | `FORBIDDEN` error |
+| Forbidden response | HTTP 403 | N/A (authentication only for now) |
 | Auth disabled behaviour | All checks bypassed | All checks bypassed |
 
 ---
@@ -425,7 +395,7 @@ func myServiceMethod(ctx context.Context) error {
 
 ### GraphQL
 
-1. Add `@auth(permissions: [...])` to every new Query and Mutation field
+1. Add `@auth` to every new Query and Mutation field
 2. Run `go generate ./...` to regenerate the gqlgen code if the schema changed
 3. The deny-by-default middleware will catch any field you forget to annotate
 4. Nested object types do not need `@auth` — only top-level Query/Mutation fields

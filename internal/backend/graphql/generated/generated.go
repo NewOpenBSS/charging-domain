@@ -32,7 +32,7 @@ type ResolverRoot interface {
 }
 
 type DirectiveRoot struct {
-	Auth func(ctx context.Context, obj any, next graphql.Resolver, permissions []string) (res any, err error)
+	Auth func(ctx context.Context, obj any, next graphql.Resolver) (res any, err error)
 }
 
 type ComplexityRoot struct {
@@ -1752,24 +1752,24 @@ input CarrierInput {
 
 extend type Query {
   # Returns a filtered, sorted, paginated list of carriers.
-  carrierList(page: PageRequest, filter: FilterRequest): [Carrier!]! @auth(permissions: ["read"])
+  carrierList(page: PageRequest, filter: FilterRequest): [Carrier!]! @auth
 
   # Returns a single carrier by PLMN, or null if not found.
-  carrierByPlmn(plmn: String!): Carrier @auth(permissions: ["read"])
+  carrierByPlmn(plmn: String!): Carrier @auth
 
   # Returns the total count of carriers matching the supplied filter.
-  countCarriers(filter: FilterRequest): Int! @auth(permissions: ["read"])
+  countCarriers(filter: FilterRequest): Int! @auth
 }
 
 extend type Mutation {
   # Creates a new carrier and returns the persisted record (including modifiedOn).
-  createCarrier(carrier: CarrierInput!): Carrier! @auth(permissions: ["write"])
+  createCarrier(carrier: CarrierInput!): Carrier! @auth
 
   # Updates an existing carrier by PLMN and returns the updated record.
-  updateCarrier(plmn: String!, carrier: CarrierInput!): Carrier! @auth(permissions: ["write"])
+  updateCarrier(plmn: String!, carrier: CarrierInput!): Carrier! @auth
 
   # Deletes a carrier by PLMN. Returns true on success.
-  deleteCarrier(plmn: String!): Boolean! @auth(permissions: ["write"])
+  deleteCarrier(plmn: String!): Boolean! @auth
 }
 `, BuiltIn: false},
 	{Name: "../../../../gql/schema/charging_trace.graphql", Input: `# ChargingTrace resource — read-only audit trail of all charging requests.
@@ -1788,13 +1788,13 @@ type ChargingTrace {
 
 extend type Query {
   # Returns a filtered, sorted, paginated list of charging traces.
-  chargingTraceList(page: PageRequest, filter: FilterRequest): [ChargingTrace!]! @auth(permissions: ["read"])
+  chargingTraceList(page: PageRequest, filter: FilterRequest): [ChargingTrace!]! @auth
 
   # Returns the total count of charging traces matching the supplied filter.
-  countChargingTrace(filter: FilterRequest): Int! @auth(permissions: ["read"])
+  countChargingTrace(filter: FilterRequest): Int! @auth
 
   # Returns a single charging trace by its UUID, or null if not found.
-  chargingTraceById(traceId: String!): ChargingTrace @auth(permissions: ["read"])
+  chargingTraceById(traceId: String!): ChargingTrace @auth
 }
 `, BuiltIn: false},
 	{Name: "../../../../gql/schema/classification.graphql", Input: `# Classification domain GraphQL types.
@@ -1939,17 +1939,17 @@ input ServiceCategoryMapEntryInput {
 
 extend type Query {
   # Returns a filtered, sorted, paginated list of classification plans.
-  classificationList(page: PageRequest, filter: FilterRequest): [Classification!]! @auth(permissions: ["read"])
+  classificationList(page: PageRequest, filter: FilterRequest): [Classification!]! @auth
 
   # Returns the total count of classification plans matching the filter.
-  countClassifications(filter: FilterRequest): Int! @auth(permissions: ["read"])
+  countClassifications(filter: FilterRequest): Int! @auth
 
   # Returns lookup data derived from the active classification plan.
   # Used to populate rate-plan configuration dropdowns in the frontend.
-  rateKeyInput: RateKeyInput! @auth(permissions: ["read"])
+  rateKeyInput: RateKeyInput! @auth
 
   # Returns a single classification plan by ID, or null if not found.
-  classification(classificationId: ID!): Classification @auth(permissions: ["read"])
+  classification(classificationId: ID!): Classification @auth
 }
 
 # ---------------------------------------------------------------------------
@@ -1959,28 +1959,28 @@ extend type Query {
 extend type Mutation {
   # Creates a new classification plan in DRAFT status.
   # createdBy is derived from the authenticated JWT; it is not a client input.
-  createClassification(classification: ClassificationInput!): Classification! @auth(permissions: ["write"])
+  createClassification(classification: ClassificationInput!): Classification! @auth
 
   # Creates a DRAFT copy of an existing classification plan.
-  cloneClassification(classificationId: ID!): Classification! @auth(permissions: ["write"])
+  cloneClassification(classificationId: ID!): Classification! @auth
 
   # Updates the name, effectiveTime, and plan of a DRAFT classification.
   # Returns an error if the classification is not in DRAFT status.
-  updateClassificationPlan(classificationId: ID!, classification: ClassificationInput!): Classification! @auth(permissions: ["write"])
+  updateClassificationPlan(classificationId: ID!, classification: ClassificationInput!): Classification! @auth
 
   # Transitions a DRAFT classification to PENDING (awaiting approval).
-  submitClassificationForApproval(classificationId: ID!): Classification! @auth(permissions: ["write"])
+  submitClassificationForApproval(classificationId: ID!): Classification! @auth
 
   # Transitions a PENDING classification to ACTIVE.
   # approvedBy is derived from the authenticated JWT.
-  approveClassificationPlan(classificationId: ID!): Classification! @auth(permissions: ["write"])
+  approveClassificationPlan(classificationId: ID!): Classification! @auth
 
   # Transitions a PENDING classification back to DRAFT.
-  declineClassificationPlan(classificationId: ID!): Classification! @auth(permissions: ["write"])
+  declineClassificationPlan(classificationId: ID!): Classification! @auth
 
   # Permanently deletes a DRAFT classification. Returns true on success.
   # Returns an error if the classification is not in DRAFT status.
-  deleteClassification(classificationId: ID!): Boolean! @auth(permissions: ["write"])
+  deleteClassification(classificationId: ID!): Boolean! @auth
 }
 `, BuiltIn: false},
 	{Name: "../../../../gql/schema/destination_group.graphql", Input: `# DestinationGroup GraphQL types.
@@ -2000,24 +2000,24 @@ input DestinationGroupInput {
 
 extend type Query {
   # Returns a filtered, sorted, paginated list of destination groups.
-  destinationGroupList(page: PageRequest, filter: FilterRequest): [DestinationGroup!]! @auth(permissions: ["read"])
+  destinationGroupList(page: PageRequest, filter: FilterRequest): [DestinationGroup!]! @auth
 
   # Returns the total count of destination groups matching the supplied filter.
-  countDestinationGroup(filter: FilterRequest): Int! @auth(permissions: ["read"])
+  countDestinationGroup(filter: FilterRequest): Int! @auth
 
   # Returns a single destination group by group name, or null if not found.
-  destinationGroupByGroupName(groupName: String!): DestinationGroup @auth(permissions: ["read"])
+  destinationGroupByGroupName(groupName: String!): DestinationGroup @auth
 }
 
 extend type Mutation {
   # Creates a new destination group and returns the persisted record.
-  createDestinationGroup(destinationGroup: DestinationGroupInput!): DestinationGroup! @auth(permissions: ["write"])
+  createDestinationGroup(destinationGroup: DestinationGroupInput!): DestinationGroup! @auth
 
   # Updates an existing destination group by group name and returns the updated record.
-  updateDestinationGroup(groupName: String!, destinationGroup: DestinationGroupInput!): DestinationGroup! @auth(permissions: ["write"])
+  updateDestinationGroup(groupName: String!, destinationGroup: DestinationGroupInput!): DestinationGroup! @auth
 
   # Deletes a destination group by group name. Returns true on success.
-  deleteDestinationGroup(groupName: String!): Boolean! @auth(permissions: ["write"])
+  deleteDestinationGroup(groupName: String!): Boolean! @auth
 }
 `, BuiltIn: false},
 	{Name: "../../../../gql/schema/numberplan.graphql", Input: `# NumberPlan domain GraphQL types.
@@ -2056,13 +2056,13 @@ input NumberPlanInput {
 
 extend type Query {
   # Returns a filtered, sorted, paginated list of number plan rows.
-  numberPlanList(page: PageRequest, filter: FilterRequest): [NumberPlan!]! @auth(permissions: ["read"])
+  numberPlanList(page: PageRequest, filter: FilterRequest): [NumberPlan!]! @auth
 
   # Returns the total count of number plan rows matching the filter.
-  countNumberPlans(filter: FilterRequest): Int! @auth(permissions: ["read"])
+  countNumberPlans(filter: FilterRequest): Int! @auth
 
   # Returns a single number plan by its primary-key ID, or null if not found.
-  numberPlan(numberId: ID!): NumberPlan @auth(permissions: ["read"])
+  numberPlan(numberId: ID!): NumberPlan @auth
 }
 
 # ---------------------------------------------------------------------------
@@ -2071,13 +2071,13 @@ extend type Query {
 
 extend type Mutation {
   # Creates a new number plan row.
-  createNumberPlan(numberPlan: NumberPlanInput!): NumberPlan! @auth(permissions: ["write"])
+  createNumberPlan(numberPlan: NumberPlanInput!): NumberPlan! @auth
 
   # Updates all mutable fields of an existing number plan row.
-  updateNumberPlan(numberId: ID!, numberPlan: NumberPlanInput!): NumberPlan! @auth(permissions: ["write"])
+  updateNumberPlan(numberId: ID!, numberPlan: NumberPlanInput!): NumberPlan! @auth
 
   # Permanently deletes a number plan row. Returns true on success.
-  deleteNumberPlan(numberId: ID!): Boolean! @auth(permissions: ["write"])
+  deleteNumberPlan(numberId: ID!): Boolean! @auth
 }
 `, BuiltIn: false},
 	{Name: "../../../../gql/schema/quota.graphql", Input: `# Quota domain GraphQL types.
@@ -2164,16 +2164,16 @@ extend type Query {
   # Returns the aggregated balance for a specific subscriber and unitType.
   # Both subscriberId and unitType are required.
   # Returns null if no matching non-expired counters exist.
-  quotaBalance(balanceEnquiryRequest: QuotaBalanceRequestInput!): QuotaBalanceResponse @auth(permissions: ["read"])
+  quotaBalance(balanceEnquiryRequest: QuotaBalanceRequestInput!): QuotaBalanceResponse @auth
 
   # Returns aggregated balances for all unit types held by the subscriber.
   # subscriberId is required; unitType is optional (filters to one unit type if supplied).
-  quotaBalances(balanceEnquiryRequest: QuotaBalanceRequestInput!): [QuotaBalanceResponse!]! @auth(permissions: ["read"])
+  quotaBalances(balanceEnquiryRequest: QuotaBalanceRequestInput!): [QuotaBalanceResponse!]! @auth
 }
 
 extend type Mutation {
   # Cancels all quota reservations for a given reservation ID on a subscriber's quota.
-  cancelQuotaReservations(reservationId: ID!, subscriberId: ID!): QuotaOperationResponse! @auth(permissions: ["write"])
+  cancelQuotaReservations(reservationId: ID!, subscriberId: ID!): QuotaOperationResponse! @auth
 
   # Reserves units from a subscriber's quota.
   # unitPrice and validitySeconds determine the size and lifetime of the reservation.
@@ -2189,7 +2189,7 @@ extend type Mutation {
     # Reservation validity duration in seconds.
     validitySeconds:  Int!
     allowOOBCharging: Boolean!
-  ): QuotaReserveResponse! @auth(permissions: ["write"])
+  ): QuotaReserveResponse! @auth
 
   # Debits previously reserved units from a subscriber's quota.
   debitQuota(
@@ -2198,7 +2198,7 @@ extend type Mutation {
     usedUnits:          Int!
     unitType:           UnitType!
     reclaimUnusedUnits: Boolean!
-  ): QuotaDebitResponse! @auth(permissions: ["write"])
+  ): QuotaDebitResponse! @auth
 }
 `, BuiltIn: false},
 	{Name: "../../../../gql/schema/rateplan.graphql", Input: `# RatePlan domain GraphQL types.
@@ -2292,18 +2292,18 @@ input RateLineInput {
 
 extend type Query {
   # Returns a filtered, sorted, paginated list of rate plan rows (all versions).
-  ratePlanList(page: PageRequest, filter: FilterRequest): [RatePlan!]! @auth(permissions: ["read"])
+  ratePlanList(page: PageRequest, filter: FilterRequest): [RatePlan!]! @auth
 
   # Returns the total count of rate plan rows matching the filter.
-  countRatePlans(filter: FilterRequest): Int! @auth(permissions: ["read"])
+  countRatePlans(filter: FilterRequest): Int! @auth
 
   # Returns the latest version of a rate plan by its planId UUID, or null if not found.
-  ratePlan(planId: ID!): RatePlan @auth(permissions: ["read"])
+  ratePlan(planId: ID!): RatePlan @auth
 
   # Returns the latest version of each logical plan for the given planType.
   # For RETAIL, scopes to the tenant's wholesaleId resolved from the Host header.
   # This query is intended for use from a RETAIL portal context only.
-  latestRatePlanList(planType: RatePlanType!): [RatePlan!]! @auth(permissions: ["read"])
+  latestRatePlanList(planType: RatePlanType!): [RatePlan!]! @auth
 }
 
 # ---------------------------------------------------------------------------
@@ -2313,39 +2313,39 @@ extend type Query {
 extend type Mutation {
   # Creates a new rate plan in DRAFT status with a freshly generated planId.
   # For RETAIL plans, wholesaleId is resolved from the tenant context (Host header).
-  createRatePlan(ratePlan: RatePlanInput!): RatePlan! @auth(permissions: ["write"])
+  createRatePlan(ratePlan: RatePlanInput!): RatePlan! @auth
 
   # Updates the name, type, effectiveAt, and rate lines of the DRAFT version.
   # Returns an error if no DRAFT version exists for the given planId.
   # TODO: confirm whether updateRatePlan or updateRatePlanRules is the one to keep.
-  updateRatePlan(planId: ID!, ratePlan: RatePlanInput!): RatePlan! @auth(permissions: ["write"])
+  updateRatePlan(planId: ID!, ratePlan: RatePlanInput!): RatePlan! @auth
 
   # Updates only the rate lines of the DRAFT version, leaving metadata unchanged.
   # TODO: confirm whether updateRatePlan or updateRatePlanRules is the one to keep.
-  updateRatePlanRules(planId: ID!, rateLines: [RateLineInput!]!): RatePlan! @auth(permissions: ["write"])
+  updateRatePlanRules(planId: ID!, rateLines: [RateLineInput!]!): RatePlan! @auth
 
   # Creates a new DRAFT version of an existing rate plan (same planId, new row).
-  cloneRatePlan(planId: ID!): RatePlan! @auth(permissions: ["write"])
+  cloneRatePlan(planId: ID!): RatePlan! @auth
 
   # Transitions the DRAFT version to PENDING (awaiting approval).
-  submitRatePlanForApproval(planId: ID!): RatePlan! @auth(permissions: ["write"])
+  submitRatePlanForApproval(planId: ID!): RatePlan! @auth
 
   # Transitions the PENDING version to ACTIVE and records approvedBy from the JWT.
-  approveRatePlan(planId: ID!): RatePlan! @auth(permissions: ["write"])
+  approveRatePlan(planId: ID!): RatePlan! @auth
 
   # Transitions the PENDING version back to DRAFT, clearing approvedBy.
-  declineRatePlan(planId: ID!): RatePlan! @auth(permissions: ["write"])
+  declineRatePlan(planId: ID!): RatePlan! @auth
 
   # Permanently deletes the DRAFT version. Returns true on success.
   # Returns an error if no DRAFT version exists for the given planId.
-  deleteRatePlan(planId: ID!): Boolean! @auth(permissions: ["write"])
+  deleteRatePlan(planId: ID!): Boolean! @auth
 }
 `, BuiltIn: false},
 	{Name: "../../../../gql/schema/schema.graphql", Input: `# GraphQL Schema for Charging Backend
 
-# Permission enforcement directive — applied to query and mutation fields to
-# declare the permissions required to execute the operation.
-directive @auth(permissions: [String!]!) on FIELD_DEFINITION
+# Authentication enforcement directive — applied to query and mutation fields to
+# require a valid authenticated session. Permission checks will be added later.
+directive @auth on FIELD_DEFINITION
 
 # Root types
 type Query {
@@ -2423,24 +2423,24 @@ input SourceGroupInput {
 
 extend type Query {
   # Returns a filtered, sorted, paginated list of source groups.
-  sourceGroupList(page: PageRequest, filter: FilterRequest): [SourceGroup!]! @auth(permissions: ["read"])
+  sourceGroupList(page: PageRequest, filter: FilterRequest): [SourceGroup!]! @auth
 
   # Returns the total count of source groups matching the supplied filter.
-  countSourceGroup(filter: FilterRequest): Int! @auth(permissions: ["read"])
+  countSourceGroup(filter: FilterRequest): Int! @auth
 
   # Returns a single source group by group name, or null if not found.
-  sourceGroupByGroupName(groupName: String!): SourceGroup @auth(permissions: ["read"])
+  sourceGroupByGroupName(groupName: String!): SourceGroup @auth
 }
 
 extend type Mutation {
   # Creates a new source group and returns the persisted record.
-  createSourceGroup(sourceGroup: SourceGroupInput!): SourceGroup! @auth(permissions: ["write"])
+  createSourceGroup(sourceGroup: SourceGroupInput!): SourceGroup! @auth
 
   # Updates an existing source group by group name and returns the updated record.
-  updateSourceGroup(groupName: String!, sourceGroup: SourceGroupInput!): SourceGroup! @auth(permissions: ["write"])
+  updateSourceGroup(groupName: String!, sourceGroup: SourceGroupInput!): SourceGroup! @auth
 
   # Deletes a source group by group name. Returns true on success.
-  deleteSourceGroup(groupName: String!): Boolean! @auth(permissions: ["write"])
+  deleteSourceGroup(groupName: String!): Boolean! @auth
 }
 `, BuiltIn: false},
 }
@@ -2449,17 +2449,6 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 // endregion ************************** generated!.gotpl **************************
 
 // region    ***************************** args.gotpl *****************************
-
-func (ec *executionContext) dir_auth_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
-	var err error
-	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "permissions", ec.unmarshalNString2ᚕstringᚄ)
-	if err != nil {
-		return nil, err
-	}
-	args["permissions"] = arg0
-	return args, nil
-}
 
 func (ec *executionContext) field_Mutation_approveClassificationPlan_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
@@ -4918,16 +4907,11 @@ func (ec *executionContext) _Mutation_createCarrier(ctx context.Context, field g
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"write"})
-				if err != nil {
-					var zeroVal *model.Carrier
-					return zeroVal, err
-				}
 				if ec.Directives.Auth == nil {
 					var zeroVal *model.Carrier
 					return zeroVal, errors.New("directive auth is not implemented")
 				}
-				return ec.Directives.Auth(ctx, nil, directive0, permissions)
+				return ec.Directives.Auth(ctx, nil, directive0)
 			}
 
 			next = directive1
@@ -4997,16 +4981,11 @@ func (ec *executionContext) _Mutation_updateCarrier(ctx context.Context, field g
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"write"})
-				if err != nil {
-					var zeroVal *model.Carrier
-					return zeroVal, err
-				}
 				if ec.Directives.Auth == nil {
 					var zeroVal *model.Carrier
 					return zeroVal, errors.New("directive auth is not implemented")
 				}
-				return ec.Directives.Auth(ctx, nil, directive0, permissions)
+				return ec.Directives.Auth(ctx, nil, directive0)
 			}
 
 			next = directive1
@@ -5076,16 +5055,11 @@ func (ec *executionContext) _Mutation_deleteCarrier(ctx context.Context, field g
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"write"})
-				if err != nil {
-					var zeroVal bool
-					return zeroVal, err
-				}
 				if ec.Directives.Auth == nil {
 					var zeroVal bool
 					return zeroVal, errors.New("directive auth is not implemented")
 				}
-				return ec.Directives.Auth(ctx, nil, directive0, permissions)
+				return ec.Directives.Auth(ctx, nil, directive0)
 			}
 
 			next = directive1
@@ -5135,16 +5109,11 @@ func (ec *executionContext) _Mutation_createClassification(ctx context.Context, 
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"write"})
-				if err != nil {
-					var zeroVal *model.Classification
-					return zeroVal, err
-				}
 				if ec.Directives.Auth == nil {
 					var zeroVal *model.Classification
 					return zeroVal, errors.New("directive auth is not implemented")
 				}
-				return ec.Directives.Auth(ctx, nil, directive0, permissions)
+				return ec.Directives.Auth(ctx, nil, directive0)
 			}
 
 			next = directive1
@@ -5212,16 +5181,11 @@ func (ec *executionContext) _Mutation_cloneClassification(ctx context.Context, f
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"write"})
-				if err != nil {
-					var zeroVal *model.Classification
-					return zeroVal, err
-				}
 				if ec.Directives.Auth == nil {
 					var zeroVal *model.Classification
 					return zeroVal, errors.New("directive auth is not implemented")
 				}
-				return ec.Directives.Auth(ctx, nil, directive0, permissions)
+				return ec.Directives.Auth(ctx, nil, directive0)
 			}
 
 			next = directive1
@@ -5289,16 +5253,11 @@ func (ec *executionContext) _Mutation_updateClassificationPlan(ctx context.Conte
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"write"})
-				if err != nil {
-					var zeroVal *model.Classification
-					return zeroVal, err
-				}
 				if ec.Directives.Auth == nil {
 					var zeroVal *model.Classification
 					return zeroVal, errors.New("directive auth is not implemented")
 				}
-				return ec.Directives.Auth(ctx, nil, directive0, permissions)
+				return ec.Directives.Auth(ctx, nil, directive0)
 			}
 
 			next = directive1
@@ -5366,16 +5325,11 @@ func (ec *executionContext) _Mutation_submitClassificationForApproval(ctx contex
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"write"})
-				if err != nil {
-					var zeroVal *model.Classification
-					return zeroVal, err
-				}
 				if ec.Directives.Auth == nil {
 					var zeroVal *model.Classification
 					return zeroVal, errors.New("directive auth is not implemented")
 				}
-				return ec.Directives.Auth(ctx, nil, directive0, permissions)
+				return ec.Directives.Auth(ctx, nil, directive0)
 			}
 
 			next = directive1
@@ -5443,16 +5397,11 @@ func (ec *executionContext) _Mutation_approveClassificationPlan(ctx context.Cont
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"write"})
-				if err != nil {
-					var zeroVal *model.Classification
-					return zeroVal, err
-				}
 				if ec.Directives.Auth == nil {
 					var zeroVal *model.Classification
 					return zeroVal, errors.New("directive auth is not implemented")
 				}
-				return ec.Directives.Auth(ctx, nil, directive0, permissions)
+				return ec.Directives.Auth(ctx, nil, directive0)
 			}
 
 			next = directive1
@@ -5520,16 +5469,11 @@ func (ec *executionContext) _Mutation_declineClassificationPlan(ctx context.Cont
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"write"})
-				if err != nil {
-					var zeroVal *model.Classification
-					return zeroVal, err
-				}
 				if ec.Directives.Auth == nil {
 					var zeroVal *model.Classification
 					return zeroVal, errors.New("directive auth is not implemented")
 				}
-				return ec.Directives.Auth(ctx, nil, directive0, permissions)
+				return ec.Directives.Auth(ctx, nil, directive0)
 			}
 
 			next = directive1
@@ -5597,16 +5541,11 @@ func (ec *executionContext) _Mutation_deleteClassification(ctx context.Context, 
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"write"})
-				if err != nil {
-					var zeroVal bool
-					return zeroVal, err
-				}
 				if ec.Directives.Auth == nil {
 					var zeroVal bool
 					return zeroVal, errors.New("directive auth is not implemented")
 				}
-				return ec.Directives.Auth(ctx, nil, directive0, permissions)
+				return ec.Directives.Auth(ctx, nil, directive0)
 			}
 
 			next = directive1
@@ -5656,16 +5595,11 @@ func (ec *executionContext) _Mutation_createDestinationGroup(ctx context.Context
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"write"})
-				if err != nil {
-					var zeroVal *model.DestinationGroup
-					return zeroVal, err
-				}
 				if ec.Directives.Auth == nil {
 					var zeroVal *model.DestinationGroup
 					return zeroVal, errors.New("directive auth is not implemented")
 				}
-				return ec.Directives.Auth(ctx, nil, directive0, permissions)
+				return ec.Directives.Auth(ctx, nil, directive0)
 			}
 
 			next = directive1
@@ -5721,16 +5655,11 @@ func (ec *executionContext) _Mutation_updateDestinationGroup(ctx context.Context
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"write"})
-				if err != nil {
-					var zeroVal *model.DestinationGroup
-					return zeroVal, err
-				}
 				if ec.Directives.Auth == nil {
 					var zeroVal *model.DestinationGroup
 					return zeroVal, errors.New("directive auth is not implemented")
 				}
-				return ec.Directives.Auth(ctx, nil, directive0, permissions)
+				return ec.Directives.Auth(ctx, nil, directive0)
 			}
 
 			next = directive1
@@ -5786,16 +5715,11 @@ func (ec *executionContext) _Mutation_deleteDestinationGroup(ctx context.Context
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"write"})
-				if err != nil {
-					var zeroVal bool
-					return zeroVal, err
-				}
 				if ec.Directives.Auth == nil {
 					var zeroVal bool
 					return zeroVal, errors.New("directive auth is not implemented")
 				}
-				return ec.Directives.Auth(ctx, nil, directive0, permissions)
+				return ec.Directives.Auth(ctx, nil, directive0)
 			}
 
 			next = directive1
@@ -5845,16 +5769,11 @@ func (ec *executionContext) _Mutation_createNumberPlan(ctx context.Context, fiel
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"write"})
-				if err != nil {
-					var zeroVal *model.NumberPlan
-					return zeroVal, err
-				}
 				if ec.Directives.Auth == nil {
 					var zeroVal *model.NumberPlan
 					return zeroVal, errors.New("directive auth is not implemented")
 				}
-				return ec.Directives.Auth(ctx, nil, directive0, permissions)
+				return ec.Directives.Auth(ctx, nil, directive0)
 			}
 
 			next = directive1
@@ -5918,16 +5837,11 @@ func (ec *executionContext) _Mutation_updateNumberPlan(ctx context.Context, fiel
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"write"})
-				if err != nil {
-					var zeroVal *model.NumberPlan
-					return zeroVal, err
-				}
 				if ec.Directives.Auth == nil {
 					var zeroVal *model.NumberPlan
 					return zeroVal, errors.New("directive auth is not implemented")
 				}
-				return ec.Directives.Auth(ctx, nil, directive0, permissions)
+				return ec.Directives.Auth(ctx, nil, directive0)
 			}
 
 			next = directive1
@@ -5991,16 +5905,11 @@ func (ec *executionContext) _Mutation_deleteNumberPlan(ctx context.Context, fiel
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"write"})
-				if err != nil {
-					var zeroVal bool
-					return zeroVal, err
-				}
 				if ec.Directives.Auth == nil {
 					var zeroVal bool
 					return zeroVal, errors.New("directive auth is not implemented")
 				}
-				return ec.Directives.Auth(ctx, nil, directive0, permissions)
+				return ec.Directives.Auth(ctx, nil, directive0)
 			}
 
 			next = directive1
@@ -6050,16 +5959,11 @@ func (ec *executionContext) _Mutation_cancelQuotaReservations(ctx context.Contex
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"write"})
-				if err != nil {
-					var zeroVal *model.QuotaOperationResponse
-					return zeroVal, err
-				}
 				if ec.Directives.Auth == nil {
 					var zeroVal *model.QuotaOperationResponse
 					return zeroVal, errors.New("directive auth is not implemented")
 				}
-				return ec.Directives.Auth(ctx, nil, directive0, permissions)
+				return ec.Directives.Auth(ctx, nil, directive0)
 			}
 
 			next = directive1
@@ -6113,16 +6017,11 @@ func (ec *executionContext) _Mutation_reserveQuota(ctx context.Context, field gr
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"write"})
-				if err != nil {
-					var zeroVal *model.QuotaReserveResponse
-					return zeroVal, err
-				}
 				if ec.Directives.Auth == nil {
 					var zeroVal *model.QuotaReserveResponse
 					return zeroVal, errors.New("directive auth is not implemented")
 				}
-				return ec.Directives.Auth(ctx, nil, directive0, permissions)
+				return ec.Directives.Auth(ctx, nil, directive0)
 			}
 
 			next = directive1
@@ -6176,16 +6075,11 @@ func (ec *executionContext) _Mutation_debitQuota(ctx context.Context, field grap
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"write"})
-				if err != nil {
-					var zeroVal *model.QuotaDebitResponse
-					return zeroVal, err
-				}
 				if ec.Directives.Auth == nil {
 					var zeroVal *model.QuotaDebitResponse
 					return zeroVal, errors.New("directive auth is not implemented")
 				}
-				return ec.Directives.Auth(ctx, nil, directive0, permissions)
+				return ec.Directives.Auth(ctx, nil, directive0)
 			}
 
 			next = directive1
@@ -6245,16 +6139,11 @@ func (ec *executionContext) _Mutation_createRatePlan(ctx context.Context, field 
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"write"})
-				if err != nil {
-					var zeroVal *model.RatePlan
-					return zeroVal, err
-				}
 				if ec.Directives.Auth == nil {
 					var zeroVal *model.RatePlan
 					return zeroVal, errors.New("directive auth is not implemented")
 				}
-				return ec.Directives.Auth(ctx, nil, directive0, permissions)
+				return ec.Directives.Auth(ctx, nil, directive0)
 			}
 
 			next = directive1
@@ -6326,16 +6215,11 @@ func (ec *executionContext) _Mutation_updateRatePlan(ctx context.Context, field 
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"write"})
-				if err != nil {
-					var zeroVal *model.RatePlan
-					return zeroVal, err
-				}
 				if ec.Directives.Auth == nil {
 					var zeroVal *model.RatePlan
 					return zeroVal, errors.New("directive auth is not implemented")
 				}
-				return ec.Directives.Auth(ctx, nil, directive0, permissions)
+				return ec.Directives.Auth(ctx, nil, directive0)
 			}
 
 			next = directive1
@@ -6407,16 +6291,11 @@ func (ec *executionContext) _Mutation_updateRatePlanRules(ctx context.Context, f
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"write"})
-				if err != nil {
-					var zeroVal *model.RatePlan
-					return zeroVal, err
-				}
 				if ec.Directives.Auth == nil {
 					var zeroVal *model.RatePlan
 					return zeroVal, errors.New("directive auth is not implemented")
 				}
-				return ec.Directives.Auth(ctx, nil, directive0, permissions)
+				return ec.Directives.Auth(ctx, nil, directive0)
 			}
 
 			next = directive1
@@ -6488,16 +6367,11 @@ func (ec *executionContext) _Mutation_cloneRatePlan(ctx context.Context, field g
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"write"})
-				if err != nil {
-					var zeroVal *model.RatePlan
-					return zeroVal, err
-				}
 				if ec.Directives.Auth == nil {
 					var zeroVal *model.RatePlan
 					return zeroVal, errors.New("directive auth is not implemented")
 				}
-				return ec.Directives.Auth(ctx, nil, directive0, permissions)
+				return ec.Directives.Auth(ctx, nil, directive0)
 			}
 
 			next = directive1
@@ -6569,16 +6443,11 @@ func (ec *executionContext) _Mutation_submitRatePlanForApproval(ctx context.Cont
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"write"})
-				if err != nil {
-					var zeroVal *model.RatePlan
-					return zeroVal, err
-				}
 				if ec.Directives.Auth == nil {
 					var zeroVal *model.RatePlan
 					return zeroVal, errors.New("directive auth is not implemented")
 				}
-				return ec.Directives.Auth(ctx, nil, directive0, permissions)
+				return ec.Directives.Auth(ctx, nil, directive0)
 			}
 
 			next = directive1
@@ -6650,16 +6519,11 @@ func (ec *executionContext) _Mutation_approveRatePlan(ctx context.Context, field
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"write"})
-				if err != nil {
-					var zeroVal *model.RatePlan
-					return zeroVal, err
-				}
 				if ec.Directives.Auth == nil {
 					var zeroVal *model.RatePlan
 					return zeroVal, errors.New("directive auth is not implemented")
 				}
-				return ec.Directives.Auth(ctx, nil, directive0, permissions)
+				return ec.Directives.Auth(ctx, nil, directive0)
 			}
 
 			next = directive1
@@ -6731,16 +6595,11 @@ func (ec *executionContext) _Mutation_declineRatePlan(ctx context.Context, field
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"write"})
-				if err != nil {
-					var zeroVal *model.RatePlan
-					return zeroVal, err
-				}
 				if ec.Directives.Auth == nil {
 					var zeroVal *model.RatePlan
 					return zeroVal, errors.New("directive auth is not implemented")
 				}
-				return ec.Directives.Auth(ctx, nil, directive0, permissions)
+				return ec.Directives.Auth(ctx, nil, directive0)
 			}
 
 			next = directive1
@@ -6812,16 +6671,11 @@ func (ec *executionContext) _Mutation_deleteRatePlan(ctx context.Context, field 
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"write"})
-				if err != nil {
-					var zeroVal bool
-					return zeroVal, err
-				}
 				if ec.Directives.Auth == nil {
 					var zeroVal bool
 					return zeroVal, errors.New("directive auth is not implemented")
 				}
-				return ec.Directives.Auth(ctx, nil, directive0, permissions)
+				return ec.Directives.Auth(ctx, nil, directive0)
 			}
 
 			next = directive1
@@ -6871,16 +6725,11 @@ func (ec *executionContext) _Mutation_createSourceGroup(ctx context.Context, fie
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"write"})
-				if err != nil {
-					var zeroVal *model.SourceGroup
-					return zeroVal, err
-				}
 				if ec.Directives.Auth == nil {
 					var zeroVal *model.SourceGroup
 					return zeroVal, errors.New("directive auth is not implemented")
 				}
-				return ec.Directives.Auth(ctx, nil, directive0, permissions)
+				return ec.Directives.Auth(ctx, nil, directive0)
 			}
 
 			next = directive1
@@ -6936,16 +6785,11 @@ func (ec *executionContext) _Mutation_updateSourceGroup(ctx context.Context, fie
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"write"})
-				if err != nil {
-					var zeroVal *model.SourceGroup
-					return zeroVal, err
-				}
 				if ec.Directives.Auth == nil {
 					var zeroVal *model.SourceGroup
 					return zeroVal, errors.New("directive auth is not implemented")
 				}
-				return ec.Directives.Auth(ctx, nil, directive0, permissions)
+				return ec.Directives.Auth(ctx, nil, directive0)
 			}
 
 			next = directive1
@@ -7001,16 +6845,11 @@ func (ec *executionContext) _Mutation_deleteSourceGroup(ctx context.Context, fie
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"write"})
-				if err != nil {
-					var zeroVal bool
-					return zeroVal, err
-				}
 				if ec.Directives.Auth == nil {
 					var zeroVal bool
 					return zeroVal, errors.New("directive auth is not implemented")
 				}
-				return ec.Directives.Auth(ctx, nil, directive0, permissions)
+				return ec.Directives.Auth(ctx, nil, directive0)
 			}
 
 			next = directive1
@@ -7263,16 +7102,11 @@ func (ec *executionContext) _Query_carrierList(ctx context.Context, field graphq
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"read"})
-				if err != nil {
-					var zeroVal []*model.Carrier
-					return zeroVal, err
-				}
 				if ec.Directives.Auth == nil {
 					var zeroVal []*model.Carrier
 					return zeroVal, errors.New("directive auth is not implemented")
 				}
-				return ec.Directives.Auth(ctx, nil, directive0, permissions)
+				return ec.Directives.Auth(ctx, nil, directive0)
 			}
 
 			next = directive1
@@ -7342,16 +7176,11 @@ func (ec *executionContext) _Query_carrierByPlmn(ctx context.Context, field grap
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"read"})
-				if err != nil {
-					var zeroVal *model.Carrier
-					return zeroVal, err
-				}
 				if ec.Directives.Auth == nil {
 					var zeroVal *model.Carrier
 					return zeroVal, errors.New("directive auth is not implemented")
 				}
-				return ec.Directives.Auth(ctx, nil, directive0, permissions)
+				return ec.Directives.Auth(ctx, nil, directive0)
 			}
 
 			next = directive1
@@ -7421,16 +7250,11 @@ func (ec *executionContext) _Query_countCarriers(ctx context.Context, field grap
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"read"})
-				if err != nil {
-					var zeroVal int
-					return zeroVal, err
-				}
 				if ec.Directives.Auth == nil {
 					var zeroVal int
 					return zeroVal, errors.New("directive auth is not implemented")
 				}
-				return ec.Directives.Auth(ctx, nil, directive0, permissions)
+				return ec.Directives.Auth(ctx, nil, directive0)
 			}
 
 			next = directive1
@@ -7480,16 +7304,11 @@ func (ec *executionContext) _Query_chargingTraceList(ctx context.Context, field 
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"read"})
-				if err != nil {
-					var zeroVal []*model.ChargingTrace
-					return zeroVal, err
-				}
 				if ec.Directives.Auth == nil {
 					var zeroVal []*model.ChargingTrace
 					return zeroVal, errors.New("directive auth is not implemented")
 				}
-				return ec.Directives.Auth(ctx, nil, directive0, permissions)
+				return ec.Directives.Auth(ctx, nil, directive0)
 			}
 
 			next = directive1
@@ -7557,16 +7376,11 @@ func (ec *executionContext) _Query_countChargingTrace(ctx context.Context, field
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"read"})
-				if err != nil {
-					var zeroVal int
-					return zeroVal, err
-				}
 				if ec.Directives.Auth == nil {
 					var zeroVal int
 					return zeroVal, errors.New("directive auth is not implemented")
 				}
-				return ec.Directives.Auth(ctx, nil, directive0, permissions)
+				return ec.Directives.Auth(ctx, nil, directive0)
 			}
 
 			next = directive1
@@ -7616,16 +7430,11 @@ func (ec *executionContext) _Query_chargingTraceById(ctx context.Context, field 
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"read"})
-				if err != nil {
-					var zeroVal *model.ChargingTrace
-					return zeroVal, err
-				}
 				if ec.Directives.Auth == nil {
 					var zeroVal *model.ChargingTrace
 					return zeroVal, errors.New("directive auth is not implemented")
 				}
-				return ec.Directives.Auth(ctx, nil, directive0, permissions)
+				return ec.Directives.Auth(ctx, nil, directive0)
 			}
 
 			next = directive1
@@ -7693,16 +7502,11 @@ func (ec *executionContext) _Query_classificationList(ctx context.Context, field
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"read"})
-				if err != nil {
-					var zeroVal []*model.Classification
-					return zeroVal, err
-				}
 				if ec.Directives.Auth == nil {
 					var zeroVal []*model.Classification
 					return zeroVal, errors.New("directive auth is not implemented")
 				}
-				return ec.Directives.Auth(ctx, nil, directive0, permissions)
+				return ec.Directives.Auth(ctx, nil, directive0)
 			}
 
 			next = directive1
@@ -7770,16 +7574,11 @@ func (ec *executionContext) _Query_countClassifications(ctx context.Context, fie
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"read"})
-				if err != nil {
-					var zeroVal int
-					return zeroVal, err
-				}
 				if ec.Directives.Auth == nil {
 					var zeroVal int
 					return zeroVal, errors.New("directive auth is not implemented")
 				}
-				return ec.Directives.Auth(ctx, nil, directive0, permissions)
+				return ec.Directives.Auth(ctx, nil, directive0)
 			}
 
 			next = directive1
@@ -7828,16 +7627,11 @@ func (ec *executionContext) _Query_rateKeyInput(ctx context.Context, field graph
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"read"})
-				if err != nil {
-					var zeroVal *model.RateKeyInput
-					return zeroVal, err
-				}
 				if ec.Directives.Auth == nil {
 					var zeroVal *model.RateKeyInput
 					return zeroVal, errors.New("directive auth is not implemented")
 				}
-				return ec.Directives.Auth(ctx, nil, directive0, permissions)
+				return ec.Directives.Auth(ctx, nil, directive0)
 			}
 
 			next = directive1
@@ -7888,16 +7682,11 @@ func (ec *executionContext) _Query_classification(ctx context.Context, field gra
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"read"})
-				if err != nil {
-					var zeroVal *model.Classification
-					return zeroVal, err
-				}
 				if ec.Directives.Auth == nil {
 					var zeroVal *model.Classification
 					return zeroVal, errors.New("directive auth is not implemented")
 				}
-				return ec.Directives.Auth(ctx, nil, directive0, permissions)
+				return ec.Directives.Auth(ctx, nil, directive0)
 			}
 
 			next = directive1
@@ -7965,16 +7754,11 @@ func (ec *executionContext) _Query_destinationGroupList(ctx context.Context, fie
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"read"})
-				if err != nil {
-					var zeroVal []*model.DestinationGroup
-					return zeroVal, err
-				}
 				if ec.Directives.Auth == nil {
 					var zeroVal []*model.DestinationGroup
 					return zeroVal, errors.New("directive auth is not implemented")
 				}
-				return ec.Directives.Auth(ctx, nil, directive0, permissions)
+				return ec.Directives.Auth(ctx, nil, directive0)
 			}
 
 			next = directive1
@@ -8030,16 +7814,11 @@ func (ec *executionContext) _Query_countDestinationGroup(ctx context.Context, fi
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"read"})
-				if err != nil {
-					var zeroVal int
-					return zeroVal, err
-				}
 				if ec.Directives.Auth == nil {
 					var zeroVal int
 					return zeroVal, errors.New("directive auth is not implemented")
 				}
-				return ec.Directives.Auth(ctx, nil, directive0, permissions)
+				return ec.Directives.Auth(ctx, nil, directive0)
 			}
 
 			next = directive1
@@ -8089,16 +7868,11 @@ func (ec *executionContext) _Query_destinationGroupByGroupName(ctx context.Conte
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"read"})
-				if err != nil {
-					var zeroVal *model.DestinationGroup
-					return zeroVal, err
-				}
 				if ec.Directives.Auth == nil {
 					var zeroVal *model.DestinationGroup
 					return zeroVal, errors.New("directive auth is not implemented")
 				}
-				return ec.Directives.Auth(ctx, nil, directive0, permissions)
+				return ec.Directives.Auth(ctx, nil, directive0)
 			}
 
 			next = directive1
@@ -8154,16 +7928,11 @@ func (ec *executionContext) _Query_numberPlanList(ctx context.Context, field gra
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"read"})
-				if err != nil {
-					var zeroVal []*model.NumberPlan
-					return zeroVal, err
-				}
 				if ec.Directives.Auth == nil {
 					var zeroVal []*model.NumberPlan
 					return zeroVal, errors.New("directive auth is not implemented")
 				}
-				return ec.Directives.Auth(ctx, nil, directive0, permissions)
+				return ec.Directives.Auth(ctx, nil, directive0)
 			}
 
 			next = directive1
@@ -8227,16 +7996,11 @@ func (ec *executionContext) _Query_countNumberPlans(ctx context.Context, field g
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"read"})
-				if err != nil {
-					var zeroVal int
-					return zeroVal, err
-				}
 				if ec.Directives.Auth == nil {
 					var zeroVal int
 					return zeroVal, errors.New("directive auth is not implemented")
 				}
-				return ec.Directives.Auth(ctx, nil, directive0, permissions)
+				return ec.Directives.Auth(ctx, nil, directive0)
 			}
 
 			next = directive1
@@ -8286,16 +8050,11 @@ func (ec *executionContext) _Query_numberPlan(ctx context.Context, field graphql
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"read"})
-				if err != nil {
-					var zeroVal *model.NumberPlan
-					return zeroVal, err
-				}
 				if ec.Directives.Auth == nil {
 					var zeroVal *model.NumberPlan
 					return zeroVal, errors.New("directive auth is not implemented")
 				}
-				return ec.Directives.Auth(ctx, nil, directive0, permissions)
+				return ec.Directives.Auth(ctx, nil, directive0)
 			}
 
 			next = directive1
@@ -8359,16 +8118,11 @@ func (ec *executionContext) _Query_quotaBalance(ctx context.Context, field graph
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"read"})
-				if err != nil {
-					var zeroVal *model.QuotaBalanceResponse
-					return zeroVal, err
-				}
 				if ec.Directives.Auth == nil {
 					var zeroVal *model.QuotaBalanceResponse
 					return zeroVal, errors.New("directive auth is not implemented")
 				}
-				return ec.Directives.Auth(ctx, nil, directive0, permissions)
+				return ec.Directives.Auth(ctx, nil, directive0)
 			}
 
 			next = directive1
@@ -8426,16 +8180,11 @@ func (ec *executionContext) _Query_quotaBalances(ctx context.Context, field grap
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"read"})
-				if err != nil {
-					var zeroVal []*model.QuotaBalanceResponse
-					return zeroVal, err
-				}
 				if ec.Directives.Auth == nil {
 					var zeroVal []*model.QuotaBalanceResponse
 					return zeroVal, errors.New("directive auth is not implemented")
 				}
-				return ec.Directives.Auth(ctx, nil, directive0, permissions)
+				return ec.Directives.Auth(ctx, nil, directive0)
 			}
 
 			next = directive1
@@ -8493,16 +8242,11 @@ func (ec *executionContext) _Query_ratePlanList(ctx context.Context, field graph
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"read"})
-				if err != nil {
-					var zeroVal []*model.RatePlan
-					return zeroVal, err
-				}
 				if ec.Directives.Auth == nil {
 					var zeroVal []*model.RatePlan
 					return zeroVal, errors.New("directive auth is not implemented")
 				}
-				return ec.Directives.Auth(ctx, nil, directive0, permissions)
+				return ec.Directives.Auth(ctx, nil, directive0)
 			}
 
 			next = directive1
@@ -8574,16 +8318,11 @@ func (ec *executionContext) _Query_countRatePlans(ctx context.Context, field gra
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"read"})
-				if err != nil {
-					var zeroVal int
-					return zeroVal, err
-				}
 				if ec.Directives.Auth == nil {
 					var zeroVal int
 					return zeroVal, errors.New("directive auth is not implemented")
 				}
-				return ec.Directives.Auth(ctx, nil, directive0, permissions)
+				return ec.Directives.Auth(ctx, nil, directive0)
 			}
 
 			next = directive1
@@ -8633,16 +8372,11 @@ func (ec *executionContext) _Query_ratePlan(ctx context.Context, field graphql.C
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"read"})
-				if err != nil {
-					var zeroVal *model.RatePlan
-					return zeroVal, err
-				}
 				if ec.Directives.Auth == nil {
 					var zeroVal *model.RatePlan
 					return zeroVal, errors.New("directive auth is not implemented")
 				}
-				return ec.Directives.Auth(ctx, nil, directive0, permissions)
+				return ec.Directives.Auth(ctx, nil, directive0)
 			}
 
 			next = directive1
@@ -8714,16 +8448,11 @@ func (ec *executionContext) _Query_latestRatePlanList(ctx context.Context, field
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"read"})
-				if err != nil {
-					var zeroVal []*model.RatePlan
-					return zeroVal, err
-				}
 				if ec.Directives.Auth == nil {
 					var zeroVal []*model.RatePlan
 					return zeroVal, errors.New("directive auth is not implemented")
 				}
-				return ec.Directives.Auth(ctx, nil, directive0, permissions)
+				return ec.Directives.Auth(ctx, nil, directive0)
 			}
 
 			next = directive1
@@ -8795,16 +8524,11 @@ func (ec *executionContext) _Query_sourceGroupList(ctx context.Context, field gr
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"read"})
-				if err != nil {
-					var zeroVal []*model.SourceGroup
-					return zeroVal, err
-				}
 				if ec.Directives.Auth == nil {
 					var zeroVal []*model.SourceGroup
 					return zeroVal, errors.New("directive auth is not implemented")
 				}
-				return ec.Directives.Auth(ctx, nil, directive0, permissions)
+				return ec.Directives.Auth(ctx, nil, directive0)
 			}
 
 			next = directive1
@@ -8860,16 +8584,11 @@ func (ec *executionContext) _Query_countSourceGroup(ctx context.Context, field g
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"read"})
-				if err != nil {
-					var zeroVal int
-					return zeroVal, err
-				}
 				if ec.Directives.Auth == nil {
 					var zeroVal int
 					return zeroVal, errors.New("directive auth is not implemented")
 				}
-				return ec.Directives.Auth(ctx, nil, directive0, permissions)
+				return ec.Directives.Auth(ctx, nil, directive0)
 			}
 
 			next = directive1
@@ -8919,16 +8638,11 @@ func (ec *executionContext) _Query_sourceGroupByGroupName(ctx context.Context, f
 			directive0 := next
 
 			directive1 := func(ctx context.Context) (any, error) {
-				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"read"})
-				if err != nil {
-					var zeroVal *model.SourceGroup
-					return zeroVal, err
-				}
 				if ec.Directives.Auth == nil {
 					var zeroVal *model.SourceGroup
 					return zeroVal, errors.New("directive auth is not implemented")
 				}
-				return ec.Directives.Auth(ctx, nil, directive0, permissions)
+				return ec.Directives.Auth(ctx, nil, directive0)
 			}
 
 			next = directive1

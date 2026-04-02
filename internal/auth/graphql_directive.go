@@ -19,9 +19,10 @@ func NewGraphQLDirectiveConfig(authEnabled bool) generated.DirectiveRoot {
 }
 
 // authDirectiveHandler returns the gqlgen directive handler for @auth.
-// The handler checks that the caller has at least one of the declared permissions.
-func authDirectiveHandler(authEnabled bool) func(ctx context.Context, obj any, next graphql.Resolver, permissions []string) (any, error) {
-	return func(ctx context.Context, obj any, next graphql.Resolver, permissions []string) (any, error) {
+// The handler verifies that the caller is authenticated (has valid claims in
+// context). It does not check specific permissions — that will be added later.
+func authDirectiveHandler(authEnabled bool) func(ctx context.Context, obj any, next graphql.Resolver) (any, error) {
+	return func(ctx context.Context, obj any, next graphql.Resolver) (any, error) {
 		if !authEnabled {
 			return next(ctx)
 		}
@@ -36,17 +37,6 @@ func authDirectiveHandler(authEnabled bool) func(ctx context.Context, obj any, n
 			}
 		}
 
-		for _, p := range permissions {
-			if HasPermission(claims, Permission(p)) {
-				return next(ctx)
-			}
-		}
-
-		return nil, &gqlerror.Error{
-			Message: "forbidden: insufficient permissions",
-			Extensions: map[string]any{
-				"code": "FORBIDDEN",
-			},
-		}
+		return next(ctx)
 	}
 }

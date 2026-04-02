@@ -140,17 +140,17 @@ input ServiceCategoryMapEntryInput {
 
 extend type Query {
   # Returns a filtered, sorted, paginated list of classification plans.
-  classificationList(page: PageRequest, filter: FilterRequest): [Classification!]! @auth(permissions: ["read"])
+  classificationList(page: PageRequest, filter: FilterRequest): [Classification!]! @auth
 
   # Returns the total count of classification plans matching the filter.
-  countClassifications(filter: FilterRequest): Int! @auth(permissions: ["read"])
+  countClassifications(filter: FilterRequest): Int! @auth
 
   # Returns lookup data derived from the active classification plan.
   # Used to populate rate-plan configuration dropdowns in the frontend.
-  rateKeyInput: RateKeyInput! @auth(permissions: ["read"])
+  rateKeyInput: RateKeyInput! @auth
 
   # Returns a single classification plan by ID, or null if not found.
-  classification(classificationId: ID!): Classification @auth(permissions: ["read"])
+  classification(classificationId: ID!): Classification @auth
 }
 
 # ---------------------------------------------------------------------------
@@ -160,26 +160,26 @@ extend type Query {
 extend type Mutation {
   # Creates a new classification plan in DRAFT status.
   # createdBy is derived from the authenticated JWT; it is not a client input.
-  createClassification(classification: ClassificationInput!): Classification! @auth(permissions: ["write"])
+  createClassification(classification: ClassificationInput!): Classification! @auth
 
   # Creates a DRAFT copy of an existing classification plan.
-  cloneClassification(classificationId: ID!): Classification! @auth(permissions: ["write"])
+  cloneClassification(classificationId: ID!): Classification! @auth
 
   # Updates the name, effectiveTime, and plan of a DRAFT classification.
   # Returns an error if the classification is not in DRAFT status.
-  updateClassificationPlan(classificationId: ID!, classification: ClassificationInput!): Classification! @auth(permissions: ["write"])
+  updateClassificationPlan(classificationId: ID!, classification: ClassificationInput!): Classification! @auth
 
   # Transitions a DRAFT classification to PENDING (awaiting approval).
-  submitClassificationForApproval(classificationId: ID!): Classification! @auth(permissions: ["write"])
+  submitClassificationForApproval(classificationId: ID!): Classification! @auth
 
   # Transitions a PENDING classification to ACTIVE.
   # approvedBy is derived from the authenticated JWT.
-  approveClassificationPlan(classificationId: ID!): Classification! @auth(permissions: ["write"])
+  approveClassificationPlan(classificationId: ID!): Classification! @auth
 
   # Transitions a PENDING classification back to DRAFT.
-  declineClassificationPlan(classificationId: ID!): Classification! @auth(permissions: ["write"])
+  declineClassificationPlan(classificationId: ID!): Classification! @auth
 
   # Permanently deletes a DRAFT classification. Returns true on success.
   # Returns an error if the classification is not in DRAFT status.
-  deleteClassification(classificationId: ID!): Boolean! @auth(permissions: ["write"])
+  deleteClassification(classificationId: ID!): Boolean! @auth
 }

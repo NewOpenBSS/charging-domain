@@ -22,39 +22,23 @@ func successResolver(ctx context.Context) (any, error) {
 	return "ok", nil
 }
 
-func TestAuthDirective_Authorised(t *testing.T) {
+func TestAuthDirective_Authenticated(t *testing.T) {
 	directives := NewGraphQLDirectiveConfig(true)
 
 	ctx := ctxWithClaims(&keycloak.KeycloakClaims{
 		Permissions: []string{"read", "write"},
 	})
 
-	res, err := directives.Auth(ctx, nil, successResolver, []string{"read"})
+	res, err := directives.Auth(ctx, nil, successResolver)
 	require.NoError(t, err)
 	assert.Equal(t, "ok", res)
-}
-
-func TestAuthDirective_Unauthorised(t *testing.T) {
-	directives := NewGraphQLDirectiveConfig(true)
-
-	ctx := ctxWithClaims(&keycloak.KeycloakClaims{
-		Permissions: []string{"read"},
-	})
-
-	res, err := directives.Auth(ctx, nil, successResolver, []string{"admin"})
-	require.Error(t, err)
-	assert.Nil(t, res)
-
-	var gqlErr *gqlerror.Error
-	require.ErrorAs(t, err, &gqlErr)
-	assert.Equal(t, "FORBIDDEN", gqlErr.Extensions["code"])
 }
 
 func TestAuthDirective_Unauthenticated(t *testing.T) {
 	directives := NewGraphQLDirectiveConfig(true)
 
 	// No claims in context.
-	res, err := directives.Auth(context.Background(), nil, successResolver, []string{"read"})
+	res, err := directives.Auth(context.Background(), nil, successResolver)
 	require.Error(t, err)
 	assert.Nil(t, res)
 
@@ -67,21 +51,23 @@ func TestAuthDirective_AuthDisabled(t *testing.T) {
 	directives := NewGraphQLDirectiveConfig(false)
 
 	// No claims, but auth disabled — should pass through.
-	res, err := directives.Auth(context.Background(), nil, successResolver, []string{"admin"})
+	res, err := directives.Auth(context.Background(), nil, successResolver)
 	require.NoError(t, err)
 	assert.Equal(t, "ok", res)
 }
 
-func TestAuthDirective_MultiplePermissions_AnyMatch(t *testing.T) {
+func TestAuthDirective_NilClaims(t *testing.T) {
 	directives := NewGraphQLDirectiveConfig(true)
 
-	ctx := ctxWithClaims(&keycloak.KeycloakClaims{
-		Permissions: []string{"superadmin"},
-	})
+	// Claims key present but nil value.
+	ctx := context.WithValue(context.Background(), keycloak.ClaimsContextKey, (*keycloak.KeycloakClaims)(nil))
+	res, err := directives.Auth(ctx, nil, successResolver)
+	require.Error(t, err)
+	assert.Nil(t, res)
 
-	res, err := directives.Auth(ctx, nil, successResolver, []string{"admin", "superadmin"})
-	require.NoError(t, err)
-	assert.Equal(t, "ok", res)
+	var gqlErr *gqlerror.Error
+	require.ErrorAs(t, err, &gqlErr)
+	assert.Equal(t, "UNAUTHENTICATED", gqlErr.Extensions["code"])
 }
 
 func TestNewGraphQLDirectiveConfig_ReturnsDirectiveRoot(t *testing.T) {
@@ -90,4 +76,4 @@ func TestNewGraphQLDirectiveConfig_ReturnsDirectiveRoot(t *testing.T) {
 }
 
 // Verify the handler function conforms to the expected gqlgen signature.
-var _ func(ctx context.Context, obj any, next graphql.Resolver, permissions []string) (any, error) = NewGraphQLDirectiveConfig(true).Auth
+var _ func(ctx context.Context, obj any, next graphql.Resolver) (any, error) = NewGraphQLDirectiveConfig(true).Auth
