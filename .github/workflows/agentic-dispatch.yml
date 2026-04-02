@@ -25,8 +25,7 @@ jobs:
     with:
       issue_number: ${{ github.event.issue.number }}
       repository: ${{ github.repository }}
-    secrets:
-      GOOSE_AGENT_PAT: ${{ secrets.GOOSE_AGENT_PAT }}
+    secrets: inherit
 
   # ─── Dev Session ───────────────────────────────────────────────────────────
   # Triggered when a feature issue is labelled in-development.
@@ -40,5 +39,4 @@ jobs:
     with:
       issue_number: ${{ github.event.issue.number }}
       repository: ${{ github.repository }}
-    secrets:
-      GOOSE_AGENT_PAT: ${{ secrets.GOOSE_AGENT_PAT }}
+    secrets: inherit
