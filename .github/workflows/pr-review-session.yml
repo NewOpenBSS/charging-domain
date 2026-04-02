@@ -3,8 +3,6 @@ name: PR Review Session (Stage 4b)
 on:
   pull_request_review:
     types: [submitted]
-  pull_request_review_comment:
-    types: [created]
   workflow_dispatch:
     inputs:
       pr_number:
@@ -25,20 +23,12 @@ jobs:
     name: Run PR Review Session
     runs-on: self-hosted
     concurrency:
-      group: pr-review-${{ github.event.pull_request.number || github.event.issue.number || github.event.inputs.pr_number }}
+      group: pr-review-${{ github.event.pull_request.number || github.event.inputs.pr_number }}
       cancel-in-progress: false
 
     # Only run on feature branches, and only when review state is
     # COMMENTED or CHANGES_REQUESTED (not APPROVED)
-    if: >
-      github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'pull_request_review_comment' &&
-       github.event.comment.user.login != 'goose-agent' &&
-       startsWith(github.event.pull_request.head.ref, 'feature/')) ||
-      (github.event_name == 'pull_request_review' &&
-       github.event.review.user.login != 'goose-agent' &&
-       startsWith(github.event.pull_request.head.ref, 'feature/') &&
-       (github.event.review.state == 'commented' || github.event.review.state == 'changes_requested'))
+    if: github.event_name == 'workflow_dispatch' || (github.event.review.user.login != 'goose-agent' && startsWith(github.event.pull_request.head.ref, 'feature/') && (github.event.review.state == 'commented' || github.event.review.state == 'changes_requested'))
 
     steps:
       - name: Checkout
