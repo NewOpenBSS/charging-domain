@@ -1,0 +1,88 @@
+name: Agentic Session Dispatch
+
+# Template thin caller workflow for domain repos.
+# Copy this file into the domain repo at .github/workflows/agentic-dispatch.yml
+# and replace NewOpenBSS/agentic with your organisation's agentic repo.
+#
+# Listens for label changes on feature issues and dispatches to the
+# appropriate reusable session workflow in the agentic repo.
+
+on:
+  issues:
+    types: [labeled]
+
+jobs:
+
+  # ─── Feature Design Session ────────────────────────────────────────────────
+  # Triggered when a feature issue is labelled in-design.
+  # Reads the feature spec, creates task sub-issues, creates the branch,
+  # then applies in-development to trigger the dev session.
+
+  feature-design:
+    name: Feature Design Session
+    if: |
+      contains(github.event.issue.labels.*.name, 'feature') &&
+      github.event.label.name == 'in-design'
+    uses: NewOpenBSS/agentic/.github/workflows/feature-design-session.yml@main
+    with:
+      issue_number: ${{ github.event.issue.number }}
+      repository: ${{ github.repository }}
+    secrets:
+      GOOSE_AGENT_PAT: ${{ secrets.GOOSE_AGENT_PAT }}
+
+  # ─── Dev Session ───────────────────────────────────────────────────────────
+  # Triggered when a feature issue is labelled in-development.
+  # Resolves the linked branch, implements all open task sub-issues,
+  # pushes commits, and opens a PR.
+
+  dev-session:
+    name: Dev Session
+    if: |
+      contains(github.event.issue.labels.*.name, 'feature') &&
+      github.event.label.name == 'in-development'
+    runs-on: ubuntu-latest
+    permissions:
+      issues: read
+    outputs:
+      branch_name: ${{ steps.branch.outputs.name }}
+
+    steps:
+      - name: Resolve linked branch
+        id: branch
+        run: |
+          BRANCH=$(gh api graphql -f query='
+            query($owner: String!, $repo: String!, $number: Int!) {
+              repository(owner: $owner, name: $repo) {
+                issue(number: $number) {
+                  linkedBranches(first: 1) {
+                    nodes { ref { name } }
+                  }
+                }
+              }
+            }' \
+            -f owner="${{ github.repository_owner }}" \
+            -f repo="${{ github.event.repository.name }}" \
+            -F number=${{ github.event.issue.number }} \
+            --jq '.data.repository.issue.linkedBranches.nodes[0].ref.name')
+
+          if [ -z "$BRANCH" ] || [ "$BRANCH" = "null" ]; then
+            echo "No linked branch found for issue #${{ github.event.issue.number }}"
+            exit 1
+          fi
+
+          echo "name=${BRANCH}" >> $GITHUB_OUTPUT
+          echo "Linked branch: ${BRANCH}"
+        env:
+          GH_TOKEN: ${{ secrets.GOOSE_AGENT_PAT }}
+
+    # Call the reusable dev session workflow with the resolved branch
+  call-dev-session:
+    name: Run Dev Session
+    needs: dev-session
+    uses: NewOpenBSS/agentic/.github/workflows/dev-session.yml@main
+    with:
+      issue_number: ${{ github.event.issue.number }}
+      branch_name: ${{ needs.dev-session.outputs.branch_name }}
+      repository: ${{ github.repository }}
+    secrets:
+      GOOSE_AGENT_PAT: ${{ secrets.GOOSE_AGENT_PAT }}
