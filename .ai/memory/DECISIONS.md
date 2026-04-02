@@ -343,3 +343,15 @@ to be updated at that point.
 **Decision:** Replace Keycloak token introspection (`RetrospectToken` via `gocloak`) with local JWT signature verification using Keycloak's JWKS endpoint (`/protocol/openid-connect/certs`) via `github.com/MicahParks/keyfunc/v2`.
 **Rationale:** Token introspection requires the calling client to be confidential and have introspection permissions granted in Keycloak. The `portal` client is a public OAuth2 client with no secret, making introspection impossible. JWKS-based validation works for both public and confidential clients, requires no client secret, and is lower latency (local verification vs. a network round-trip to Keycloak per request). Keys are cached and refreshed automatically in the background.
 **Consequences:** `clientId` and `clientSecret` removed from `KeycloakConfig` — no credentials needed for token validation. `gocloak` is retained only for `UserService` (admin API calls). The `keyfunc/v2` dependency is added. Token expiry and signature are enforced by `golang-jwt/jwt/v5` during local parse.
+
+## ADR-025 — Permission enforcement framework: @auth directive + SecureRouter (F-011)
+**Status:** Accepted
+**Area:** `internal/auth/`, GraphQL schema, REST router
+**Decision:** Implement a reusable permission enforcement framework with three components:
+1. `Permission` type + `HasPermission` helper extracting permissions from JWT `permissions` claim
+2. `SecureRouter` for REST — wraps chi.Router, requires explicit permission declaration per route (compile error if omitted). `Public()` marker for unauthenticated endpoints.
+3. `@auth(permissions: [...])` GraphQL directive — enforces permissions per field. `DenyByDefaultFieldMiddleware` rejects unannotated Query/Mutation fields.
+
+All three components respect `auth.enabled: false` for local dev bypass.
+**Rationale:** Keycloak middleware validates *who* the caller is but not *what* they can do. The framework establishes deny-by-default semantics without coupling to any specific permission constants (which are domain-specific). Using generic `read`/`write` placeholder permissions allows the framework to be deployed immediately; fine-grained permissions (e.g. `carrier:create`, `rateplan:approve`) are a future feature.
+**Consequences:** Every new REST route must use `SecureRouter` methods. Every new GraphQL query/mutation field must include `@auth(permissions: [...])` or the deny-default middleware will reject it. The `permissions` JWT claim must be configured in Keycloak token mappers for production use.
