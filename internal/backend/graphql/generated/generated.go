@@ -32,6 +32,7 @@ type ResolverRoot interface {
 }
 
 type DirectiveRoot struct {
+	Auth func(ctx context.Context, obj any, next graphql.Resolver, permissions []string) (res any, err error)
 }
 
 type ComplexityRoot struct {
@@ -2342,6 +2343,10 @@ extend type Mutation {
 `, BuiltIn: false},
 	{Name: "../../../../gql/schema/schema.graphql", Input: `# GraphQL Schema for Charging Backend
 
+# Permission enforcement directive — applied to query and mutation fields to
+# declare the permissions required to execute the operation.
+directive @auth(permissions: [String!]!) on FIELD_DEFINITION
+
 # Root types
 type Query {
   _empty: String
@@ -2444,6 +2449,17 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 // endregion ************************** generated!.gotpl **************************
 
 // region    ***************************** args.gotpl *****************************
+
+func (ec *executionContext) dir_auth_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "permissions", ec.unmarshalNString2ᚕstringᚄ)
+	if err != nil {
+		return nil, err
+	}
+	args["permissions"] = arg0
+	return args, nil
+}
 
 func (ec *executionContext) field_Mutation_approveClassificationPlan_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error

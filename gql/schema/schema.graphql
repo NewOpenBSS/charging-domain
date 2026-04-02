@@ -1,5 +1,9 @@
 # GraphQL Schema for Charging Backend
 
+# Permission enforcement directive — applied to query and mutation fields to
+# declare the permissions required to execute the operation.
+directive @auth(permissions: [String!]!) on FIELD_DEFINITION
+
 # Root types
 type Query {
   _empty: String
