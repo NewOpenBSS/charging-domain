@@ -20,9 +20,7 @@ jobs:
 
   feature-design:
     name: Feature Design Session
-    if: |
-      contains(github.event.issue.labels.*.name, 'feature') &&
-      github.event.label.name == 'in-design'
+    if: contains(github.event.issue.labels.*.name, 'feature') && github.event.label.name == 'in-design'
     uses: NewOpenBSS/agentic/.github/workflows/feature-design-session.yml@main
     with:
       issue_number: ${{ github.event.issue.number }}
@@ -37,9 +35,7 @@ jobs:
 
   dev-session:
     name: Dev Session
-    if: |
-      contains(github.event.issue.labels.*.name, 'feature') &&
-      github.event.label.name == 'in-development'
+    if: contains(github.event.issue.labels.*.name, 'feature') && github.event.label.name == 'in-development'
     runs-on: ubuntu-latest
     permissions:
       issues: read
