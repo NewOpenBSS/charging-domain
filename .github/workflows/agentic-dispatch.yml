@@ -1,9 +1,12 @@
-name: Basic Test
+name: Reusable Test
 on:
   issues:
     types: [labeled]
 jobs:
-  echo:
-    runs-on: ubuntu-latest
-    steps:
-      - run: echo "label=${{ github.event.label.name }}"
+  feature-design:
+    if: github.event.label.name == 'in-design'
+    uses: NewOpenBSS/agentic/.github/workflows/feature-design-session.yml@main
+    with:
+      issue_number: ${{ github.event.issue.number }}
+      repository: ${{ github.repository }}
+    secrets: inherit
